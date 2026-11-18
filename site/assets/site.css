@@ -144,6 +144,7 @@ thead th { color: var(--ink-2); font-weight: 600; }
 .links li { padding: .25rem 0; }
 .limits { max-width: 52rem; }
 .tag { display: inline-block; font-size: .75rem; font-weight: 650; border: 1px solid var(--ink-3); border-radius: 4px; padding: 0 .35rem; margin-right: .4rem; white-space: nowrap; }
+.months-table { max-width: 26rem; }
 .scope { max-width: 46rem; margin: .5rem 0 0; padding-left: 1.1rem; }
 .scope li { margin-bottom: .3rem; }
 .download { display: inline-block; padding: .55rem .8rem; border: 1px solid var(--link); border-radius: 6px; font-weight: 600; text-decoration: none; }

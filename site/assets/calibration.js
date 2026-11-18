@@ -3,18 +3,22 @@
 import { el, missing, num } from "./format.js";
 import { lineChart } from "./charts.js";
 
-// The chart holds the length of record fixed. Results for other lengths are not shown.
+// The chart holds the length of record fixed. The table shows the largest tag set at each length.
 const CHART_MONTHS = 1;
+const TABLE_TAGS = 25;
 
 // All wording of the section is here, so it can be revised without touching the drawing code.
 const TEXT = {
   leadFalling: (first, last) => `With one month of data, more of the right tags reduce the recovery error: the largest error falls from ${first.label} with ${first.tags} tags to ${last.label} with ${last.tags} tags.`,
   leadMixed: (first, last) => `With one month of data, the largest recovery error is ${first.label} with ${first.tags} tags and ${last.label} with ${last.tags} tags.`,
   chartTitle: "Largest recovery error against number of tags, with one month of data",
-  chartNote: "Every point uses one month of data. This page makes no claim about longer records.",
+  chartNote: "Every point on this chart uses one month of data. The table below shows longer records with 25 tags.",
+  monthsTitle: "Largest recovery error with 25 tags, by months of data",
+  monthsCaption: "Largest recovery error with 25 tags for each length of record in this build",
+  monthsHead: ["Months of data", "Largest recovery error"],
+  notRun: "Not run",
+  notConverged: "Did not converge",
   method: "The campus in this test is simulated, so its true pipe coefficients are known, and the recovery error compares each estimate with those true values. This is a test on synthetic data, not a result from a real plant.",
-  campus: (test, shown) => `This demonstration uses the ${test}-junction synthetic campus, not the ${shown ? `${shown}-junction ` : ""}demo campus shown in the animation.`,
-  groups: (names) => `Only steam-side coefficient groups are estimated${names ? ` (${names})` : ""}. Condensate-side and per-pipe coefficients are not identifiable from these tags.`,
   noChart: " The calibration study has not produced a converged result in this build.",
   noFigures: "Export size figures are not available in this build.",
   figuresNote: "Measured on the synthetic export used in this demonstration.",
@@ -33,20 +37,24 @@ export function normalizeCalibration(raw) {
     .filter((c) => c.months === CHART_MONTHS && c.converged === true && Number.isFinite(c.tags) && Number.isFinite(c.max_error_percent))
     .map((c) => ({ tags: c.tags, error: c.max_error_percent, label: percent(c.max_error_percent) }))
     .sort((a, b) => a.tags - b.tags);
-  const coefficients = raw.true_coefficients;
-  const estimated = Array.isArray(coefficients?.groups) && Array.isArray(coefficients?.estimated)
-    ? coefficients.groups.filter((_, i) => coefficients.estimated[i] === true) : [];
+  const months = cells.filter((c) => c.tags === TABLE_TAGS && Number.isFinite(c.months))
+    .sort((a, b) => a.months - b.months)
+    .map((c) => ({
+      months: c.months,
+      result: c.run !== true ? TEXT.notRun
+        : c.converged === true && Number.isFinite(c.max_error_percent) ? percent(c.max_error_percent) : TEXT.notConverged,
+    }));
   return {
-    points, estimated,
+    points, months,
+    findings: Array.isArray(raw.findings) ? raw.findings.filter((f) => typeof f === "string") : [],
     subtitle: raw.chart?.subtitle || null, xLabel: raw.chart?.x_label || "Tags used", yLabel: raw.chart?.y_label || "Largest recovery error (%)",
-    junctions: raw.network?.junctions ?? null,
     ask: raw.ask || null, historian: raw.historian || null,
     example: raw.bad_quality_example || null,
     sampleRows: Array.isArray(raw.sample_rows) ? raw.sample_rows : null,
   };
 }
 
-export function renderCalibration(host, cal, shownJunctions) {
+export function renderCalibration(host, cal) {
   if (!cal || cal.points.length < 2) return missing(host, TEXT.noChart);
   host.replaceChildren();
   const first = cal.points[0], last = cal.points[cal.points.length - 1];
@@ -58,10 +66,23 @@ export function renderCalibration(host, cal, shownJunctions) {
     series: [{ name: "Largest recovery error (%)", color: "var(--s1)", points: cal.points.map((p) => ({ x: p.tags, y: p.error })) }],
   });
   el("p", { class: "note" }, host, TEXT.chartNote);
+  if (cal.months.length) {
+    el("h3", {}, host, TEXT.monthsTitle);
+    const wrap = el("div", { class: "table-scroll months-table", tabindex: "0", role: "region", "aria-label": TEXT.monthsTitle }, host);
+    const table = el("table", {}, wrap);
+    el("caption", { class: "sr-only" }, table, TEXT.monthsCaption);
+    const head = el("tr", {}, el("thead", {}, table));
+    TEXT.monthsHead.forEach((h) => el("th", { scope: "col" }, head, h));
+    const body = el("tbody", {}, table);
+    cal.months.forEach((m) => {
+      const tr = el("tr", {}, body);
+      el("th", { scope: "row" }, tr, String(m.months));
+      el("td", {}, tr, m.result);
+    });
+  }
   const scope = el("ul", { class: "scope" }, host);
   el("li", {}, scope, TEXT.method);
-  if (cal.junctions !== null) el("li", {}, scope, TEXT.campus(cal.junctions, shownJunctions));
-  el("li", {}, scope, TEXT.groups(cal.estimated.join(" and ")));
+  cal.findings.forEach((f) => el("li", {}, scope, f));
 }
 
 export function renderAsk(host, cal) {

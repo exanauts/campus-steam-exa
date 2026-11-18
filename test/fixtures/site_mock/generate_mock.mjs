@@ -111,10 +111,16 @@ write("calibration.json", {
   true_coefficients: { groups: ["steam mains", "steam laterals", "condensate return"], estimated: [true, true, false] },
   bad_quality_example: { tag: "MOCK.TEMP", unit: "K", samples: calSamples, mean_with_bad_sample: 61.6, mean_after_exclusion: 42.5, samples_excluded: 1 },
   finding: "Mock finding.",
+  findings: ["Mock finding about the network.", "Mock finding about the coefficient groups."],
   chart: { title: "Mock chart", subtitle: "Mock subtitle.", x_label: "Tags used", y_label: "Largest recovery error (%)", x_scale: "linear", y_scale: "log", series: [] },
   ask: { tag_count: 25, years: 2, rows: 438000, size_label: "19 MiB" },
   sample_rows: calSamples.map((s) => ({ DateTime: s.time, TagName: "MOCK.TEMP", Value: s.value, Quality: s.quality })),
-  grid: { tag_counts: [5, 10, 15, 25], months: [1, 3], cells: [calCell(5, 1, 40), calCell(10, 1, 12), calCell(15, 1, 6), calCell(25, 1, 2), calCell(25, 3, 1.5), { tags: 5, months: 3, hours: 2190, run: false, reason: "Mock." }] },
+  grid: { tag_counts: [5, 10, 15, 25], months: [1, 3, 6, 12, 24], cells: [
+    calCell(5, 1, 40), calCell(10, 1, 12), calCell(15, 1, 6), calCell(25, 1, 2), calCell(25, 3, 1.5), calCell(25, 6, 2.5),
+    { tags: 25, months: 12, hours: 8760, run: true, converged: false, solver_status: "MAXIMUM_WALLTIME_EXCEEDED", reason: "Mock." },
+    { tags: 25, months: 24, hours: 17520, run: false, reason: "Mock." },
+    { tags: 5, months: 3, hours: 2190, run: false, reason: "Mock." },
+  ] },
 });
 
 const runs = [];

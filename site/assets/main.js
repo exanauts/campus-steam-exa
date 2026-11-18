@@ -96,7 +96,7 @@ async function main() {
   ]);
   renderFooter(info);
   const cal = normalizeCalibration(calRaw);
-  await guarded($("calibration"), "The calibration result could not be drawn.", () => renderCalibration($("calibration"), cal, networkRaw?.junctions?.id?.length));
+  await guarded($("calibration"), "The calibration result could not be drawn.", () => renderCalibration($("calibration"), cal));
   await guarded($("ask-figures"), "The export figures could not be read.", () => renderAsk($("ask-figures"), cal));
   await guarded(null, "sample", () => renderSample($("sample-body"), $("sample-note"), cal));
   await guarded($("benchmarks"), "The measurements could not be drawn.", () => renderBenchmarks(normalizeBenchmarks(benchRaw)));

@@ -163,7 +163,7 @@ time from a simulated network whose true coefficients are known, and is deleted 
 | `data_note` | String | Statement that the data is synthetic |
 | `network` | Object | `junctions`, `pipes`, `loads`, `description` |
 | `network_used` | Object | `name`, `generator_call`, `is_demo_campus` (always `false`), `note` |
-| `findings` | Array of String | Statements the site must show with these results |
+| `findings` | Array of String | Statements the site shows with these results. The statement about months of data is built from the converged 25-tag cells of this run |
 | `seasonal_check` | Object | The 25-tag, one-month fit in month 1 and month 7, see below |
 | `historian` | Object | `format` (column names), `hours`, `tags`, `rows`, `file_bytes`, `tag_hours`, `good`, `excluded_bad`, `excluded_uncertain`, `excluded_blank`, `absent`, `good_percent` |
 | `true_coefficients` | Object | `groups`, `estimated` (Bool per group), `loss_multiplier`, `friction_multiplier` (per group), `pipe_spread_percent` |

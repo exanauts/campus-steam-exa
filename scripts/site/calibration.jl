@@ -14,10 +14,10 @@ using MadNLPGPU
 const CAL_TAG_COUNTS = [5, 10, 15, 25]
 const CAL_MONTHS = [1, 3, 6, 12, 24]
 # Grid points of the site build, in the order they are attempted.
-const CAL_CI_POINTS = [(25, 1), (5, 1), (25, 3), (10, 1), (15, 1)]
+const CAL_CI_POINTS = [(25, 1), (5, 1), (25, 3), (10, 1), (15, 1), (25, 6)]
 # Wall-clock budget of the whole calibration step in the site build, and the time kept for the GPU
 # attempt and for writing results.
-const CAL_BUDGET_S = 345.0
+const CAL_BUDGET_S = 645.0
 const CAL_GPU_RESERVE_S = 55.0
 const CAL_HISTORIAN_HOURS = 17520
 const CAL_MAX_ITER = 500
@@ -181,14 +181,30 @@ function _cal_seasonal_check(hist, net, series, january, wall_limit_s)
     return check
 end
 
-function _cal_findings(net, hist, identifiability, seasonal)
+# What the converged 25-tag cells of this run show about the length of record, and nothing more.
+function _cal_months_finding(grid)
+    cells = sort(filter(c -> c["tags"] == 25 && get(c, "converged", false), grid); by = c -> c["months"])
+    isempty(cells) && return nothing
+    length_of(m) = m == 1 ? "1 month" : "$m months"
+    parts = ["$(c["max_error_percent"])% with $(length_of(c["months"]))" for c in cells]
+    text = "With 25 tags, the largest recovery error in this build was " * join(parts, ", ", " and ") * " of data."
+    length(cells) < 2 && return text
+    errors = [c["max_error_percent"] for c in cells]
+    falling = all(errors[i] < errors[i - 1] for i in 2:length(errors))
+    return text * (falling ? " The error fell each time more months were used." :
+        " The error did not fall each time more months were used.")
+end
+
+function _cal_findings(net, hist, identifiability, seasonal, grid)
     finest = identifiability[end]
     findings = String[
-        "All data is synthetic. The network is a synthetic $(length(net.junctions))-junction campus, not the 132-junction demo campus shown elsewhere on this site.",
+        "All data is synthetic. The network is a synthetic $(length(net.junctions))-junction campus, not the $(length(demo_campus().junctions))-junction demo campus shown elsewhere on this site.",
         "Coefficients are estimated per pipe group, not per pipe: at most $(finest["pipe_directions_resolved_12_months"]) of $(finest["pipe_coefficients"]) per-pipe directions are resolved by $(finest["tags"]) tags.",
         "Condensate-return coefficients are not estimated. They are held at nominal and would need their own condensate-side tags.",
-        "Recovery error is measured against the length-weighted mean of the true pipe coefficients in each group, and pipes in a group differ by a seeded $(100 * CampusSteam.TRUE_PIPE_SPREAD)% spread. In separate diagnostic runs that are not part of this build, this spread kept the error from falling as months of data were added, so more history alone does not buy more accuracy here.",
+        "Recovery error is measured against the length-weighted mean of the true pipe coefficients in each group, and pipes in a group differ by a seeded $(100 * CampusSteam.TRUE_PIPE_SPREAD)% spread.",
     ]
+    months = _cal_months_finding(grid)
+    months === nothing || push!(findings, months)
     if get(seasonal, "run", false) && haskey(seasonal["windows"][2], "estimate")
         first_month, seventh = seasonal["windows"][1]["estimate"], seasonal["windows"][2]["estimate"]
         push!(findings, "The steam-mains friction multiplier was estimated at $(first_month["friction"][1]) from month 1 and $(seventh["friction"][1]) from month 7, against a true group mean of $(seasonal["true_friction_multiplier"][1]).")
@@ -233,7 +249,7 @@ function _cal_chart(grid)
     isempty(series) && return nothing
     return Dict(
         "title" => "Coefficient recovery error against number of tags",
-        "subtitle" => "Synthetic data. Largest relative error over the estimated steam-side coefficient groups. More months do not keep reducing it; see the findings.",
+        "subtitle" => "Synthetic data. Largest relative error over the estimated steam-side coefficient groups.",
         "x_label" => "Tags used",
         "y_label" => "Largest recovery error (%)",
         "x_scale" => "linear",
@@ -337,9 +353,9 @@ function run_calibration(outdir; points = CAL_CI_POINTS, budget_s = CAL_BUDGET_S
             "name" => "Synthetic $(length(net.junctions))-junction campus",
             "generator_call" => "scaled_campus($(length(net.junctions)))",
             "is_demo_campus" => false,
-            "note" => "The calibration study does not use the 132-junction demo campus.",
+            "note" => "The calibration study does not use the $(length(demo_campus().junctions))-junction demo campus.",
         ),
-        "findings" => _cal_findings(net, hist, identifiability, seasonal),
+        "findings" => _cal_findings(net, hist, identifiability, seasonal, grid),
         "seasonal_check" => seasonal,
         "historian" => Dict(
             "format" => split(HISTORIAN_HEADER, ','),
