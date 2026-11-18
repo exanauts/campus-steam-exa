@@ -186,7 +186,7 @@ uuid = "9e67e8f6-ba02-4b6c-a7db-3b11ae1e7ab7"
 version = "6.5.1"
 
 [[deps.CampusSteam]]
-deps = ["ExaModels", "LinearAlgebra", "MadNLP", "SparseArrays"]
+deps = ["Dates", "ExaModels", "LinearAlgebra", "MadNLP", "SparseArrays"]
 path = ".."
 uuid = "6e451196-e023-4038-bfd0-4af1b621d80c"
 version = "0.1.0"

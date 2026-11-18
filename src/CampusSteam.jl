@@ -32,5 +32,7 @@ CUDSS and MadNLPGPU to be loaded alongside this package.
 gpu_extension_loaded() = Base.get_extension(@__MODULE__, :CampusSteamGPUExt) !== nothing
 
 include("model/model.jl")
+include("historian.jl")
+include("calibration.jl")
 
 end # module CampusSteam

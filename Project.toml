@@ -4,6 +4,7 @@ authors = ["exanauts"]
 version = "0.1.0"
 
 [deps]
+Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
 ExaModels = "1037b233-b668-4ce9-9b63-f9f681f55dd2"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 MadNLP = "2621e9c9-9eb4-46b1-8089-e8c72242dfb6"
@@ -20,6 +21,7 @@ CampusSteamGPUExt = ["CUDA", "CUDSS", "MadNLPGPU"]
 [compat]
 CUDA = "6"
 CUDSS = "1"
+Dates = "1"
 ExaModels = "0.15"
 LinearAlgebra = "1"
 MadNLP = "0.11"

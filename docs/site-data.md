@@ -131,3 +131,80 @@ With one boiler out, no critical load is shed under either weighting, so that ca
 weights protecting critical load. There the weights decide whether labs are shed. The `deeper_derate`
 stress case is the one that shows critical load being protected. Show it as a stress case, separate from
 the four scenarios.
+
+## Calibration
+
+`scripts/site/calibration.jl` defines `run_calibration(outdir)`, which writes `calibration.json` and
+`tag_template.csv` to `site/data/`. All data is synthetic: the historian-style CSV is generated at build
+time from a simulated network whose true coefficients are known, and is deleted after the run.
+
+### Method
+
+- **Network.** The synthetic 40-junction campus from `scaled_campus(40)`.
+- **True model.** Heat-loss and friction multipliers per group are set by `TRUE_GROUP_LOSS` and
+  `TRUE_GROUP_FRICTION` in `src/calibration.jl`, times a seeded pipe-to-pipe spread (`TRUE_PIPE_SPREAD`).
+  The score compares each estimate with the length-weighted mean of the true multipliers in its group.
+- **Historian file.** Hourly narrow CSV with the columns `DateTime,TagName,Value,Quality`. Rows have
+  sensor noise. Independently per tag and hour, 1% of rows are absent, 2% are flagged `Bad` and 0.5% are
+  flagged `Uncertain`. About six plant-wide gaps per year of 4 to 12 hours have no rows.
+- **Ingest.** `read_historian` and `align_historian` in `src/historian.jl`. Only `Good` samples are used.
+  Excluded and missing samples are not filled in and add no term to the objective.
+- **Inverse problem.** One ExaModels NLP over all hours, with the hourly network states, the hourly heat
+  of each building, and one heat-loss and one friction multiplier per group shared across hours.
+  Condensate-return multipliers are held at nominal, because the tags do not determine them.
+- **Grid.** Tag sets are nested: the set of size `n` is the first `n` curated tags. One month is 730 hours.
+  The site build runs the points in `CAL_CI_POINTS` within `CAL_BUDGET_S`.
+
+### `calibration.json`
+
+| Key | Type | Meaning |
+|---|---|---|
+| `synthetic` | Bool | Always `true` |
+| `data_note` | String | Statement that the data is synthetic |
+| `network` | Object | `junctions`, `pipes`, `loads`, `description` |
+| `historian` | Object | `format` (column names), `hours`, `tags`, `rows`, `file_bytes`, `tag_hours`, `good`, `excluded_bad`, `excluded_uncertain`, `excluded_blank`, `absent`, `good_percent` |
+| `true_coefficients` | Object | `groups`, `estimated` (Bool per group), `loss_multiplier`, `friction_multiplier` (per group), `pipe_spread_percent` |
+| `tags_by_category` | Object | For each category, a list of `name`, `unit`, `description` |
+| `tag_sets` | Object | For each tag count, the tag names in that set |
+| `bad_quality_example` | Object | See below |
+| `finding` | String or null | One sentence built from the converged grid points of this run |
+| `chart` | Object or null | `title`, `subtitle`, `x_label`, `y_label`, `x_scale`, `y_scale`, and `series` (each with `name`, `x` as tag counts, `y` as `max_error_percent`). Only converged points appear |
+| `ask` | Object | Size of the export: `tag_count`, `years`, `rows`, `size_label` |
+| `sample_rows` | Array | The rows of `bad_quality_example` as `DateTime`, `TagName`, `Value`, `Quality` |
+| `identifiability` | Array | One entry per tag count, see below |
+| `grid` | Object | `tag_counts`, `months`, `cells`, see below |
+| `gpu` | Object | Outcome of the GPU attempt, see below |
+| `timing_s` | Object | `generate_historian`, `read_historian`, `nominal_simulation`, `identifiability`, `total`, `budget` |
+
+**`bad_quality_example`** has `tag`, `unit`, `samples` (each with `time`, `value`, `quality`, `used`),
+`mean_with_bad_sample`, `mean_after_exclusion` and `samples_excluded`.
+
+**`identifiability`** entries are linearized predictions at the true coefficients, with unmetered hourly
+quantities marginalized out. They assume that errors are independent from hour to hour, so they are a
+lower bound on the real error and are not measured recovery errors. Each has `tags`,
+`predicted_std_1_month` and `predicted_std_12_months` (each with `loss` and `friction`, by group, as a
+fraction of the multiplier), `pipe_directions_resolved_12_months` (directions in the space of per-pipe
+coefficients with a predicted standard deviation below 10%), `pipe_coefficients` and `sample_hours`.
+
+**`grid.cells`** has one entry for each combination of tag count and months.
+
+| Key | Present | Meaning |
+|---|---|---|
+| `tags`, `months`, `hours` | Always | Grid point |
+| `run` | Always | `false` when the point was not run in this build |
+| `reason` | Not run or not converged | Why there is no recovery error |
+| `solver_status`, `converged`, `iterations` | Run | MadNLP outcome |
+| `variables`, `constraints`, `jacobian_nonzeros`, `measurements` | Run | Problem size |
+| `build_s`, `solve_s` | Run | Wall-clock seconds |
+| `estimate` | Converged | `loss` and `friction` multipliers per group |
+| `error_percent` | Converged | `loss` and `friction` relative error per estimated group |
+| `max_error_percent` | Converged | Largest relative error over the estimated groups |
+
+**`gpu`** has `attempted`, and `reason` when no attempt was made. After an attempt it has `tags`, `months`,
+`wall_limit_s`, `device` and either the keys of a grid cell or `run = false`, `converged = false`, `reason`
+and `error_message`.
+
+### `tag_template.csv`
+
+A fill-in tag list with the columns `tag_name`, `category`, `unit`, `description`. The rows are the
+generic names of the curated synthetic tags, to be replaced with a site's own tag names.
