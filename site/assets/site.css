@@ -28,7 +28,8 @@ a { color: var(--link); }
 .skip { position: absolute; left: 16px; top: -4rem; background: var(--surface); padding: .5rem .75rem; z-index: 10; }
 .skip:focus { top: .5rem; }
 
-.masthead { padding-top: .75rem; }
+.masthead { padding-top: .75rem; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: .25rem 1.25rem; }
+.source-link { font-size: .95rem; font-weight: 600; white-space: nowrap; padding-block: .35rem; }
 .brand { margin: 0; font-weight: 650; font-size: .95rem; display: flex; flex-wrap: wrap; gap: .1rem .6rem; }
 .brand span { font-weight: 400; color: var(--ink-2); }
 
