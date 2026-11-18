@@ -133,3 +133,4 @@ function main()
 end
 
 main()
+include(joinpath(@__DIR__, "site", "benchmarks.jl")); run_benchmarks(dirname(OUTPUT_FILE))
