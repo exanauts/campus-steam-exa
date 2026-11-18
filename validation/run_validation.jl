@@ -91,9 +91,8 @@ end
 function solve_pair(net; tol)
     exa = build_steam_model(net)
     sol = solve_steam(exa; tol, max_iter = MAX_ITER, bound_relax_factor = 0.0)
-    tnfo = build_tnfo(net; tol, max_iter = MAX_ITER)
-    optimize!(tnfo.model)
-    return exa, sol, tnfo, tnfo_solution(tnfo)
+    tnfo, presolve_status = solve_tnfo(net; tol, max_iter = MAX_ITER)
+    return exa, sol, tnfo, tnfo_solution(tnfo), presolve_status
 end
 
 function differences(tnfo, sol, ref)
@@ -114,7 +113,7 @@ end_verified(status, violation) =
     status in ("LOCALLY_SOLVED", "ALMOST_LOCALLY_SOLVED") && violation <= 1.0e-6
 
 function validate_instance(name, net, provenance)
-    exa, sol, tnfo, ref = solve_pair(net; tol = TOL)
+    exa, sol, tnfo, ref, presolve = solve_pair(net; tol = TOL)
     audit_inputs(net, exa.data)
     d = differences(tnfo, sol, ref)
     row = (
@@ -127,6 +126,7 @@ function validate_instance(name, net, provenance)
         jump_n_constraints = num_constraints(tnfo.model; count_variable_in_set_constraints = false),
         madnlp_status = string(sol.status),
         ipopt_status = string(termination_status(tnfo.model)),
+        ipopt_presolve_status = presolve,
         tolerance = TOL,
         objective_madnlp_W = sol.objective_W,
         objective_ipopt_W = ref.objective_W,
@@ -175,7 +175,7 @@ end
 
 function ladder_rows(name, net)
     return map(LADDER) do tol
-        _, sol, tnfo, ref = solve_pair(net; tol)
+        _, sol, tnfo, ref, _ = solve_pair(net; tol)
         d = differences(tnfo, sol, ref)
         (
             instance = name, tolerance = tol, madnlp_status = string(sol.status),
@@ -189,7 +189,7 @@ end
 
 function sweep_row(n)
     net = scaled_campus(n)
-    _, sol, tnfo, ref = solve_pair(net; tol = TOL)
+    _, sol, tnfo, ref, _ = solve_pair(net; tol = TOL)
     return (
         n_junctions = n, madnlp_status = string(sol.status),
         ipopt_status = string(termination_status(tnfo.model)), objective_madnlp_W = sol.objective_W,

@@ -10,7 +10,7 @@
 # - Variables are scaled by different references, and each edge class has its own variables.
 
 using JuMP: JuMP, @constraint, @objective, @variable, Model, optimizer_with_attributes
-using JuMP: set_start_value, optimize!, termination_status, objective_value, objective_function, value,
+using JuMP: set_attribute, set_start_value, optimize!, termination_status, objective_value, objective_function, value,
     num_variables, num_constraints, primal_feasibility_report, all_variables, delete
 using Ipopt: Ipopt
 
@@ -120,7 +120,9 @@ function build_tnfo(
         rating_W = net.plant.rating_W,
         tol = 1.0e-9,
         max_iter = 3000,
+        steam_row::Symbol = :paper,
     )
+    steam_row in (:paper, :substituted) || throw(ArgumentError("unknown steam_row $steam_row"))
     c = TNFO
     b = tnfo_bounds(net)
     m = Model(optimizer_with_attributes(
@@ -225,9 +227,11 @@ function build_tnfo(
         if pipe.side == "steam"
             # Eq. (14), with flow non-negative in the nominal direction.
             r = pipe.friction_factor * c.R_s * F0^2 / (area^2 * pipe.diameter_m * P0^2)
+            drop = steam_row == :paper ? Tin[e] - Tout[e] :
+                (Tin[e] - c.T_ext / TH0) * (1 - exp(-rate / f[e]))
             @constraint(m,
                 p[pipe.to]^2 - p[pipe.from]^2 ==
-                    -r * f[e]^2 * (c.T_ext * pipe.length_m + spec * F0 * TH0 * f[e] * (Tin[e] - Tout[e]) / gamma))
+                    -r * f[e]^2 * (c.T_ext * pipe.length_m + spec * F0 * TH0 * f[e] * drop / gamma))
         else
             # Eq. (16).
             r = pipe.friction_factor * pipe.length_m * F0^2 / (2 * area^2 * pipe.diameter_m * c.rho_w * P0)
@@ -253,6 +257,25 @@ function build_tnfo(
 
     vars = (; p, T, f, Tin, Tout, fl, Tl_in, Tl_out, QS, QE, fg, Tg_in, Tg_out, alpha)
     return TNFOModel(m, net, collect(Float64, heat_W), Float64(rating_W), vars)
+end
+
+"""
+    solve_tnfo(net; tol, max_iter) -> (tnfo, presolve_status)
+
+Solve problem (27) with Eq. (14) exactly as printed in the paper. On well-insulated pipes that row
+multiplies any residual of Eq. (7) by `c * f / gamma`, and Ipopt fails from a cold start. A first
+solve therefore uses Eq. (14) with Eq. (7) substituted for `Tin - Tout`, and its solution starts the
+final solve of the printed form. The returned model and all reported values use the printed form.
+"""
+function solve_tnfo(net::CampusNetwork; tol = 1.0e-9, max_iter = 3000)
+    first_stage = build_tnfo(net; tol, max_iter, steam_row = :substituted)
+    optimize!(first_stage.model)
+    presolve_status = string(termination_status(first_stage.model))
+    tnfo = build_tnfo(net; tol, max_iter, steam_row = :paper)
+    set_start_value.(all_variables(tnfo.model), value.(all_variables(first_stage.model)))
+    set_attribute(tnfo.model, "mu_init", 1.0e-7)
+    optimize!(tnfo.model)
+    return tnfo, presolve_status
 end
 
 "Physical solution of a solved `TNFOModel`, in SI units."
