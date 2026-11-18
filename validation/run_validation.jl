@@ -16,6 +16,7 @@ using Printf: @sprintf
 
 include("upstream_example.jl")
 include("jump_model.jl")
+include("source_hash.jl")
 
 const TOL = 1.0e-8
 const LADDER = (1.0e-8, 1.0e-10, 1.0e-12)
@@ -23,14 +24,10 @@ const MAX_ITER = 3000
 const THRESHOLD = 1.0e-6
 const REPO = dirname(@__DIR__)
 
-const VALIDATED_SIZES = (300, 400)
+# Selection rule: validate the two largest swept sizes that both solvers solve at the reference
+# tolerance, meaning MadNLP reports SOLVE_SUCCEEDED and Ipopt reports LOCALLY_SOLVED.
 const SWEEP_SIZES = (200, 300, 400, 500, 600, 800)
-
-const INSTANCES = [
-    "upstream_example" => upstream_example_network,
-    "demo_campus" => demo_campus,
-    ["scaled_campus_$n" => (() -> scaled_campus(n)) for n in VALIDATED_SIZES]...,
-]
+const N_VALIDATED_SIZES = 2
 
 relative_difference(a, b) = a == b ? 0.0 : abs(a - b) / max(abs(a), abs(b))
 
@@ -116,7 +113,7 @@ end
 end_verified(status, violation) =
     status in ("LOCALLY_SOLVED", "ALMOST_LOCALLY_SOLVED") && violation <= 1.0e-6
 
-function validate_instance(name, net, commit, generator)
+function validate_instance(name, net, provenance)
     exa, sol, tnfo, ref = solve_pair(net; tol = TOL)
     audit_inputs(net, exa.data)
     d = differences(tnfo, sol, ref)
@@ -143,8 +140,10 @@ function validate_instance(name, net, commit, generator)
         madnlp_point_max_violation_in_jump = tnfo_max_violation(tnfo, sol),
         n_loads_with_excess = count(>(1.0), ref.excess_W),
         n_loads_with_shed = count(>(1.0), ref.shed_W),
-        commit_sha = commit,
-        generator_commit = generator,
+        commit_sha = provenance.commit,
+        generator_commit = provenance.generator,
+        model_commit = provenance.model,
+        source_hash = provenance.sources,
     )
 
     # Where a quantity differs by more than the threshold, measure how far it can move at all
@@ -192,7 +191,7 @@ function sweep_row(n)
     net = scaled_campus(n)
     _, sol, tnfo, ref = solve_pair(net; tol = TOL)
     return (
-        n_junctions = n, validated = n in VALIDATED_SIZES, madnlp_status = string(sol.status),
+        n_junctions = n, madnlp_status = string(sol.status),
         ipopt_status = string(termination_status(tnfo.model)), objective_madnlp_W = sol.objective_W,
         objective_ipopt_W = ref.objective_W, madnlp_shed_W = sum(sol.load_shed_W),
         madnlp_excess_W = sum(sol.load_excess_W), plant_output_W = sol.plant_output_W,
@@ -215,14 +214,32 @@ function write_rows(name, rows)
     return path
 end
 
+solved_by_both(row) = row.madnlp_status == "SOLVE_SUCCEEDED" && row.ipopt_status == "LOCALLY_SOLVED"
+
 function main()
+    isempty(git("status", "--porcelain", "--", "src", "validation")) ||
+        error("Commit the changes under src/ and validation/ first, so the recorded commit is exact.")
     commit = git("rev-parse", "HEAD")
     generator = git("log", "-1", "--format=%H", "--", "src/generator", "data/synthetic")
+    model = git("log", "-1", "--format=%H", "--", "src/model", "src/network.jl")
+    sources = validation_source_hash(REPO)
+
+    sweep = [sweep_row(n) for n in SWEEP_SIZES]
+    solved = sort([row.n_junctions for row in sweep if solved_by_both(row)])
+    length(solved) >= N_VALIDATED_SIZES || error("Fewer than $N_VALIDATED_SIZES sizes solved by both solvers.")
+    sizes = solved[(end - N_VALIDATED_SIZES + 1):end]
+    write_rows("validation_size_sweep.csv", [(; row..., validated = row.n_junctions in sizes) for row in sweep])
+
+    instances = [
+        "upstream_example" => upstream_example_network,
+        "demo_campus" => demo_campus,
+        ["scaled_campus_$n" => (() -> scaled_campus(n)) for n in sizes]...,
+    ]
     rows, faces, ladder = NamedTuple[], NamedTuple[], NamedTuple[]
-    for (name, build) in INSTANCES
+    for (name, build) in instances
         println("Validating ", name)
         net = build()
-        row, face = validate_instance(name, net, commit, generator)
+        row, face = validate_instance(name, net, (; commit, generator, model, sources))
         println(row)
         push!(rows, row)
         append!(faces, face)
@@ -231,7 +248,6 @@ function main()
     write_rows("validation.csv", rows)
     write_rows("validation_tolerance_ladder.csv", ladder)
     isempty(faces) || write_rows("validation_optimal_face.csv", faces)
-    write_rows("validation_size_sweep.csv", [sweep_row(n) for n in SWEEP_SIZES])
     return rows
 end
 

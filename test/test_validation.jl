@@ -3,6 +3,8 @@
 
 using Test
 
+include(joinpath(dirname(@__DIR__), "validation", "source_hash.jl"))
+
 const VALIDATION_THRESHOLD = 1.0e-6
 const VALIDATION_METRICS = (
     "rel_diff_objective",
@@ -14,6 +16,7 @@ const VALIDATION_METRICS = (
 const VALIDATION_COLUMNS = (
     "instance", "data", "n_variables", "n_constraints", "madnlp_status", "ipopt_status",
     "objective_madnlp_W", "objective_ipopt_W", VALIDATION_METRICS..., "commit_sha",
+    "generator_commit", "model_commit", "source_hash",
 )
 
 function read_validation_csv(path)
@@ -63,6 +66,21 @@ end
             @test bound !== nothing
             bound === nothing || @test value <= bound
         end
+    end
+
+    @testset "results match the current sources" begin
+        # On failure, rerun validation/run_validation.jl and review docs/validation-notes.md.
+        @test all(r -> r["source_hash"] == validation_source_hash(root), rows)
+    end
+
+    @testset "scaled sizes follow the selection rule" begin
+        _, sweep = read_validation_csv(joinpath(root, "results", "validation_size_sweep.csv"))
+        solved = sort([
+            parse(Int, r["n_junctions"]) for r in sweep
+            if r["madnlp_status"] == "SOLVE_SUCCEEDED" && r["ipopt_status"] == "LOCALLY_SOLVED"
+        ])
+        expected = ["scaled_campus_$n" for n in solved[max(end - 1, 1):end]]
+        @test sort(filter(startswith("scaled_campus_"), [r["instance"] for r in rows])) == sort(expected)
     end
 
     @testset "solver packages stay out of the main environment" begin

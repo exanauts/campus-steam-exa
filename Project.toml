@@ -24,12 +24,14 @@ ExaModels = "0.15"
 LinearAlgebra = "1"
 MadNLP = "0.11"
 MadNLPGPU = "0.11"
+SHA = "1"
 SparseArrays = "1"
 Test = "1"
 julia = "1.13"
 
 [extras]
+SHA = "ea8e919c-243c-51af-8825-aaa63cd721ce"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["Test"]
+test = ["SHA", "Test"]
