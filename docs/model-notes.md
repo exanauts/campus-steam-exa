@@ -268,6 +268,108 @@ delivery.
 - Pump and compressor energy is not counted in the plant output.
 - `plant_power` covers the heat added at the plant only. Boilers are not modeled individually.
 
+## Multi-period model
+
+`src/model/multiperiod.jl` stacks T hourly steady states into one NLP. Each hour has the
+steady-state physics above, with no pipe transients and no valves. All inputs are synthetic.
+
+### Formulation
+
+**One generator per family.** Each period is compiled by `compile_steam_data`, and the per-period
+arrays are concatenated with every index shifted by the offset of its period. The result is again a
+`SteamData`, so `add_steam_variables`, `add_steam_constraints` and `add_steam_objective` build the
+whole horizon without a loop over periods. The period is carried by the flat index, not by a second
+array dimension, because the number of pipes differs between periods when a pipe is out for part of
+the horizon. Periods with the same pipes share one compiled template.
+
+**Time-varying inputs.** Heat demand is an ExaModels parameter indexed by period and load. The plant
+rating is the upper bound of each period's `plant_power`. Priority weights are objective
+coefficients per period and load.
+
+**Objective.** The sum of the single-period objectives, reported as `objective_Wh`. It is not divided
+by T, so the gradient of each variable, and with it the solver scaling, matches a single period. At
+T = 1 the model is the single-period model, with the same iterates.
+
+**Ramp limits.** One row per transition, `-down <= P[k+1] - P[k] <= up`, with `up` equal to
+`ramp_limit_W_per_h` and `down = max(up, rating[k] - rating[k+1])`. A forced derate takes effect at
+once. Without this relaxation the plant would have to shed load ahead of a boiler outage to get down
+to the reduced rating in time. The return to service stays limited by `up`. The horizon has perfect
+foresight, so the plant can still pre-position ahead of a demand step. There is no initial-output
+condition on the first period.
+
+**No storage term.** Thermal storage and pipe inventory are left out. A steady-state hour has no
+state that carries heat into the next hour, so an inventory term would need physics this model does
+not have. The ramp limit is the only coupling between periods.
+
+### Outages and orientation per period
+
+`out_of_service` takes pipe ids (out for the whole horizon), `pipe => periods` pairs, or one id list
+per period. Each outage period has its own pipe directions, so a flow reversal is represented without
+reverse flow in the NLP. Periods with no outage keep the input network unchanged.
+
+`orient_periods` chooses the directions with one of three methods: `:search` (`solve_oriented` for
+that hour), `:demand` (`orient_for_demand`) or `:design` (`orient_network`).
+`solve_multiperiod_oriented` is the documented way to solve an outage case:
+
+1. It solves the horizon from each starting orientation in `methods`, by default `:search` and
+   `:design`.
+2. Loop pipes pinned at their minimum flow in an outage period are flipped in that period and the
+   horizon is solved again. A flip round is kept only if it converges with a lower objective.
+3. The converged result with the lowest objective is returned. If no start converges, the result is
+   not converged, so check `solution.converged`.
+
+The direction pattern is a heuristic and is not proven optimal. `build_multiperiod_model` with
+`out_of_service` and no `networks` uses `:demand`, which does no search.
+
+Demo campus, hours 2600 to 2767 of the synthetic year, loop pipe 1 out in periods 20 to 60, CPU, with
+a limit of 1000 iterations per solve. Reversed pipes are 4, 8, 11, 12 and 18 in all 41 outage periods.
+
+| Starting orientation | Status | Iterations | Objective (Wh) | Shed (MWh) |
+|---|---|---|---|---|
+| `:search` | `SOLVE_SUCCEEDED` | 136 | 2.10774e8 | 0.000 |
+| `:demand` | `SOLVE_SUCCEEDED` | 115 | 2.11540e8 | 0.575 |
+| `:design` | `SOLVE_SUCCEEDED` | 110 | 2.36593e8 | 0.000 |
+
+### Measurements
+
+Demo campus, first T hours of the synthetic profiles, default ramp limit, no outage. Generator commit
+`a1e75b6`. Times exclude compilation. The tolerance is 1e-8 with a limit of 1000 iterations. The CPU
+runs use MadNLP's default MUMPS solver. The GPU runs use one NVIDIA H200 with cuDSS and
+`richardson_max_iter = 30, richardson_tol = 1e-12`. The violation is the unscaled maximum constraint
+violation, and closure is the largest hourly energy balance error.
+
+| T | Variables | Constraints | Jacobian nonzeros | Device | Status | Iterations | Build (s) | Solve (s) | Violation | Closure (W) |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 24 | 24,192 | 20,855 | 71,878 | CPU | `SOLVE_SUCCEEDED` | 58 | 0.003 | 1.530 | 1.2e-13 | 2.5e-8 |
+| 24 | 24,192 | 20,855 | 71,878 | GPU | `SOLVE_SUCCEEDED` | 94 | 0.040 | 3.736 | 9.2e-9 | 1.9e-3 |
+| 168 | 169,344 | 145,991 | 503,158 | CPU | `SOLVE_SUCCEEDED` | 64 | 0.023 | 13.995 | 2.1e-12 | 3.1e-7 |
+| 168 | 169,344 | 145,991 | 503,158 | GPU | `SOLVED_TO_ACCEPTABLE_LEVEL` | 374 | 0.090 | 19.038 | 7.4e-8 | 1.3e-2 |
+| 720 | 725,760 | 625,679 | 2,156,398 | CPU | `SOLVE_SUCCEEDED` | 76 | 0.107 | 87.946 | 1.4e-9 | 2.0e-4 |
+| 720 | 725,760 | 625,679 | 2,156,398 | GPU | `SOLVED_TO_ACCEPTABLE_LEVEL` | 149 | 0.250 | 12.980 | 7.6e-8 | 5.9e-3 |
+
+The GPU runs at T = 168 and T = 720 stopped at MadNLP's acceptable level and did not reach 1e-8.
+T = 8,760 has not been run on this data.
+
+### Multi-period API
+
+```julia
+model = build_multiperiod_model(net; heat_W, plant_rating_W, priority_weight, ramp_limit_W_per_h,
+                                out_of_service, networks, options, backend)
+sol = solve_multiperiod(model; print_level, tol, max_iter)   # other keywords go to madnlp
+
+# Outages: chooses pipe directions per period, then solves. Returns an OrientedMultiPeriodSolve.
+result = solve_multiperiod_oriented(net; heat_W, out_of_service = [pipe_id => periods])
+result.solution, result.networks, result.reversed_pipes, result.method, result.rounds
+
+energy_audit(sol)                  # one vector per quantity, with one entry per period
+physical_residuals(model, sol, k)  # residuals of period k in SI units
+period_solution(model, sol, k)     # period k as a SteamSolution
+```
+
+`heat_W` is indexed `(period, load)`, the same as `LoadProfiles.heat_W`. `MultiPeriodSolution` holds
+matrices indexed `(period, id)` in SI units. Pipe ids always refer to the input network, flows are
+negative against its direction, and every pipe quantity is zero where `pipe_in_service` is false.
+
 ## API
 
 ```julia
@@ -284,7 +386,8 @@ physical_residuals(model, sol)   # residual of each family in SI units, computed
 energy_audit(sol)                # plant output, delivered heat, pipe losses and closure
 ```
 
-Multi-period models can assemble their own `ExaCore` from the pieces:
+For multi-period problems use `build_multiperiod_model`, described above. Custom models can assemble
+their own `ExaCore` from the pieces:
 
 ```julia
 data = compile_steam_data(net; heat_W, options)
