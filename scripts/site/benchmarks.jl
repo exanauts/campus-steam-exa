@@ -26,18 +26,18 @@ const BENCH_PROFILES = Dict(
     :ci => (
         size_cases = ["demo", "scaled-200", "scaled-400"],
         horizon_cases = ["horizon-24"],
-        repeats = 3, strict_tols = [1.0e-8], ttfs_repeats = 0, ipopt = false,
+        repeats = 3, strict_tols = [1.0e-8], ttfs_repeats = 0, ipopt = false, gpu_memory = false,
         budget_s = 270.0, wall_limit_s = 60.0,
     ),
     :local => (
         size_cases = ["demo", "scaled-200", "scaled-300", "scaled-400", "scaled-500", "scaled-600", "scaled-800"],
         horizon_cases = ["horizon-24", "horizon-168", "horizon-720"],
-        repeats = 5, strict_tols = [1.0e-6, 1.0e-8], ttfs_repeats = 3, ipopt = true,
+        repeats = 5, strict_tols = [1.0e-6, 1.0e-8], ttfs_repeats = 3, ipopt = true, gpu_memory = true,
         budget_s = Inf, wall_limit_s = 1800.0,
     ),
     :year => (
         size_cases = String[], horizon_cases = ["horizon-8760"],
-        repeats = 1, strict_tols = Float64[], ttfs_repeats = 0, ipopt = false,
+        repeats = 1, strict_tols = [1.0e-8], ttfs_repeats = 0, ipopt = false, gpu_memory = false,
         budget_s = Inf, wall_limit_s = 1800.0,
     ),
 )
@@ -54,10 +54,10 @@ const GPU_REFINEMENT = (; richardson_max_iter = 30, richardson_tol = 1.0e-12)
 const CSV_COLUMNS = [
     "run_profile", "commit", "run_date", "case", "family", "junctions", "periods", "solver", "mode",
     "tol_requested", "repeat", "nvar", "ncon", "nnzj", "nnzh", "status", "iterations", "build_s",
-    "total_s", "linear_s", "eval_s", "other_s", "compile_s", "objective", "primal_residual",
+    "total_s", "linear_s", "eval_s", "other_s", "compile_s", "host_load_1min", "objective", "primal_residual",
     "dual_residual", "complementarity_residual", "kkt_residual", "objective_rel", "plant_output_rel",
-    "steam_pressure_rel", "steam_temperature_rel", "steam_flow_rel", "nonunique_water_pressure_rel",
-    "nonunique_return_temperature_rel", "nonunique_light_flow_rel", "gpu_peak_mib",
+    "steam_pressure_rel", "steam_temperature_rel", "steam_flow_rel",
+    "nonunique_water_pressure_rel", "nonunique_return_temperature_rel", "nonunique_light_flow_rel",
     "gpu_other_processes", "error",
 ]
 
@@ -122,36 +122,92 @@ end
 
 # GPU memory and occupancy ------------------------------------------------------------------------
 
-"Sample per-process GPU memory with nvidia-smi for the duration of `f`."
-function with_gpu_sampler(f)
+function start_gpu_sampler()
     path = tempname()
     cmd = `nvidia-smi --query-compute-apps=gpu_uuid,pid,used_memory --format=csv,noheader,nounits -lms 200`
-    sampler = try
+    process = try
         run(pipeline(cmd; stdout = path, stderr = devnull); wait = false)
     catch
         nothing
     end
-    value = try
-        f()
-    finally
-        sampler === nothing || kill(sampler)
-    end
-    sampler === nothing && return value, (peak_mib = nothing, others = nothing)
-    sampler_wait = timedwait(() -> process_exited(sampler), 5.0)
-    sampler_wait === :ok || kill(sampler, Base.SIGKILL)
+    return (; process, path)
+end
+
+# Peak memory of process `pid` on this GPU, and the number of other processes seen on it.
+function stop_gpu_sampler(sampler, pid)
+    sampler.process === nothing && return (peak_mib = nothing, others = nothing)
+    kill(sampler.process)
+    timedwait(() -> process_exited(sampler.process), 5.0) === :ok || kill(sampler.process, Base.SIGKILL)
     uuid = lowercase(string(CUDA.uuid(CUDA.device())))
     peak, others = 0, Set{String}()
-    for line in eachline(path)
+    for line in eachline(sampler.path)
         fields = strip.(split(line, ','))
         length(fields) == 3 && occursin(uuid, lowercase(fields[1])) || continue
-        if fields[2] == string(getpid())
+        if fields[2] == string(pid)
             peak = max(peak, something(tryparse(Int, fields[3]), 0))
         else
             push!(others, String(fields[2]))
         end
     end
-    rm(path; force = true)
-    return value, (peak_mib = peak == 0 ? nothing : peak, others = length(others))
+    rm(sampler.path; force = true)
+    return (peak_mib = peak == 0 ? nothing : peak, others = length(others))
+end
+
+"Run `f` and count the other compute processes seen on this GPU meanwhile."
+function with_gpu_sampler(f)
+    sampler = start_gpu_sampler()
+    value = try
+        f()
+    catch
+        stop_gpu_sampler(sampler, getpid())
+        rethrow()
+    end
+    return value, stop_gpu_sampler(sampler, getpid())
+end
+
+const GPU_MEMORY_SCRIPT = raw"""
+include(ARGS[1])
+using CUDA, CUDSS, MadNLP, MadNLPGPU
+model = bench_case(ARGS[2]; backend = CUDABackend())
+result = MadNLP.madnlp(
+    model.nlp; tol = 1.0e-8, acceptable_tol = 1.0e-8, acceptable_iter = 100_000,
+    bound_relax_factor = 1.0e-8, max_iter = 1000, max_wall_time = 900.0, print_level = MadNLP.ERROR,
+    richardson_max_iter = 30, richardson_tol = 1.0e-12, cudss_asynchronous = false,
+)
+println("GPUMEM ", result.status, " ", result.iter)
+"""
+
+"""
+Peak GPU memory of one strict solve per case, each in a fresh process. A long-lived process keeps
+freed memory in its pool, so its reading reflects the largest earlier case and not the current one.
+"""
+function gpu_memory_table(cases)
+    project = dirname(@__DIR__)
+    common = joinpath(@__DIR__, "bench_common.jl")
+    rows = Dict{String, Any}[]
+    for id in cases
+        row = Dict{String, Any}("case" => id)
+        path = tempname()
+        sleep(5.0)    # lets the previous case's process leave the GPU before sampling starts
+        cmd = `$(Base.julia_cmd()) --project=$project --startup-file=no -e $GPU_MEMORY_SCRIPT $common $id`
+        sampler = start_gpu_sampler()
+        process = run(pipeline(cmd; stdout = path, stderr = devnull); wait = false)
+        pid = getpid(process)
+        wait(process)
+        memory = stop_gpu_sampler(sampler, pid)
+        line = findfirst(startswith("GPUMEM "), readlines(path))
+        fields = line === nothing ? String[] : split(readlines(path)[line])
+        merge!(row, Dict{String, Any}(
+            "peak_mib" => memory.peak_mib, "other_processes" => memory.others,
+            "status" => length(fields) == 3 ? String(fields[2]) : "ERROR",
+            "iterations" => length(fields) == 3 ? parse(Int, fields[3]) : nothing,
+        ))
+        rm(path; force = true)
+        push!(rows, row)
+        println("gpu memory  ", id, "  ", row["status"], "  ", row["peak_mib"], " MiB")
+        flush(stdout)
+    end
+    return rows
 end
 
 # One solve ---------------------------------------------------------------------------------------
@@ -179,7 +235,7 @@ function base_record(profile, env, id, solver, mode, tol, repeat)
         "run_profile" => string(profile), "commit" => env["commit"], "run_date" => env["run_date"],
         "case" => id, "family" => case_family(id), "junctions" => size.junctions,
         "periods" => size.periods, "solver" => solver, "mode" => mode, "tol_requested" => tol,
-        "repeat" => repeat,
+        "repeat" => repeat, "host_load_1min" => Sys.loadavg()[1],
     )
 end
 
@@ -214,12 +270,10 @@ function run_one!(record, host, reference_x, solver, id, options)
             "primal_residual" => residuals.primal, "dual_residual" => residuals.dual,
             "complementarity_residual" => residuals.complementarity,
             "kkt_residual" => residuals.kkt,
-            "gpu_peak_mib" => gpu === nothing ? nothing : gpu.peak_mib,
             "gpu_other_processes" => gpu === nothing ? nothing : gpu.others,
         ))
-        reference = reference_x === nothing ? x : reference_x
-        merge!(record, Dict{String, Any}(string(k) => v for (k, v) in
-            pairs(solution_agreement(host, x, reference))))
+        reference_x === nothing || merge!(record, Dict{String, Any}(string(k) => v for (k, v) in
+            pairs(solution_agreement(host, x, reference_x))))
         return x
     catch err
         err isa InterruptException && rethrow()
@@ -240,15 +294,17 @@ function warm_up()
     return nothing
 end
 
+bench_cases(settings) = vcat(settings.size_cases, settings.horizon_cases)
+
 function run_sweep(profile, env, started; log = stdout)
     settings = BENCH_PROFILES[profile]
     records, not_run = Dict{String, Any}[], Dict{String, Any}[]
     references = Dict{String, Vector{Float64}}()
-    plans = vcat(
-        [("default", 1.0e-8, s) for s in (CPU_SOLVER, GPU_SOLVER, GPU_ASYNC_SOLVER)],
-        [("strict", t, s) for t in settings.strict_tols for s in (CPU_SOLVER, GPU_SOLVER)],
+    strict_plans = [("strict", t, s) for t in reverse(settings.strict_tols) for s in (CPU_SOLVER, GPU_SOLVER)]
+    plans = profile === :year ? strict_plans : vcat(
+        [("default", 1.0e-8, s) for s in (CPU_SOLVER, GPU_SOLVER, GPU_ASYNC_SOLVER)], strict_plans,
     )
-    for id in vcat(settings.size_cases, settings.horizon_cases)
+    for id in bench_cases(settings)
         host = bench_case(id)
         reference_x = nothing
         for (mode, tol, solver) in plans, repeat in 1:settings.repeats
@@ -262,7 +318,9 @@ function run_sweep(profile, env, started; log = stdout)
             record = base_record(profile, env, id, solver, mode, tol, repeat)
             options = solver_options(solver, mode, tol, settings.wall_limit_s)
             x = run_one!(record, host, reference_x, solver, id, options)
-            if reference_x === nothing && solver == CPU_SOLVER && mode == "default" && x !== nothing
+            # The reference is the first CPU solve that met 1e-8.
+            if reference_x === nothing && solver == CPU_SOLVER && tol == 1.0e-8 && x !== nothing &&
+                    get(record, "status", "") == "SOLVE_SUCCEEDED"
                 reference_x = x
                 references[id] = x
             end
@@ -370,7 +428,7 @@ function summarize(records)
             "tol_requested" => tol, "repeats" => length(rows),
             "statuses" => sort!(unique(String[string(get(r, "status", "?")) for r in rows])),
         )
-        solved = filter(r -> get(r, "status", "") == "SOLVE_SUCCEEDED", rows)
+        solved = filter(r -> get(r, "status", "") in ("SOLVE_SUCCEEDED", "Solve_Succeeded"), rows)
         entry["solved_repeats"] = length(solved)
         entry["total_s_solved"] = spread(numbers(solved, "total_s"))
         entry["iterations_solved"] = spread(numbers(solved, "iterations"))
@@ -378,7 +436,7 @@ function summarize(records)
             entry[key] = get(first_row, key, nothing)
         end
         for key in ("total_s", "linear_s", "eval_s", "other_s", "build_s", "compile_s", "iterations",
-                    "gpu_peak_mib", "kkt_residual", "primal_residual", "dual_residual",
+                    "host_load_1min", "kkt_residual", "primal_residual", "dual_residual",
                     "complementarity_residual")
             entry[key] = spread(numbers(rows, key))
         end
@@ -398,6 +456,9 @@ end
 
 all_solved(entry) = entry["solved_repeats"] == entry["repeats"]
 
+# Like for like: the GPU's worst KKT residual is at most this multiple of the CPU's worst.
+const ACHIEVED_TOLERANCE_FACTOR = 2.0
+
 "CPU and GPU at the same requested tolerance, with acceptable termination switched off on both."
 function like_for_like(summary)
     find(id, solver, tol) = findfirst(
@@ -414,6 +475,10 @@ function like_for_like(summary)
         comparable = cpu["total_s_solved"] !== nothing && gpu["total_s_solved"] !== nothing
         ratio = comparable ? gpu["total_s_solved"]["median"] / cpu["total_s_solved"]["median"] : nothing
         worst = comparable ? gpu["total_s_solved"]["max"] / cpu["total_s_solved"]["median"] : nothing
+        # The requested tolerance applies to each solver's own scaled problem, so the residual both
+        # returned points reach on the unscaled model is compared as well.
+        kkt_ratio = comparable ? gpu["kkt_residual"]["max"] / cpu["kkt_residual"]["max"] : nothing
+        matched = comparable && kkt_ratio <= ACHIEVED_TOLERANCE_FACTOR
         push!(rows, Dict{String, Any}(
             "case" => cpu["case"], "family" => cpu["family"], "junctions" => cpu["junctions"],
             "periods" => cpu["periods"], "nvar" => cpu["nvar"], "tol_requested" => cpu["tol_requested"],
@@ -425,6 +490,7 @@ function like_for_like(summary)
             "cpu_kkt_residual" => cpu["kkt_residual"], "gpu_kkt_residual" => gpu["kkt_residual"],
             "gpu_max_objective_rel" => gpu["max_objective_rel"],
             "gpu_over_cpu_time" => ratio, "gpu_slowest_over_cpu_median" => worst,
+            "gpu_over_cpu_kkt_residual" => kkt_ratio, "achieved_tolerance_matched" => matched,
         ))
     end
     sort!(rows; by = r -> (r["family"], something(r["nvar"], 0), r["tol_requested"]))
@@ -435,7 +501,7 @@ end
 function crossover(rows, family, tol)
     selected = filter(r -> r["family"] == family && r["tol_requested"] == tol, rows)
     isempty(selected) && return nothing
-    faster(r) = r["both_solved_every_repeat"] && r["gpu_over_cpu_time"] < 1
+    faster(r) = r["both_solved_every_repeat"] && r["achieved_tolerance_matched"] && r["gpu_over_cpu_time"] < 1
     all(!faster, selected) && return nothing
     for i in eachindex(selected)
         all(faster, selected[i:end]) && return selected[i]["case"]
@@ -444,21 +510,22 @@ function crossover(rows, family, tol)
 end
 
 # Points drawn by the site: the median of the solved repeats at the tightest strict tolerance. The
-# status is "solved" only when every repeat met that tolerance.
+# status is "solved" only when every repeat met that tolerance and, for the GPU, when the residual it
+# reached matches the CPU's.
 function site_runs(rows, tol)
     out = Dict{String, Any}[]
     for r in rows
         (r["tol_requested"] == tol && r["nvar"] !== nothing) || continue
-        for (device, total, iterations, solved) in (
-                ("cpu", r["cpu_total_s"], r["cpu_iterations"], r["cpu_solved_repeats"]),
-                ("gpu", r["gpu_total_s"], r["gpu_iterations"], r["gpu_solved_repeats"]),
+        for (device, total, iterations, solved, matched) in (
+                ("cpu", r["cpu_total_s"], r["cpu_iterations"], r["cpu_solved_repeats"], true),
+                ("gpu", r["gpu_total_s"], r["gpu_iterations"], r["gpu_solved_repeats"], r["achieved_tolerance_matched"]),
             )
             total === nothing && continue
             push!(out, Dict{String, Any}(
                 "size" => r["nvar"], "case" => r["case"], "device" => device,
                 "solve_s" => total["median"], "solve_s_min" => total["min"],
                 "solve_s_max" => total["max"], "iterations" => iterations["median"],
-                "status" => solved == r["repeats"] ? "solved" : "partial",
+                "status" => solved == r["repeats"] && matched ? "solved" : "partial",
                 "solved_repeats" => solved, "repeats" => r["repeats"],
             ))
         end
@@ -466,7 +533,7 @@ function site_runs(rows, tol)
     return out
 end
 
-site_notes(tol, source) = "Synthetic data. Median solve time of the repeats that met a tolerance of $tol on both CPU and GPU, from the $source sweep. Hollow points mark sizes where some repeats did not meet it."
+site_notes(tol, source) = "Synthetic data. Median solve time of the repeats that met a tolerance of $tol on both CPU and GPU, from the $source sweep. Hollow points mark sizes where some repeats did not meet it, or where the GPU's KKT residual was more than $(ACHIEVED_TOLERANCE_FACTOR) times the CPU's."
 
 # Output ------------------------------------------------------------------------------------------
 
@@ -511,6 +578,7 @@ function bench_document(profile, env, records, not_run, ttfs, extra_not_run)
             GPU_ASYNC_SOLVER => "As $GPU_SOLVER with asynchronous cuDSS, the package default; MadNLP does not report linear solver time in this mode",
             IPOPT_SOLVER => "Ipopt with MUMPS on the same ExaModel, tol = 1e-8",
             "strict_mode" => "Acceptable termination is off, so SOLVE_SUCCEEDED means the requested tolerance was met. bound_relax_factor = 1e-8 on CPU and GPU.",
+            "achieved_tolerance_matched" => "True when the GPU's largest KKT residual over the repeats, recomputed on the unscaled model, is at most $(ACHIEVED_TOLERANCE_FACTOR) times the CPU's.",
         ),
         "agreement_note" => "Agreement with the CPU uses objective, plant output and steam-side quantities. Water-side pressure, return-side temperature and flow in lightly loaded pipes are not unique at the optimum (docs/validation-notes.md) and are reported separately under nonunique_* fields.",
         "size_label" => "Variables",
@@ -533,10 +601,25 @@ const STANDING_NOT_RUN = [
     Dict{String, Any}("item" => "Single precision", "reason" => "The model builders use Float64."),
 ]
 
-function calibration_not_run()
+
+"""
+The CPU and GPU outcomes that `run_calibration` wrote to `calibration.json` in `outdir`, at 25 tags.
+Calibration is not solved again here, so it adds no runtime to the benchmarks.
+"""
+function calibration_outcome(outdir)
+    path = joinpath(outdir, "calibration.json")
+    isfile(path) || return nothing
+    data = JSON.parsefile(path)
+    keys_kept = ("tags", "months", "hours", "run", "solver_status", "converged", "iterations",
+                 "variables", "constraints", "jacobian_nonzeros", "solve_s", "reason")
+    keep(cell) = Dict{String, Any}(k => cell[k] for k in keys_kept if haskey(cell, k))
+    gpu = data["gpu"]
     return Dict{String, Any}(
-        "item" => "WP6 calibration problem",
-        "reason" => "Not available on main when this benchmark was written.",
+        "source" => "calibration.json",
+        "network_junctions" => data["network"]["junctions"],
+        "cpu" => [keep(c) for c in data["grid"]["cells"] if c["tags"] == 25 && get(c, "run", false)],
+        "gpu" => merge(keep(gpu), Dict{String, Any}("attempted" => get(gpu, "attempted", false))),
+        "note" => "Read from the calibration step of this build. The site build attempts the GPU at one grid point.",
     )
 end
 
@@ -556,15 +639,22 @@ function run_benchmarks(outdir; profile::Symbol = :ci)
     records, not_run, references = run_sweep(profile, env, started)
     if settings.ipopt
         append!(records, ipopt_records(
-            profile, env, vcat(settings.size_cases, settings.horizon_cases), settings.repeats, references,
+            profile, env, bench_cases(settings), settings.repeats, references,
         ))
     end
     ttfs = time_to_first_solve(settings.ttfs_repeats)
-    extra = vcat(STANDING_NOT_RUN, [calibration_not_run()])
+    extra = copy(STANDING_NOT_RUN)
+    calibration = calibration_outcome(outdir)
+    calibration === nothing && push!(extra, Dict{String, Any}(
+        "item" => "Calibration CPU and GPU outcome",
+        "reason" => "calibration.json was not found next to this file when the benchmarks were written.",
+    ))
     settings.ipopt || push!(extra, Dict{String, Any}(
         "item" => "Ipopt in this sweep", "reason" => "Ipopt runs only in the local sweep; see results/benchmarks.csv.",
     ))
     document = bench_document(profile, env, records, not_run, ttfs, extra)
+    document["calibration"] = calibration
+    settings.gpu_memory && (document["gpu_memory"] = gpu_memory_table(bench_cases(settings)))
     document["sweep_runtime_s"] = time() - started
     local_summary = joinpath(BENCH_ROOT, "results", "benchmarks_summary.json")
     if profile === :ci && isfile(local_summary)
@@ -572,6 +662,8 @@ function run_benchmarks(outdir; profile::Symbol = :ci)
         document["runs"] = document["local_sweep"]["runs"]
         document["notes"] = document["local_sweep"]["notes"]
     end
+    year_summary = joinpath(BENCH_ROOT, "results", "benchmarks_year_summary.json")
+    profile === :ci && isfile(year_summary) && (document["year_attempt"] = JSON.parsefile(year_summary))
     text = JSON.json(document, 2)
     csv = records_csv(records)
     assert_bench_public_safe(text)
@@ -595,5 +687,7 @@ if abspath(PROGRAM_FILE) == @__FILE__
         write(joinpath(results, "benchmarks_summary.json"), JSON.json(document, 2))
     else
         cp(joinpath(outdir, "benchmarks.csv"), joinpath(results, "benchmarks_$(profile).csv"); force = true)
+        delete!(document, "records")
+        write(joinpath(results, "benchmarks_$(profile)_summary.json"), JSON.json(document, 2))
     end
 end

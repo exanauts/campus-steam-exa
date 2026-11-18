@@ -133,6 +133,6 @@ function main()
 end
 
 main()
-include(joinpath(@__DIR__, "site", "benchmarks.jl")); run_benchmarks(dirname(OUTPUT_FILE))
 include(joinpath(@__DIR__, "site", "scenarios.jl")); run_scenarios(joinpath(REPO_ROOT, "site", "data", "scenarios"))
 include(joinpath(@__DIR__, "site", "calibration.jl")); run_calibration(dirname(OUTPUT_FILE))
+include(joinpath(@__DIR__, "site", "benchmarks.jl")); run_benchmarks(dirname(OUTPUT_FILE))
