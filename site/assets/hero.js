@@ -1,101 +1,184 @@
-import { el, MW, num, hourLabel, missing, dataTable, showTip, hideTip } from "./format.js";
-import { loadJSON, listed, normalizeScenario } from "./data.js";
+import { el, num, hourLabel, missing, dataTable, showTip, hideTip } from "./format.js";
+import { loadJSON, listed, normalizeScenario, SCENARIO_DIR } from "./data.js";
 
 const HOURS_PER_SECOND = 6;
-// Share of demand below which shed load is treated as solver noise.
-const SHED_EPS = 1e-4;
-// Pipes under this share of the week's largest flow are drawn at the minimum width,
-// because flows in lightly loaded pipes are not unique at the optimum.
-const LIGHT_FLOW_SHARE = 0.05;
+// Shed load below this size, in MW or MWh, is solver residue rather than a result.
+const SHED_MIN = 0.01;
 const DEFAULT_TITLE = "How a campus steam network carries a hard week";
+// The scenario shown first, when it is in the build.
+const FIRST_SCENARIO = "cold_snap";
+// Top of the temperature color scale, so that colors compare across scenarios.
+const COLOR_SCALE_TOP_C = 160;
+const TYPE_NAMES = { critical: "Critical", lab: "Labs", classroom: "Classrooms", housing: "Housing" };
+const TYPE_ORDER = ["critical", "lab", "classroom", "housing"];
 
 const reduceMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const $ = (id) => document.getElementById(id);
 const sum = (a) => a.reduce((x, y) => x + y, 0);
+const fixed = (v, digits = 1) => v.toFixed(digits);
+const typeName = (t) => TYPE_NAMES[t] || t;
+const fileOf = (id) => `${SCENARIO_DIR}${id}.json`;
 
-function scenarioFacts(s) {
-  const demandBy = s.demand.map(sum), servedBy = s.served.map(sum);
-  const shedBy = demandBy.map((d, i) => Math.max(0, d - servedBy[i]));
-  const significant = shedBy.map((v, i) => v > SHED_EPS * demandBy[i]);
-  const worstHour = shedBy.indexOf(Math.max(...shedBy));
+// Shed is reported by building type: the split between buildings of one type is not unique.
+function scenarioFacts(s, network) {
+  const typeOfLoad = new Map(network.loads.map((l) => [l.id, l.type]));
+  const types = TYPE_ORDER.filter((t) => network.loads.some((l) => l.type === t));
+  const shedByHour = s.loadShed.map((row) => {
+    const byType = Object.fromEntries(types.map((t) => [t, 0]));
+    row.forEach((v, j) => { const t = typeOfLoad.get(s.loadIds[j]); if (t in byType) byType[t] += v; });
+    return byType;
+  });
+  const weekByType = Object.fromEntries(types.map((t) => [t, sum(shedByHour.map((h) => h[t]))]));
+  const designByType = Object.fromEntries(types.map((t) => [t, sum(network.loads.filter((l) => l.type === t).map((l) => l.design_heat_MW))]));
+  const shedHours = s.shed.filter((v) => v >= SHED_MIN).length;
+  const worstHour = s.shed.indexOf(Math.max(...s.shed));
   const peakHour = s.output.indexOf(Math.max(...s.output));
-  return {
-    demandBy, shedBy, significant, worstHour,
-    demandMWh: sum(demandBy) / 1e6,
-    shedMWh: sum(shedBy.filter((_, i) => significant[i])) / 1e6,
-    shedHours: significant.filter(Boolean).length,
-    worstShed: shedBy[worstHour],
-    peakOutput: s.output[peakHour], ratingAtPeak: s.rating[peakHour],
-  };
+  return { types, shedByHour, weekByType, designByType, shedHours, worstHour, peakHour };
 }
 
-function findingText(s, f, label) {
-  if (f.shedHours === 0) {
-    return `${label}: the plant carries the week. Output peaks at ${MW(f.peakOutput)} MW against ${MW(f.ratingAtPeak)} MW available, and no load is shed.`;
+function shedByTypeText(f) {
+  const parts = f.types.filter((t) => t !== "critical" && f.weekByType[t] >= SHED_MIN)
+    .sort((a, b) => f.weekByType[b] - f.weekByType[a])
+    .map((t) => `${typeName(t).toLowerCase()} ${fixed(f.weekByType[t])} MWh`);
+  return parts.join(", ");
+}
+
+function findingText(s, f, network) {
+  const total = s.summary.total_shed_MWh;
+  const shed = total >= SHED_MIN;
+  const peak = `output peaks at ${fixed(s.output[f.peakHour])} MW of ${fixed(s.rating[f.peakHour])} MW available`;
+  const critical = s.summary.critical_shed_MWh >= SHED_MIN ? `${fixed(s.summary.critical_shed_MWh)} MWh of critical load is shed` : "no critical load is shed";
+  const weights = s.comparison ? " with the priority weights by building type" : "";
+  const outcome = shed
+    ? `${fixed(total)} MWh goes unserved (${shedByTypeText(f)})${weights}, and ${critical}.`
+    : `The plant carries it: ${peak}, and no load is shed.`;
+  const event = s.events[0];
+  const span = event ? event.last_hour - event.first_hour + 1 : 0;
+  if (s.id === "cold_snap" && event) {
+    return `Cold snap: loads run ${Math.round((event.factor - 1) * 100)} percent higher for ${span} hours, with a ${event.shoulder_hours}-hour ramp on each side. ${outcome}`;
   }
-  const pct = ((100 * f.shedMWh) / f.demandMWh).toFixed(1);
-  return `${label}: the plant falls short for ${f.shedHours} of ${s.hours} hours. ${num(f.shedMWh)} MWh of demand goes unserved (${pct}%), and the deepest shortfall is ${MW(f.worstShed)} MW on ${hourLabel(f.worstHour)}.`;
+  if (s.id === "plant_derate" && event) {
+    return `One of ${network.plant.n_boilers} boilers out for ${span} hours leaves ${fixed(event.rating_MW)} MW available. ${outcome}`;
+  }
+  if (s.id === "pipe_out" && event) {
+    const reversed = s.reroute?.reversed_steam_pipes?.length;
+    const reroute = reversed ? ` Flow reverses in ${reversed} other steam pipe${reversed > 1 ? "s" : ""} to reroute around it.` : "";
+    return `Steam main pipe ${event.pipe} out for ${span} hours. ${outcome}${reroute}`;
+  }
+  return `${s.title}: ${shed ? outcome : `the plant carries the week, ${peak}, and no load is shed.`}`;
 }
 
-export async function initHero(campus, index) {
+function typeTable(host, caption, types, cases) {
+  const scroll = el("div", { class: "table-scroll", tabindex: "0", role: "region", "aria-label": caption }, host);
+  const table = el("table", {}, scroll);
+  el("caption", { class: "sr-only" }, table, caption);
+  const head = el("tr", {}, el("thead", {}, table));
+  el("th", { scope: "col" }, head, "Shed by building type (MWh)");
+  cases.forEach((c) => el("th", { scope: "col" }, head, c.label));
+  const body = el("tbody", {}, table);
+  types.forEach((t) => {
+    const tr = el("tr", {}, body);
+    el("th", { scope: "row" }, tr, typeName(t));
+    cases.forEach((c) => el("td", {}, tr, fixed(c.shed_by_type_MWh[t] ?? 0, 2)));
+  });
+}
+
+const usable = (cases) => Array.isArray(cases) && cases.length >= 2 && cases.every((c) => c.presented && c.shed_by_type_MWh);
+
+// The weights change how shed load is shared, so each statement is drawn from the two solves.
+function renderComparison(host, s, f) {
+  const cmp = s.comparison;
+  if (!cmp) return;
+  const box = el("div", { class: "evidence" }, host);
+  el("h2", { class: "evidence-title" }, box, "What the priority weights change with one boiler out");
+  if (usable(cmp.cases)) {
+    const [weighted, uniform] = cmp.cases;
+    const noCritical = cmp.cases.every((c) => (c.shed_by_type_MWh.critical ?? 0) < SHED_MIN);
+    const moved = f.types.filter((t) => Math.abs((weighted.shed_by_type_MWh[t] ?? 0) - (uniform.shed_by_type_MWh[t] ?? 0)) >= SHED_MIN).map((t) => typeName(t).toLowerCase());
+    const text = noCritical
+      ? `No critical load is shed under either weighting, so this case does not show the weights protecting critical load.${moved.length ? ` The weights only shift shedding between ${moved.join(" and ")}.` : ""}`
+      : "Critical load is shed in this case. Compare the two weightings below.";
+    el("p", {}, box, text);
+    typeTable(box, "Shed by building type with one boiler out, under two weightings", f.types, cmp.cases);
+  } else {
+    el("p", {}, box, "This comparison did not reach the solver tolerance, so its results are withheld.");
+  }
+  if (cmp.note) el("p", { class: "note" }, box, cmp.note);
+
+  const stress = cmp.deeper_derate;
+  if (!stress) return;
+  const card = el("div", { class: "stress" }, box);
+  el("span", { class: "tag" }, card, "Stress case");
+  el("h3", {}, card, `${stress.title}: ${fixed(stress.rating_MW)} MW for ${stress.hours} peak hours`);
+  el("p", {}, card, "This is a separate, harsher case and not one of the four scenarios above.");
+  if (usable(stress.cases)) {
+    const [weighted, uniform] = stress.cases;
+    const a = weighted.shed_by_type_MWh.critical ?? 0, b = uniform.shed_by_type_MWh.critical ?? 0;
+    const text = a < b - SHED_MIN
+      ? `Here the weights protect critical load: ${fixed(a, 2)} MWh of critical load is shed with weights by building type, against ${fixed(b, 2)} MWh with one uniform weight.`
+      : `Critical load shed is ${fixed(a, 2)} MWh with weights by building type and ${fixed(b, 2)} MWh with one uniform weight.`;
+    el("p", {}, card, text);
+    typeTable(card, "Shed by building type in the stress case, under two weightings", f.types, stress.cases);
+  } else {
+    el("p", {}, card, "This stress case did not reach the solver tolerance, so its results are withheld.");
+  }
+}
+
+export async function initHero(network) {
   const map = $("map");
   const radios = [...document.querySelectorAll('input[name="scenario"]')];
-  const labels = Object.fromEntries(radios.map((r) => [r.value, r.nextElementSibling.textContent]));
-  const entry = (id) => index?.scenarios?.find((s) => s.id === id);
-  const fileOf = (id) => entry(id)?.file || `scenario_${id}.json`;
-  const available = (id) => !!campus && !!entry(id) && listed(fileOf(id));
   radios.forEach((r) => {
-    r.disabled = !available(r.value);
+    r.disabled = !network || !listed(fileOf(r.value));
     if (r.disabled) r.closest("label").title = "Not available in this build";
   });
-  const first = radios.find((r) => !r.disabled);
-  if (!first) {
+  const enabled = radios.filter((r) => !r.disabled);
+  if (!enabled.length) {
     missing(map, " The campus playback has not been generated yet.");
     return;
   }
+  const first = enabled.find((r) => r.value === FIRST_SCENARIO) || enabled[0];
   first.checked = true;
 
-  const view = buildMap(map, campus);
+  const view = buildMap(map, network);
   const panel = $("panel"), transport = $("transport"), scrubber = $("scrubber"), play = $("play");
   map.closest(".stage").classList.add("has-panel");
-  panel.hidden = false;
-  transport.hidden = false;
   $("map-key").hidden = false;
-  buildKey($("map-key"), campus);
-  const ui = buildPanel(panel, campus);
+  buildKey($("map-key"));
+  const ui = buildPanel(panel, network);
 
   const cache = new Map();
   const state = { s: null, f: null, hour: 0, playing: false, visible: true, token: 0 };
   let cursor = null, cursorX = () => 0;
 
   const fetchScenario = (id) => {
-    if (!cache.has(id)) cache.set(id, loadJSON(fileOf(id)).then(normalizeScenario));
+    if (!cache.has(id)) cache.set(id, loadJSON(fileOf(id)).then((raw) => normalizeScenario(raw, network)));
     return cache.get(id);
   };
 
   function render(announce) {
     const { s, f, hour } = state;
-    view.update(s, hour);
-    const demand = f.demandBy[hour], shed = f.significant[hour] ? f.shedBy[hour] : 0;
-    ui.update(s, hour, demand, shed);
+    view.update(s, f, hour);
+    ui.update(s, f, hour);
     scrubber.value = hour;
-    const text = `${hourLabel(hour)}: plant output ${MW(s.output[hour])} MW, demand ${MW(demand)} MW, shed ${MW(shed)} MW.`;
+    const shed = s.shed[hour] >= SHED_MIN ? s.shed[hour] : 0;
+    const text = `${hourLabel(hour)}: plant output ${fixed(s.output[hour])} MW, demand ${fixed(s.demand[hour])} MW, shed ${fixed(shed)} MW.`;
     scrubber.setAttribute("aria-valuetext", text);
     if (cursor) { cursor.setAttribute("x1", cursorX(hour)); cursor.setAttribute("x2", cursorX(hour)); }
     if (announce) $("hero-live").textContent = text;
   }
 
   function drawStrip() {
-    const { s, f } = state;
+    const { s } = state;
     const host = $("strip");
     host.replaceChildren();
     const W = Math.max(200, host.clientWidth - 22), H = 42;
-    const top = Math.max(campus.plant.rating_W, ...s.rating);
+    const top = Math.max(network.plant.rating_MW, ...s.rating, ...s.output);
     const sx = (h) => (s.hours > 1 ? (h / (s.hours - 1)) * W : 0);
     const sy = (v) => H - 3 - (v / top) * (H - 6);
     const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, preserveAspectRatio: "none" }, host);
-    f.significant.forEach((on, h) => {
-      if (on) el("rect", { x: sx(h) - W / s.hours / 2, y: 0, width: Math.max(1.5, W / s.hours), height: H, fill: "var(--shed)", opacity: 0.28 }, svg);
+    s.events.forEach((e) => el("rect", { x: sx(e.first_hour - 1), y: 0, width: sx(e.last_hour - 1) - sx(e.first_hour - 1), height: H, fill: "var(--ink)", opacity: 0.07 }, svg));
+    s.shed.forEach((v, h) => {
+      if (v >= SHED_MIN) el("rect", { x: sx(h) - W / s.hours / 2, y: 0, width: Math.max(1.5, W / s.hours), height: H, fill: "var(--shed)", opacity: 0.3 }, svg);
     });
     const path = (a) => a.map((v, h) => `${h ? "L" : "M"}${sx(h).toFixed(1)} ${sy(v).toFixed(1)}`).join("");
     el("path", { d: path(s.rating), fill: "none", stroke: "var(--ink-3)", "stroke-width": 1 }, svg);
@@ -118,25 +201,24 @@ export async function initHero(campus, index) {
     const rows = [];
     for (let d = 0; d < Math.ceil(s.hours / 24); d++) {
       const range = [...Array(s.hours).keys()].filter((h) => Math.floor(h / 24) === d);
-      const shed = sum(range.map((h) => (f.significant[h] ? f.shedBy[h] : 0))) / 1e6;
-      rows.push([`Day ${d + 1}`, s.outdoor ? num(Math.min(...range.map((h) => s.outdoor[h])), 1) : "n/a",
-        MW(Math.max(...range.map((h) => f.demandBy[h]))), MW(Math.max(...range.map((h) => s.output[h]))), num(shed, 1)]);
+      rows.push([`Day ${d + 1}`, fixed(Math.max(...range.map((h) => s.demand[h]))), fixed(Math.max(...range.map((h) => s.output[h]))),
+        fixed(Math.min(...range.map((h) => s.rating[h]))), fixed(sum(range.map((h) => s.shed[h])))]);
     }
-    dataTable(host, "Day-by-day values for this scenario", ["Day", "Lowest outdoor (C)", "Peak demand (MW)", "Peak output (MW)", "Shed (MWh)"], rows);
-    const byLoad = s.loadIds.map((id, j) => {
-      let shed = 0, total = 0;
-      for (let h = 0; h < s.hours; h++) {
-        total += s.demand[h][j];
-        if (f.significant[h]) shed += Math.max(0, s.demand[h][j] - s.served[h][j]);
-      }
-      return { load: campus.loads.find((l) => l.id === id), shed: shed / 1e6, total: total / 1e6 };
-    }).filter((r) => r.shed > 0 && r.load).sort((a, b) => b.shed - a.shed);
-    if (byLoad.length) {
-      dataTable(host, "Buildings with shed load in this scenario", ["Building", "Type", "Shed (MWh)", "Share of its demand (%)"],
-        byLoad.map((r) => [r.load.name, r.load.type, num(r.shed, 1), num((100 * r.shed) / r.total, 1)]));
-    } else {
-      el("p", { class: "note" }, host, "No building has shed load in this scenario.");
-    }
+    dataTable(host, "Day-by-day values for this scenario", ["Day", "Peak demand (MW)", "Peak output (MW)", "Lowest available (MW)", "Shed (MWh)"], rows);
+    dataTable(host, "Week totals for this scenario", ["Quantity", "Value"], [
+      ["Demand", `${num(s.summary.total_demand_MWh)} MWh`],
+      ["Shed", `${fixed(s.summary.total_shed_MWh)} MWh`],
+      ...f.types.map((t) => [`Shed, ${typeName(t).toLowerCase()}`, `${fixed(f.weekByType[t])} MWh`]),
+      ["Heat lost in pipes (indicative)", `about ${num(s.summary.total_losses_MWh)} MWh`],
+    ]);
+    renderComparison(host, s, f);
+  }
+
+  function showLabels(s) {
+    const labels = [s.dataLabel, s.modelLabel].filter(Boolean).join(" ");
+    const node = $("hero-labels");
+    node.hidden = !labels;
+    node.textContent = labels;
   }
 
   let timer = null;
@@ -157,36 +239,41 @@ export async function initHero(campus, index) {
     }
   }
 
+  function withhold(message, s) {
+    setPlaying(false);
+    state.s = null;
+    view.setVisible(false);
+    missing(view.notice, message);
+    view.notice.hidden = false;
+    $("hero-title").textContent = s?.title || DEFAULT_TITLE;
+    $("hero-sub").hidden = true;
+    panel.hidden = true;
+    transport.hidden = true;
+    $("map-key").hidden = true;
+    $("hero-tables").replaceChildren();
+  }
+
   async function select(id) {
     const token = ++state.token;
     const s = await fetchScenario(id);
     if (token !== state.token) return;
-    if (!s) {
-      setPlaying(false);
-      state.s = null;
-      view.setVisible(false);
-      missing(view.notice, " This scenario could not be loaded.");
-      view.notice.hidden = false;
-      $("hero-title").textContent = DEFAULT_TITLE;
-      $("hero-sub").hidden = true;
-      panel.hidden = true;
-      transport.hidden = true;
-      $("hero-tables").replaceChildren();
-      return;
-    }
+    if (!s) return withhold(" This scenario could not be loaded.");
+    showLabels(s);
+    if (!s.presented) return withhold(` The solver stopped with status ${s.status}, so the numbers for this scenario are withheld.`, s);
     view.notice.hidden = true;
     view.setVisible(true);
     panel.hidden = false;
     transport.hidden = false;
+    $("map-key").hidden = false;
     state.s = s;
-    state.f = scenarioFacts(s);
+    state.f = scenarioFacts(s, network);
     view.prepare(s);
     scrubber.max = s.hours - 1;
     state.hour = Math.min(state.hour, s.hours - 1);
-    $("hero-title").textContent = findingText(s, state.f, entry(id)?.label || labels[id]);
-    const sub = $("hero-sub"), description = entry(id)?.description;
-    sub.hidden = !description;
-    sub.textContent = description || "";
+    $("hero-title").textContent = findingText(s, state.f, network);
+    const sub = $("hero-sub");
+    sub.hidden = !s.description;
+    sub.textContent = s.description || "";
     drawStrip();
     renderTables();
     render(true);
@@ -198,7 +285,8 @@ export async function initHero(campus, index) {
     setPlaying(false);
   });
   radios.forEach((r) => r.addEventListener("change", () => { if (r.checked) select(r.value); }));
-  new IntersectionObserver(([e]) => { state.visible = e.isIntersecting; }).observe(map);
+  // Playback pauses only when the whole hero is off screen, so the controls always respond.
+  new IntersectionObserver(([e]) => { state.visible = e.isIntersecting; }).observe($("hero"));
   let lastWidth = map.clientWidth;
   new ResizeObserver(() => {
     if (Math.abs(map.clientWidth - lastWidth) < 4) return;
@@ -211,9 +299,9 @@ export async function initHero(campus, index) {
   if (state.s && !reduceMotion()) setPlaying(true);
 }
 
-function buildMap(host, campus) {
+function buildMap(host, network) {
   host.replaceChildren();
-  const pts = [...campus.junctions.values()];
+  const pts = [...network.junctions.values()];
   const xs = pts.map((j) => j.x), ys = pts.map((j) => j.y);
   const pad = 46;
   const x0 = Math.min(...xs) - pad, y1 = Math.max(...ys) + pad;
@@ -221,17 +309,17 @@ function buildMap(host, campus) {
   const px = (j) => j.x - x0, py = (j) => y1 - j.y;
   const svg = el("svg", {
     viewBox: `0 0 ${vw} ${vh}`, role: "img",
-    "aria-label": "Map of the fictional campus steam network. Pipes are colored by steam temperature and drawn wider for larger flows. Buildings show served and shed load. The status panel and the tables below give the same values as text.",
+    "aria-label": "Map of the fictional campus steam network. Pipes are colored by steam temperature and drawn wider for larger flows. Lightly loaded pipes are faded. Buildings show shed load by building type. The status panel and the tables below give the values as text.",
   }, host);
   const notice = el("div", { hidden: "" }, host);
   const pipeLayer = el("g", {}, svg), markLayer = el("g", {}, svg), bldgLayer = el("g", {}, svg);
-  const pipes = new Map(campus.pipes.map((p) => {
-    const a = campus.junctions.get(p.from), b = campus.junctions.get(p.to);
+  const pipes = new Map(network.pipes.map((p) => {
+    const a = network.junctions.get(p.from), b = network.junctions.get(p.to);
     const node = el("line", { class: "pipe", x1: px(a), y1: py(a), x2: px(b), y2: py(b), "stroke-width": 1.5 }, pipeLayer);
-    return [p.id, { node, mx: (px(a) + px(b)) / 2, my: (py(a) + py(b)) / 2 }];
+    return [p.id, { node, from: p.from, to: p.to, mx: (px(a) + px(b)) / 2, my: (py(a) + py(b)) / 2, mark: null }];
   }));
-  const loads = new Map(campus.loads.map((l) => {
-    const j = campus.junctions.get(l.junction);
+  const loads = new Map(network.loads.map((l) => {
+    const j = network.junctions.get(l.junction);
     const g = el("g", { "data-load": l.id }, bldgLayer);
     return [l.id, {
       load: l, cx: px(j), cy: py(j),
@@ -240,20 +328,18 @@ function buildMap(host, campus) {
       ring: el("rect", { class: "bldg-ring", visibility: "hidden" }, g),
     }];
   }));
-  const pj = campus.junctions.get(campus.plant.junction);
+  const pj = network.junctions.get(network.plant.junction);
   const plantMark = el("rect", { class: "plant" }, svg);
   const plantText = el("text", { "text-anchor": "start" }, svg, "Plant");
 
-  let unit = 1, size = 10, current = null, hourNow = 0, maxFlow = 1, outPipes = [];
-  const loadInfo = new Map();
+  let unit = 1, size = 10, current = null, facts = null, hourNow = 0, maxFlow = 1, tMax = 100;
+  const typeInfo = new Map();
 
   function drawOutMarks() {
     markLayer.replaceChildren();
-    outPipes.forEach((id) => {
-      const p = pipes.get(id);
-      if (!p) return;
+    pipes.forEach((p) => {
       const d = 7 * unit;
-      el("path", { class: "out-mark", d: `M${p.mx - d} ${p.my - d}L${p.mx + d} ${p.my + d}M${p.mx - d} ${p.my + d}L${p.mx + d} ${p.my - d}` }, markLayer);
+      p.mark = el("path", { class: "out-mark", visibility: "hidden", d: `M${p.mx - d} ${p.my - d}L${p.mx + d} ${p.my + d}M${p.mx - d} ${p.my + d}L${p.mx + d} ${p.my - d}` }, markLayer);
     });
   }
 
@@ -277,7 +363,7 @@ function buildMap(host, campus) {
     plantText.setAttribute("x", px(pj) + s / 2 + 6 * unit); plantText.setAttribute("y", py(pj) + 5 * unit);
     plantText.setAttribute("font-size", 13 * unit); plantText.setAttribute("stroke-width", 3 * unit);
     drawOutMarks();
-    if (current) update(current, hourNow);
+    if (current) update(current, facts, hourNow);
   }
 
   const readRamp = () => {
@@ -290,43 +376,62 @@ function buildMap(host, campus) {
   let [c0, c1] = readRamp();
   window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
     [c0, c1] = readRamp();
-    if (current) update(current, hourNow);
+    if (current) update(current, facts, hourNow);
   });
-  const tMin = 100, tMax = campus.plant.supply_temp_C;
+  const tMin = 100;
   const color = (t) => {
-    const u = Math.max(0, Math.min(1, (t - tMin) / (tMax - tMin)));
+    const u = Math.max(0, Math.min(1, (t - tMin) / Math.max(1, tMax - tMin)));
     return `rgb(${c0.map((c, i) => Math.round(c + (c1[i] - c) * u)).join(" ")})`;
   };
 
-  function prepare(s) {
-    current = s;
-    maxFlow = Math.max(1e-9, ...s.flow.map((row) => Math.max(...row.map(Math.abs))));
-    const out = new Set();
-    if (s.inService) s.inService.forEach((row) => row.forEach((on, i) => { if (!on) out.add(s.pipeIds[i]); }));
-    outPipes = [...out];
-    drawOutMarks();
+  // Mean temperature of the pipe's two ends, leaving out junctions marked as not unique in this hour.
+  function pipeTemperature(s, p, h) {
+    const values = [p.from, p.to].filter((id) => !s.nodeMarks.get(id)?.[h]).map((id) => s.temperature[h][s.nodeColumn.get(id)]).filter(Number.isFinite);
+    return values.length ? sum(values) / values.length : null;
   }
 
-  function update(s, h) {
+  function prepare(s) {
+    current = s;
+    maxFlow = 1e-9;
+    s.flow.forEach((row, h) => row.forEach((v, i) => {
+      if (v !== null && !s.flowMarks.get(s.pipes[i].id)?.[h]) maxFlow = Math.max(maxFlow, Math.abs(v));
+    }));
+    // One color scale for every scenario, extended only if a scenario runs hotter than it.
+    let hottest = tMin;
+    s.temperature.forEach((row, h) => s.nodeColumn.forEach((column, id) => {
+      if (!s.nodeMarks.get(id)?.[h] && Number.isFinite(row[column])) hottest = Math.max(hottest, row[column]);
+    }));
+    tMax = Math.max(COLOR_SCALE_TOP_C, Math.ceil(hottest / 10) * 10);
+    const label = $("ramp-max");
+    if (label) label.textContent = `${Math.round(tMax)} C steam`;
+  }
+
+  function update(s, f, h) {
+    facts = f;
     hourNow = h;
-    s.pipeIds.forEach((id, i) => {
-      const p = pipes.get(id);
+    s.pipes.forEach((pipe, i) => {
+      const p = pipes.get(pipe.id);
       if (!p) return;
-      const on = !s.inService || s.inService[h][i];
-      p.node.classList.toggle("out", !on);
-      if (!on) { p.node.style.stroke = ""; p.node.setAttribute("stroke-width", 2); return; }
-      const share = Math.abs(s.flow[h][i]) / maxFlow;
-      const light = share < LIGHT_FLOW_SHARE || (s.nonUnique && s.nonUnique[h][i]);
-      p.node.style.stroke = color(s.temp[h][i]);
-      p.node.setAttribute("stroke-width", light ? 1.5 : (1.5 + 6 * Math.sqrt(share)).toFixed(1));
+      const flow = s.flow[h][i];
+      const out = flow === null;
+      p.mark?.setAttribute("visibility", out ? "visible" : "hidden");
+      p.node.classList.toggle("out", out);
+      const temperature = out ? null : pipeTemperature(s, p, h);
+      const faded = !out && (!s.flowTrusted || !s.temperatureTrusted || s.flowMarks.get(pipe.id)?.[h] || temperature === null);
+      p.node.classList.toggle("faded", !!faded);
+      if (out || faded) {
+        p.node.style.stroke = "";
+        p.node.setAttribute("stroke-width", out ? 2 : 1.25);
+        return;
+      }
+      p.node.style.stroke = color(temperature);
+      p.node.setAttribute("stroke-width", (1.5 + 6 * Math.sqrt(Math.abs(flow) / maxFlow)).toFixed(1));
     });
-    s.loadIds.forEach((id, j) => {
-      const v = loads.get(id);
-      if (!v) return;
-      const d = s.demand[h][j], frac = d > 0 ? Math.max(0, d - s.served[h][j]) / d : 0;
-      const shed = frac > SHED_EPS;
-      loadInfo.set(id, { d, served: s.served[h][j], frac });
-      v.shed.setAttribute("height", shed ? Math.max(size * 0.18, size * frac) : 0);
+    f.types.forEach((t) => typeInfo.set(t, { mw: f.shedByHour[h][t], frac: Math.min(1, f.shedByHour[h][t] / f.designByType[t]) }));
+    loads.forEach((v) => {
+      const info = typeInfo.get(v.load.type);
+      const shed = info && info.mw >= SHED_MIN;
+      v.shed.setAttribute("height", shed ? Math.max(size * 0.18, size * info.frac) : 0);
       v.ring.setAttribute("visibility", shed ? "visible" : "hidden");
     });
   }
@@ -334,12 +439,11 @@ function buildMap(host, campus) {
   svg.addEventListener("pointermove", (e) => {
     const g = e.target.closest?.("[data-load]");
     if (!g) return hideTip();
-    const v = loads.get(+g.dataset.load), info = loadInfo.get(+g.dataset.load);
+    const v = loads.get(+g.dataset.load), info = v && typeInfo.get(v.load.type);
     if (!v || !info) return;
     showTip(e.clientX, e.clientY, (t) => {
       el("b", {}, t, v.load.name);
-      el("div", {}, t, `Demand ${MW(info.d)} MW`);
-      el("div", {}, t, `Served ${MW(info.served)} MW${info.frac > SHED_EPS ? `, ${((100 * info.frac)).toFixed(0)}% shed` : ""}`);
+      el("div", {}, t, info.mw >= SHED_MIN ? `${typeName(v.load.type)} combined: ${fixed(info.mw)} MW shed this hour` : `${typeName(v.load.type)}: no load shed this hour`);
     });
   });
   svg.addEventListener("pointerleave", hideTip);
@@ -347,21 +451,22 @@ function buildMap(host, campus) {
   return { notice, prepare, update, resize, setVisible: (on) => { svg.style.display = on ? "" : "none"; } };
 }
 
-function buildKey(host, campus) {
+function buildKey(host) {
   host.replaceChildren();
   const a = el("span", {}, host);
   a.append("100 C");
   el("i", { class: "ramp" }, a);
-  a.append(`${num(campus.plant.supply_temp_C)} C steam`);
+  el("span", { id: "ramp-max" }, a);
   el("span", {}, host, "Wider line: more flow");
-  const b = el("span", {}, host); el("i", { class: "swatch" }, b); b.append("Building served");
-  const c = el("span", {}, host); el("i", { class: "swatch shed" }, c); c.append("Part of load shed");
+  const f = el("span", {}, host); el("i", { class: "line-key faded" }, f); f.append("Faded: lightly loaded this hour, not a prediction");
+  const b = el("span", {}, host); el("i", { class: "swatch" }, b); b.append("Building type served");
+  const c = el("span", {}, host); el("i", { class: "swatch shed" }, c); c.append("Building type short of heat");
   const d = el("span", {}, host); el("i", { class: "line-key" }, d); d.append("Pipe out of service");
 }
 
-function buildPanel(host, campus) {
+function buildPanel(host, network) {
   host.replaceChildren();
-  const nameplate = campus.plant.rating_W;
+  const nameplate = network.plant.rating_MW;
   const head = el("div", { class: "gauge-head" }, host);
   el("span", {}, head, "Plant output");
   const pct = el("span", {}, head);
@@ -371,32 +476,28 @@ function buildPanel(host, campus) {
   const foot = el("div", { class: "gauge-foot" }, host);
   const dl = el("dl", { class: "readout" }, host);
   const row = (k) => { el("dt", {}, dl, k); return el("dd", {}, dl); };
-  const when = row("Time"), outdoor = row("Outdoors"), demand = row("Demand"), shed = row("Shed");
-  const lossLabel = el("dt", { hidden: "" }, dl, "Lost in pipes"), loss = el("dd", { hidden: "" }, dl);
+  const when = row("Time"), demand = row("Demand"), shed = row("Shed"), losses = row("Pipe loss, week");
   const list = el("p", { class: "shed-now" }, host);
   return {
-    update(s, hour, d, sh) {
+    update(s, f, hour) {
       const out = s.output[hour], avail = s.rating[hour];
-      value.replaceChildren(`${MW(out)} `);
+      value.replaceChildren(`${fixed(out)} `);
       el("small", {}, value, "MW");
       pct.textContent = `${Math.round((100 * out) / avail)}% of available`;
       fill.style.width = `${Math.min(100, (100 * out) / nameplate)}%`;
       off.style.width = `${Math.max(0, 100 * (1 - avail / nameplate))}%`;
       foot.textContent = avail < nameplate
-        ? `${MW(avail, 0)} MW available, derated from the ${MW(nameplate, 0)} MW rating`
-        : `${MW(avail, 0)} MW available, the full rating`;
-      lossLabel.hidden = loss.hidden = !s.heatLoss;
-      if (s.heatLoss) loss.textContent = `${MW(s.heatLoss[hour], 2)} MW`;
+        ? `${fixed(avail)} MW available, derated from the ${fixed(nameplate)} MW rating`
+        : `${fixed(avail)} MW available, the full rating`;
       when.textContent = hourLabel(hour);
-      outdoor.textContent = s.outdoor ? `${s.outdoor[hour].toFixed(1)} C` : "n/a";
-      demand.textContent = `${MW(d)} MW`;
-      shed.textContent = `${MW(sh)} MW`;
-      const short = s.loadIds.map((id, j) => ({ id, v: s.demand[hour][j] - s.served[hour][j], d: s.demand[hour][j] }))
-        .filter((r) => r.d > 0 && r.v / r.d > SHED_EPS).sort((a, b) => b.v - a.v);
+      demand.textContent = `${fixed(s.demand[hour])} MW`;
+      shed.textContent = `${fixed(s.shed[hour] >= SHED_MIN ? s.shed[hour] : 0)} MW`;
+      losses.textContent = `about ${num(s.summary.total_losses_MWh)} MWh`;
+      const short = f.types.filter((t) => f.shedByHour[hour][t] >= SHED_MIN).sort((a, b) => f.shedByHour[hour][b] - f.shedByHour[hour][a]);
       list.replaceChildren();
-      if (!short.length) { list.append("All buildings fully served this hour."); return; }
-      el("b", {}, list, `${short.length} building${short.length > 1 ? "s" : ""} short: `);
-      list.append(short.slice(0, 3).map((r) => `${campus.loads.find((l) => l.id === r.id)?.name ?? r.id} ${MW(r.v)} MW`).join(", ") + (short.length > 3 ? ", and others" : ""));
+      if (!short.length) { list.append("All load served this hour."); return; }
+      el("b", {}, list, "Short this hour: ");
+      list.append(short.map((t) => `${typeName(t)} ${fixed(f.shedByHour[hour][t])} MW`).join(", "));
     },
   };
 }

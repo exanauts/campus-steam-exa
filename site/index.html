@@ -35,18 +35,18 @@
       <div class="map-key" id="map-key" hidden></div>
     </figure>
     <aside class="panel" id="panel" aria-label="Plant status at the selected hour" hidden></aside>
-  </div>
-
-  <div class="transport" id="transport" hidden>
-    <button type="button" id="play" class="play" aria-pressed="false">Play</button>
-    <div class="scrub">
-      <div class="strip" id="strip" aria-hidden="true"></div>
-      <input type="range" id="scrubber" min="0" max="0" value="0" step="1" aria-label="Hour of the week">
-      <div class="strip-days" id="strip-days" aria-hidden="true"></div>
+    <div class="transport" id="transport" hidden>
+      <button type="button" id="play" class="play" aria-pressed="false">Play</button>
+      <div class="scrub">
+        <div class="strip" id="strip" aria-hidden="true"></div>
+        <input type="range" id="scrubber" min="0" max="0" value="0" step="1" aria-label="Hour of the week">
+        <div class="strip-days" id="strip-days" aria-hidden="true"></div>
+      </div>
     </div>
   </div>
 
-  <p class="caption">Playback is precomputed solver output, not live plant data. Example University is fictional and its layout is generated. Only the steam supply side is drawn.</p>
+  <p class="caption">Playback is precomputed solver output, not live plant data. Example University is fictional and its layout is generated. Only the steam supply side is drawn. Shed load is shown by building type, because the split between buildings of one type is not unique.</p>
+  <p class="caption" id="hero-labels" hidden></p>
   <p class="sr-only" id="hero-live" aria-live="polite"></p>
   <div class="hero-tables" id="hero-tables"></div>
 </section>
@@ -113,7 +113,7 @@
     <li><strong>Synthetic data.</strong> The campus, weather, demand and equipment are all generated.</li>
     <li><strong>Sensible cooling only.</strong> Steam loses heat without condensing, so the model has no condensation in pipes.</li>
     <li><strong>Saturation fixed at 100 C,</strong> as in the reference paper, regardless of pressure.</li>
-    <li><strong>Some quantities are not unique.</strong> Water-side pressures, return-side temperatures and flows in lightly loaded pipes can differ between equally good solutions, so they are not predictions. The animation draws lightly loaded pipes at one thin width for this reason.</li>
+    <li><strong>Some quantities are not unique.</strong> Water-side pressures, return-side temperatures and flows in lightly loaded pipes can differ between equally good solutions, so they are not predictions. The animation fades lightly loaded pipes for this reason and does not draw the water side.</li>
   </ul>
   <h3>Sources</h3>
   <ul class="links">

@@ -1,4 +1,4 @@
-import { loadManifest, loadJSON, listed, dataUrl, normalizeCampus, normalizeBenchmarks, normalizeCalibration } from "./data.js";
+import { loadManifest, loadJSON, listed, dataUrl, normalizeNetwork, normalizeBenchmarks, normalizeCalibration, SCENARIO_DIR } from "./data.js";
 import { el, missing, compact, num } from "./format.js";
 import { lineChart } from "./charts.js";
 import { initHero } from "./hero.js";
@@ -105,7 +105,12 @@ function renderBenchmarks(bench) {
   if (!bench) return missing(host, " The CPU and GPU measurements have not been generated yet.");
   host.replaceChildren();
   const { runs, sizeLabel } = bench;
-  const { strict, crossover, looseWins } = compareDevices(runs);
+  const compared = compareDevices(runs);
+  const { strict, looseWins } = compared;
+  // The benchmark file states whether a crossover was measured, and that statement wins.
+  const reported = bench.crossover;
+  const denied = reported && reported.network_size == null && reported.horizon == null;
+  const crossover = denied ? null : compared.crossover;
   const lead = el("p", { class: "lead" }, host);
   const cpuWins = strict.filter((p) => p.cpu.solve_s <= p.gpu.solve_s).length;
   if (crossover !== null) lead.textContent = `The GPU was faster from ${compact(crossover)} ${sizeLabel.toLowerCase()} upward in these measurements, with both devices at full tolerance.`;
@@ -135,8 +140,8 @@ function renderBenchmarks(bench) {
 async function main() {
   await loadManifest();
   renderTemplate();
-  const [info, calRaw, benchRaw, campusRaw, index] = await Promise.all([
-    loadJSON("build_info.json"), loadJSON("calibration.json"), loadJSON("benchmarks.json"), loadJSON("campus.json"), loadJSON("scenarios.json"),
+  const [info, calRaw, benchRaw, networkRaw] = await Promise.all([
+    loadJSON("build_info.json"), loadJSON("calibration.json"), loadJSON("benchmarks.json"), loadJSON(`${SCENARIO_DIR}network.json`),
   ]);
   renderFooter(info);
   const cal = normalizeCalibration(calRaw);
@@ -144,7 +149,7 @@ async function main() {
   await guarded($("ask-figures"), "The export figures could not be read.", () => renderAsk(cal));
   await guarded(null, "sample", () => renderSample(cal));
   await guarded($("benchmarks"), "The measurements could not be drawn.", () => renderBenchmarks(normalizeBenchmarks(benchRaw)));
-  await guarded($("map"), "The campus playback could not be drawn.", () => initHero(normalizeCampus(campusRaw), index));
+  await guarded($("map"), "The campus playback could not be drawn.", () => initHero(normalizeNetwork(networkRaw)));
 }
 
 main();
