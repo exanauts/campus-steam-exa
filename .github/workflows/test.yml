@@ -31,3 +31,5 @@ jobs:
       - uses: julia-actions/cache@9353db09a0f2bbbdec6f41791918c75d37391b36 # v3.5.0
       - name: Run tests
         run: julia --color=yes --project=. -e 'using Pkg; Pkg.test()'
+      - name: Check the site build environment loads the package
+        run: julia --color=yes --project=scripts -e 'using Pkg; Pkg.instantiate(); using CampusSteam'
