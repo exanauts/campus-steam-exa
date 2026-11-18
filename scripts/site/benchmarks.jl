@@ -380,7 +380,8 @@ end
 function ipopt_records(profile, env, cases, repeats, references)
     dir = mktempdir()
     script = joinpath(BENCH_ROOT, "validation", "ipopt_benchmark.jl")
-    load_path = join([joinpath(BENCH_ROOT, "validation"), joinpath(BENCH_ROOT, "scripts"), "@stdlib"], ":")
+    # The scripts environment comes first because its manifest tracks the dependencies of CampusSteam.
+    load_path = join([joinpath(BENCH_ROOT, "scripts"), joinpath(BENCH_ROOT, "validation"), "@stdlib"], ":")
     cmd = addenv(`$(Base.julia_cmd()) --startup-file=no $script $dir $repeats $cases`,
                  "JULIA_LOAD_PATH" => load_path)
     run(cmd)
@@ -637,13 +638,21 @@ function run_benchmarks(outdir; profile::Symbol = :ci)
     started = time()
     warm_up()
     records, not_run, references = run_sweep(profile, env, started)
+    ipopt_failure = nothing
     if settings.ipopt
-        append!(records, ipopt_records(
-            profile, env, bench_cases(settings), settings.repeats, references,
-        ))
+        try
+            append!(records, ipopt_records(profile, env, bench_cases(settings), settings.repeats, references))
+        catch err
+            err isa InterruptException && rethrow()
+            ipopt_failure = bench_scrub(first(first(split(sprint(showerror, err), '\n')), 300))
+            @warn "The Ipopt reference runs failed" ipopt_failure
+        end
     end
     ttfs = time_to_first_solve(settings.ttfs_repeats)
     extra = copy(STANDING_NOT_RUN)
+    ipopt_failure === nothing || push!(extra, Dict{String, Any}(
+        "item" => "Ipopt reference runs", "reason" => "The Ipopt process failed: $ipopt_failure",
+    ))
     calibration = calibration_outcome(outdir)
     calibration === nothing && push!(extra, Dict{String, Any}(
         "item" => "Calibration CPU and GPU outcome",

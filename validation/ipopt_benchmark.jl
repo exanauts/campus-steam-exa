@@ -1,7 +1,7 @@
 # Ipopt reference runs for the benchmarks. Ipopt stays out of the main package: this script runs
-# with the validation environment stacked on top of the scripts environment.
+# with the validation environment stacked below the scripts environment.
 #
-#   JULIA_LOAD_PATH="validation:scripts:@stdlib" julia validation/ipopt_benchmark.jl \
+#   JULIA_LOAD_PATH="scripts:validation:@stdlib" julia validation/ipopt_benchmark.jl \
 #       OUTDIR REPEATS CASE [CASE...]
 #
 # Writes OUTDIR/ipopt_records.json and one raw Float64 solution file per case. The model is the
