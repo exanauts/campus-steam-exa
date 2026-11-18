@@ -596,9 +596,13 @@ end
 Build one NLP over all hours of `problem.series`. The variables are the hourly network states, the
 hourly heat of each building, and one heat-loss and one friction multiplier per coefficient group,
 shared across hours. The objective is the weighted least-squares misfit of the good samples, plus
-priors on building heat and on the multipliers. Samples that are not good add no term.
+priors on building heat and on the multipliers. Samples that are not good add no term. Groups that are
+not estimated are held at `held_loss` and `held_friction`, by default the nominal value 1.
 """
-function build_calibration_model(problem::CalibrationProblem; backend = nothing, options::SteamModelOptions = SteamModelOptions())
+function build_calibration_model(
+        problem::CalibrationProblem; backend = nothing, options::SteamModelOptions = SteamModelOptions(),
+        held_loss::Real = 1.0, held_friction::Real = 1.0,
+    )
     net, series, tags = problem.net, problem.series, problem.tags
     T = size(series.values, 1)
     nl = length(net.loads)
@@ -631,10 +635,13 @@ function build_calibration_model(problem::CalibrationProblem; backend = nothing,
 
     ngroup = length(problem.groups.names)
     # A group that is not estimated has equal bounds, which hold it at the nominal value.
-    lower = [e ? 0.2 : 1.0 for e in problem.groups.estimated]
-    upper = [e ? 5.0 : 1.0 for e in problem.groups.estimated]
-    core, loss = add_var(core, ngroup; lvar = lower, uvar = upper, start = 1.0)
-    core, friction = add_var(core, ngroup; lvar = lower, uvar = upper, start = 1.0)
+    bounds(held) = (
+        lvar = [e ? 0.2 : Float64(held) for e in problem.groups.estimated],
+        uvar = [e ? 5.0 : Float64(held) for e in problem.groups.estimated],
+        start = [e ? 1.0 : Float64(held) for e in problem.groups.estimated],
+    )
+    core, loss = add_var(core, ngroup; bounds(held_loss)...)
+    core, friction = add_var(core, ngroup; bounds(held_friction)...)
 
     vars = (; pressure, temperature, flow, temp_in, temp_out, boost, plant_power)
     group_of = vcat(problem.groups.pipe_group, zeros(Int, nl + 1))

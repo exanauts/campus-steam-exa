@@ -139,6 +139,63 @@ function _cal_gpu_attempt(hist, net, series, nominal_state, n_tags, months, wall
     return outcome
 end
 
+# The same 25-tag, one-month fit in a cold month and in a mild month. A group multiplier is an effective
+# average over pipes that differ from each other, so its estimate moves with the flow pattern.
+function _cal_seasonal_check(hist, net, series, january, wall_limit_s)
+    months = 1
+    hours = months * CampusSteam.HOURS_PER_MONTH
+    offset = 6 * CampusSteam.HOURS_PER_MONTH
+    check = Dict{String, Any}(
+        "tags" => 25, "months" => months, "groups" => hist.groups.names,
+        "true_loss_multiplier" => _cal_round.(hist.truth.group_loss; digits = 4),
+        "true_friction_multiplier" => _cal_round.(hist.truth.group_friction; digits = 4),
+    )
+    if !get(january, "converged", false) || wall_limit_s < 20
+        check["run"] = false
+        check["reason"] = "Skipped: the first-month fit did not converge or the time budget of this build was used up."
+        return check
+    end
+    range = (offset + 1):(offset + hours)
+    window = HistorianSeries(
+        series.tags, series.start + Hour(offset), series.values[range, :], series.status[range, :], 0, 0, 0,
+    )
+    heat = hist.nominal_heat_W[range, :]
+    # Each hour warm starts from the one before, so the simulation runs from the first hour.
+    state = simulate_hours(ForwardSimulator(net), hist.nominal_heat_W[1:last(range), :])[:, range]
+    problem = CalibrationProblem(net, window, hist.tags, heat, state)
+    result = solve_calibration(build_calibration_model(problem); max_iter = CAL_MAX_ITER, max_wall_time = wall_limit_s)
+    check["run"] = true
+    check["windows"] = Any[
+        Dict(
+            "label" => "month 1", "first_hour" => 1, "solver_status" => january["solver_status"],
+            "converged" => true, "solve_s" => january["solve_s"], "estimate" => january["estimate"],
+        ),
+        Dict{String, Any}(
+            "label" => "month 7", "first_hour" => offset + 1, "solver_status" => result.status,
+            "converged" => result.converged, "solve_s" => _cal_round(result.solve_time_s; digits = 2),
+        ),
+    ]
+    if result.converged
+        check["windows"][2]["estimate"] = Dict("loss" => _cal_round.(result.loss), "friction" => _cal_round.(result.friction))
+    end
+    return check
+end
+
+function _cal_findings(net, hist, identifiability, seasonal)
+    finest = identifiability[end]
+    findings = String[
+        "All data is synthetic. The network is a synthetic $(length(net.junctions))-junction campus, not the 132-junction demo campus shown elsewhere on this site.",
+        "Coefficients are estimated per pipe group, not per pipe: at most $(finest["pipe_directions_resolved_12_months"]) of $(finest["pipe_coefficients"]) per-pipe directions are resolved by $(finest["tags"]) tags.",
+        "Condensate-return coefficients are not estimated. They are held at nominal and would need their own condensate-side tags.",
+        "Recovery error is measured against the length-weighted mean of the true pipe coefficients in each group, and pipes in a group differ by a seeded $(100 * CampusSteam.TRUE_PIPE_SPREAD)% spread. In separate diagnostic runs that are not part of this build, this spread kept the error from falling as months of data were added, so more history alone does not buy more accuracy here.",
+    ]
+    if get(seasonal, "run", false) && haskey(seasonal["windows"][2], "estimate")
+        first_month, seventh = seasonal["windows"][1]["estimate"], seasonal["windows"][2]["estimate"]
+        push!(findings, "The steam-mains friction multiplier was estimated at $(first_month["friction"][1]) from month 1 and $(seventh["friction"][1]) from month 7, against a true group mean of $(seasonal["true_friction_multiplier"][1]).")
+    end
+    return findings
+end
+
 function _cal_identifiability(net, hist)
     sim = ForwardSimulator(net)
     report = identifiability_analysis(
@@ -176,7 +233,7 @@ function _cal_chart(grid)
     isempty(series) && return nothing
     return Dict(
         "title" => "Coefficient recovery error against number of tags",
-        "subtitle" => "Synthetic data. Largest relative error over the estimated steam-side coefficient groups.",
+        "subtitle" => "Synthetic data. Largest relative error over the estimated steam-side coefficient groups. More months do not keep reducing it; see the findings.",
         "x_label" => "Tags used",
         "y_label" => "Largest recovery error (%)",
         "x_scale" => "linear",
@@ -260,9 +317,12 @@ function run_calibration(outdir; points = CAL_CI_POINTS, budget_s = CAL_BUDGET_S
 
     gpu_outcome = Dict{String, Any}("attempted" => false, "reason" => "Disabled for this run.")
     if gpu
-        limit = max(budget_s - elapsed() - 10.0, 15.0)
+        limit = clamp(budget_s - elapsed() - 10.0, 15.0, 90.0)
         gpu_outcome = _cal_gpu_attempt(hist, net, series, nominal_state, 25, 1, limit)
     end
+    january = get(cells, (25, 1), Dict{String, Any}())
+    seasonal = _cal_seasonal_check(hist, net, series, january, budget_s - elapsed() - 5.0)
+    println("calibration: seasonal check run = $(seasonal["run"])")
 
     categories = unique(t.category for t in hist.tags)
     group_names = hist.groups.names
@@ -273,6 +333,14 @@ function run_calibration(outdir; points = CAL_CI_POINTS, budget_s = CAL_BUDGET_S
             "junctions" => length(net.junctions), "pipes" => length(net.pipes), "loads" => length(net.loads),
             "description" => "Synthetic 40-junction campus from the repository's generator.",
         ),
+        "network_used" => Dict(
+            "name" => "Synthetic $(length(net.junctions))-junction campus",
+            "generator_call" => "scaled_campus($(length(net.junctions)))",
+            "is_demo_campus" => false,
+            "note" => "The calibration study does not use the 132-junction demo campus.",
+        ),
+        "findings" => _cal_findings(net, hist, identifiability, seasonal),
+        "seasonal_check" => seasonal,
         "historian" => Dict(
             "format" => split(HISTORIAN_HEADER, ','),
             "hours" => hist.hours,

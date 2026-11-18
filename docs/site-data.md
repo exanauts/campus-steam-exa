@@ -162,6 +162,9 @@ time from a simulated network whose true coefficients are known, and is deleted 
 | `synthetic` | Bool | Always `true` |
 | `data_note` | String | Statement that the data is synthetic |
 | `network` | Object | `junctions`, `pipes`, `loads`, `description` |
+| `network_used` | Object | `name`, `generator_call`, `is_demo_campus` (always `false`), `note` |
+| `findings` | Array of String | Statements the site must show with these results |
+| `seasonal_check` | Object | The 25-tag, one-month fit in month 1 and month 7, see below |
 | `historian` | Object | `format` (column names), `hours`, `tags`, `rows`, `file_bytes`, `tag_hours`, `good`, `excluded_bad`, `excluded_uncertain`, `excluded_blank`, `absent`, `good_percent` |
 | `true_coefficients` | Object | `groups`, `estimated` (Bool per group), `loss_multiplier`, `friction_multiplier` (per group), `pipe_spread_percent` |
 | `tags_by_category` | Object | For each category, a list of `name`, `unit`, `description` |
@@ -203,6 +206,41 @@ coefficients with a predicted standard deviation below 10%), `pipe_coefficients`
 **`gpu`** has `attempted`, and `reason` when no attempt was made. After an attempt it has `tags`, `months`,
 `wall_limit_s`, `device` and either the keys of a grid cell or `run = false`, `converged = false`, `reason`
 and `error_message`.
+
+**`seasonal_check`** has `run`, `tags`, `months`, `groups`, `true_loss_multiplier` and
+`true_friction_multiplier`. When `run` is `true`, `windows` lists `label`, `first_hour`, `solver_status`,
+`converged`, `solve_s` and, if converged, `estimate`. When `run` is `false`, `reason` says why.
+
+### Why recovery error does not keep falling with more data
+
+These are local diagnostic runs, not part of the site build, and the site shows none of these numbers.
+Each uses 25 tags and a 12-month synthetic file, and each cell is the largest relative error in percent
+over the four estimated groups. All 26 solves ended with `SOLVE_SUCCEEDED`. The site build generates a
+24-month file, and the communication gaps depend on the file length, so its results differ slightly from
+this baseline: the same fit at 3 months gives 1.149 there and 1.065 here.
+
+| Run | What differs from the baseline | 1 month | 3 months | 6 months | 12 months |
+|---|---|---|---|---|---|
+| Baseline | Nothing | 1.668 | 1.065 | 2.144 | 3.052 |
+| Condensate at truth | Condensate multipliers fixed at their true values | 1.668 | 1.065 | 2.144 | 3.052 |
+| Tolerance 1e-8 | Solver tolerance tightened from 1e-6 | not run | 1.063 | 2.142 | not run |
+| True heat prior | Building heat prior centered on the true heat | 1.590 | 1.246 | 2.361 | 3.214 |
+| No sensor noise | Tag values are exact | 1.961 | 1.583 | 2.047 | 2.699 |
+| No pipe spread | Pipes in a group share one true multiplier, condensate at truth | 2.256 | 0.998 | 1.256 | 1.030 |
+| No spread, no noise | Both removed | 0.003 | 0.006 | 0.006 | 0.016 |
+
+- **Cause.** The rise comes from the pipe-to-pipe spread inside each group. It persists without sensor
+  noise, and it disappears when the spread is removed.
+- **Ruled out.** Holding the condensate multipliers at nominal (estimates agree to all five reported
+  decimals), solver tolerance, and the building heat prior.
+- **Sensor noise** adds a separate error of about 1% that does not shrink between 3 and 12 months. Its
+  mechanism has not been isolated.
+- **Season.** Separate 3-month fits starting at months 0, 3, 6 and 9 give steam-mains friction multipliers
+  of 1.2417, 1.2075, 1.1874 and 1.2100 against a true group mean of 1.2551. That the group value acts as
+  an average whose weighting follows the flow pattern is an inference from these runs, not a direct
+  measurement.
+- **No estimator change was made.** A lumped condensate term would not help, because the condensate
+  multipliers do not affect these results. Finer coefficient groups were not tried.
 
 ### `tag_template.csv`
 
