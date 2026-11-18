@@ -119,7 +119,9 @@ end
         @test all(0.05 <= p.diameter_m <= 1.2 for p in side_pipes(net, "steam"))
         @test all(0.05 <= p.diameter_m <= 1.2 for p in side_pipes(net, "water"))
         @test all(0.009 <= p.friction_factor <= 0.03 for p in net.pipes)
-        @test all(1.0 <= p.heat_loss_W_per_m2K <= 2.0 for p in net.pipes)
+        @test all(0.31 <= p.heat_loss_W_per_m2K <= 1.41 for p in side_pipes(net, "steam"))
+        @test all(p.heat_loss_W_per_m2K * pi * p.diameter_m >= 0.18 for p in side_pipes(net, "steam"))
+        @test all(0.155 <= p.heat_loss_W_per_m2K <= 0.195 for p in side_pipes(net, "water"))
         @test all(0.3e6 <= l.design_heat_W <= 4.5e6 for l in net.loads)
         design = sum(l.design_heat_W for l in net.loads)
         @test net.plant.rating_W >= 1.3 * design

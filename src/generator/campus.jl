@@ -16,7 +16,9 @@
 #                           0.4 times the steam main they run beside
 #   Steam velocity          sized for at most 35 m/s, condensate for at most 1.5 m/s
 #   Darcy friction factor   about 0.01-0.03 (rough commercial steel, 5 % spread)
-#   Heat-loss coefficient   1.0-2.0 W/(m2 K) on the pipe surface
+#   Heat-loss coefficient   steam 0.35 W/(m2 K) and condensate 0.175 W/(m2 K) on the pipe
+#                           surface, each with a 10 % spread; small steam pipes lose at least
+#                           0.20 W/(m K) per metre. See `_STEAM_HEAT_LOSS_U`.
 #   Condensate pumps        150-300 kPa at buildings, 400 kPa on the plant return
 #   Plant rating            at least 1.35 times the total design heat
 #   Boiler ramp limit       25 % of rating per hour
@@ -49,6 +51,22 @@ const _STEAM_SIZING = (density = 4.5, velocity = 35.0, budget_Pa = 2.0e5, min_ma
 const _WATER_DENSITY = 950.0
 const _WATER_VELOCITY = 1.5
 const _WATER_DIAMETER_RATIO = 0.4
+
+# Overall heat-transfer coefficients, W/(m2 K) of pipe surface. Heat loss in the model is sensible
+# cooling only, so the steam that reaches a building must stay above 100 C on superheat alone. These
+# values keep lightly loaded mains within that limit at part load. Larger values force the plant to
+# overfire and release excess heat at the buildings (see docs/model-notes.md).
+const _STEAM_HEAT_LOSS_U = 0.35
+const _WATER_HEAT_LOSS_U = 0.175
+const _HEAT_LOSS_SPREAD = 0.10
+# Insulation on a small pipe cannot be arbitrarily thick, so its loss per metre has a lower limit.
+const _STEAM_MIN_LINE_LOSS_W_PER_MK = 0.20
+
+_steam_heat_loss_u(d) = max(_STEAM_HEAT_LOSS_U, _STEAM_MIN_LINE_LOSS_W_PER_MK / (pi * d))
+
+# Every main can carry at least 15 % of the campus flow during an outage, up to this flow. Without
+# the cap, large campuses get oversized mains that run nearly empty and cool the steam too far.
+const _MAIN_FLOW_FLOOR_KG_S = 6.0
 
 # Block types of the demo campus, south to north (rows) and west to east (columns).
 const _DEMO_BLOCKS = ["housing" "classroom" "critical" "housing";
@@ -125,7 +143,8 @@ function _size_side!(draft::Vector{_DraftPipe}, n::Int, root::Int, demand_kg_s::
         _, phi = _solve_hydraulics(n, us, vs, r, injection, root)
         for (e, p) in enumerate(draft)
             flow = p.role == :feeder ? total :
-                   p.role == :main ? max(1.5 * abs(phi[e]), 0.15 * total) : abs(phi[e])
+                   p.role == :main ? max(1.5 * abs(phi[e]), min(0.15 * total, _MAIN_FLOW_FLOOR_KG_S)) :
+                   abs(phi[e])
             d_velocity = sqrt(4 * flow / (pi * sizing.density * sizing.velocity))
             f = _fully_rough_friction(p.diameter_m)
             d_gradient = (8 * f * flow^2 / (pi^2 * sizing.density * target_gradient))^(1 / 5)
@@ -254,7 +273,8 @@ function _build_campus(nx::Int, ny::Int, n_loads::Int, seed::Integer; demo::Bool
     for p in steam
         p.friction = round(_fully_rough_friction(p.diameter_m) * _uniform!(sizing_rng, 0.95, 1.05);
                            digits = 5)
-        p.heat_loss = round(_uniform!(sizing_rng, 1.0, 2.0); digits = 3)
+        p.heat_loss = round(_steam_heat_loss_u(p.diameter_m) *
+                            _uniform!(sizing_rng, 1 - _HEAT_LOSS_SPREAD, 1 + _HEAT_LOSS_SPREAD); digits = 4)
     end
     for (p, s) in zip(water, steam)
         if p.role == :lateral
@@ -268,7 +288,8 @@ function _build_campus(nx::Int, ny::Int, n_loads::Int, seed::Integer; demo::Bool
             p.diameter_m = round(_WATER_DIAMETER_RATIO * s.diameter_m; digits = 4)
             p.friction = s.friction
         end
-        p.heat_loss = round(_uniform!(sizing_rng, 1.0, 2.0); digits = 3)
+        p.heat_loss = round(_WATER_HEAT_LOSS_U *
+                            _uniform!(sizing_rng, 1 - _HEAT_LOSS_SPREAD, 1 + _HEAT_LOSS_SPREAD); digits = 4)
         # Condensate pumps sit where the flow direction can never change: at each
         # building's receiver and on the return into the plant.
         p.boost_Pa = p.role == :feeder ? 400e3 :

@@ -64,6 +64,30 @@ The steam-side temperature lower bound is 100 C at every steam junction. The pap
 temperatures at 80 C and requires 100 C at load inlets. Temperature only falls along a pipe and all
 steam ends at a load, so the tighter bound is implied.
 
+### The temperature integral in the steam pressure drop
+
+Eq. (14) needs the integral of temperature along the pipe. It is usually written with the inlet and
+outlet temperatures, as `T_amb * L + (c * phi / gamma) * (T_in - T_out)`. That form is exact only
+where the decay law (7) holds. While the solver is away from that point, any error in `T_out` is
+multiplied by `c * phi / gamma`, so a well-insulated pipe turns a small temperature error into a
+large, possibly negative, friction term.
+
+The model therefore substitutes the decay law into the integral and uses
+`T_amb * L + (c * phi / gamma) * (T_in - T_amb) * (1 - exp(-L * gamma / (c * phi)))`. The two forms
+are equal at every feasible point, so the physics is unchanged. `physical_residuals` still checks
+each solution against the first form.
+
+The effect on convergence was measured over 17 demand levels per campus on trial data with low heat
+loss coefficients, on three seeds for four trial coefficient sets (204 solves, 400 iteration limit):
+
+| Steam pressure row | Solved to optimality |
+|---|---|
+| Written with `T_out` | 150 of 204 |
+| Written with the decay law | 204 of 204 |
+
+With the `T_out` form, changing the coefficient by 1% was enough to turn converged cases into
+failures at the 1000 iteration limit.
+
 ### Pressures in Pa next to powers in W
 
 Variables are scaled by fixed references: pressure 1e5 Pa, temperature 100 K, flow 1 kg/s and power
@@ -87,7 +111,7 @@ written instead on the plant edge alone, from the plant's flow and its inlet and
 temperatures, and defines a `plant_power` variable whose upper bound is the rating. The row has 4
 nonzeros on every network. The network-wide coupling is carried by the sparse balance rows.
 
-On the demo campus (1008 variables, 868 constraints, 3071 Jacobian nonzeros) the densest Jacobian
+On the demo campus (1008 variables, 868 constraints, 2993 Jacobian nonzeros) the densest Jacobian
 row has 16 nonzeros. Only the junction balances vary in length, and they grow with junction degree
 rather than network size, so the plant adds no dense row or column to the KKT system.
 
@@ -119,38 +143,36 @@ same residuals as any other solve. The approximation is in the search: the direc
 heuristic and is not proven optimal. A pump on a pipe running against its installed direction gives
 no boost.
 
-Scanning the 66 single loop-pipe outages at 120 sampled hours found 1600 outage-hour pairs, across
+Scanning the 66 single loop-pipe outages at 120 sampled hours found 1636 outage-hour pairs, across
 24 outages, where the demand-based and design-based orientations differ. On 16 of those pairs, spaced
 evenly through the list:
 
 | Result on the 16 pairs | Design orientation only | `solve_oriented` |
 |---|---|---|
-| Converged | 15 | 16 |
-| Lower objective than the other method | 0 | 9, counting the pair where design orientation failed |
-| Same objective as the other method | 7 | 7 |
+| Converged | 16 | 16 |
+| Lower objective than the other method | 0 | 13 |
+| Same objective as the other method | 3 | 3 |
 
-The objective differences are large in some cases, up to a factor of 3.6 (pipe 104 out at hour
-4600). The test suite covers pipe 103 out at hour 2629, where design orientation alone reached the
-500 iteration limit and `solve_oriented` converged in 88 iterations with no shed load.
+The objective differences are large in some cases, up to a factor of 2.1 (pipe 79 out at hour
+5439). The test suite covers pipe 103 out at hour 2629, where `solve_oriented` converges in 42
+iterations with no shed load and one pipe reversed.
 
 ## Demo campus results
 
-Solved with the default options at the design heat of 79.695 MW, with the tolerance at 1e-8. The
-CPU runs used one thread and the GPU runs one NVIDIA H200. Each backend was solved three times in
-one session. Solve times exclude the first run, which includes compilation (7.4 s on CPU and 60.6 s
-on GPU).
+Solved with the default options at the design heat of 79.695 MW, with the tolerance at 1e-8, on the
+CPU with one thread. Solve times exclude the first run, which includes compilation.
 
-| Quantity | CPU | GPU |
-|---|---|---|
-| Status | `SOLVE_SUCCEEDED` | `SOLVE_SUCCEEDED` |
-| Objective (W) | 1946093.89 | 1946092.62 |
-| Iterations | 36 | 38 to 39 |
-| Solve time after compilation (s) | 0.037 to 0.038 | 0.143 to 0.365 |
-| Scaled constraint violation | 5.1e-12 | 4.7e-12 to 5.0e-12 |
-| Energy closure (W) | 5.2e-7 | 0.42 |
+| Quantity | CPU |
+|---|---|
+| Status | `SOLVE_SUCCEEDED` |
+| Objective (W) | 1250425.89 |
+| Iterations | 51 |
+| Solve time after compilation (s) | 0.053 |
+| Scaled constraint violation | 1.1e-12 |
+| Energy closure (W) | -2.4e-8 |
 
-The plant output is 82.61 MW, with 2.22 MW lost in pipes, 0.70 MW of excess heat at one load and no
-shed load. The GPU objective differs from the CPU objective by a relative 6.5e-7.
+The plant output is 80.06 MW, with 0.36 MW lost in pipes, no excess heat and no shed load. GPU
+results have not been measured on this data.
 
 ## Verification against the reference code
 
@@ -164,38 +186,82 @@ was a one-off check and the upstream data is not stored in this repository.
 | Plant flow | 0.93 kg/s | 0.9285 kg/s |
 | Power lost in pipes | 17016.43 W | 17027.52 W |
 
-The objectives differ by a relative 1.0e-8.
+The objectives differ by a relative 1.0e-8. This comparison predates the rewritten temperature
+integral described under numerical hazards and has not been repeated since.
 
-## Part-load excess heat
+## Synthetic demo data
 
-The demo campus releases a large amount of excess heat at part load. The model follows the paper in
-treating heat loss from a steam pipe as sensible cooling, with no condensation in the pipe. The
-likely mechanism is that steam must still reach every load at 100 C or above, so a lightly loaded
-network keeps its flow high, and the steam that flow carries has to condense at the loads. The
-table supports this: the excess disappears at part load when the heat loss coefficient is lowered.
+All network data is synthetic and describes the fictional Example University. It does not describe
+any real campus.
 
-Intact demo campus, every load scaled by the same factor:
+| Quantity | Value |
+|---|---|
+| Plant supply | 1.0 MPa, 189.85 C, which is also the steam temperature limit |
+| Steam pipe heat loss | 0.35 W/(m2 K) of pipe surface, and at least 0.20 W/(m K) per metre, with a 10% spread |
+| Condensate pipe heat loss | 0.175 W/(m2 K) of pipe surface, with a 10% spread |
+| Steam line coefficient on the demo campus | 0.18 to 0.68 W/(m K), median 0.215 |
+| Plant rating | 110 MW from 4 boilers, 82.5 MW with one boiler out |
+| Design heat | 79.7 MW |
+| Peak demand | 87.5 MW in the cold snap, 76.1 MW outside it |
 
-| Share of design heat | Demand (MW) | Excess, demo heat loss (MW) | Excess, paper heat loss (MW) |
-|---|---|---|---|
-| 100% | 79.7 | 0.70 | not converged in 1000 iterations |
-| 75% | 59.8 | 1.55 | 0.00 |
-| 50% | 39.8 | 3.22 | 0.00 |
-| 35% | 27.9 | 6.37 | 0.00 |
-| 25% | 19.9 | 10.11 | 0.00 |
+With one boiler out, the plant cannot meet the cold-snap peak and sheds 5.36 MW. Outside the cold
+snap it meets the peak with one boiler out.
 
-"Demo heat loss" is the generator's coefficient, with a median of 0.648 W/(m K) on steam pipes.
-"Paper heat loss" replaces it with the paper's 0.1 W/(m K) on steam pipes and 0.05 W/(m K) on water
-pipes. With the demo coefficients the plant outlet sits at its 189.85 C limit in all five cases.
+The steam coefficients correspond to about 60 to 190 mm of insulation with a conductivity of
+0.04 W/(m K). The paper uses 0.1 W/(m K) on steam pipes, which is lower than these values.
 
-Treat excess heat at part load as an artifact of this modeling choice combined with the demo's heat
-loss coefficients, and not as a prediction of real plant behavior.
+### Part-load results
+
+Intact demo campus with every load scaled by the same factor, and the cold-snap peak:
+
+| Case | Demand (MW) | Plant outlet (C) | Excess (MW) | Excess share of demand | Pipe loss (MW) | Pipe loss share of plant output |
+|---|---|---|---|---|---|---|
+| Cold-snap peak | 87.5 | 116.76 | 0.00 | 0.00% | 0.36 | 0.41% |
+| 100% of design | 79.7 | 118.19 | 0.00 | 0.00% | 0.36 | 0.45% |
+| 75% | 59.8 | 125.06 | 0.00 | 0.00% | 0.38 | 0.63% |
+| 50% | 39.8 | 140.43 | 0.00 | 0.00% | 0.42 | 1.05% |
+| 35% | 27.9 | 163.69 | 0.00 | 0.00% | 0.49 | 1.71% |
+| 25% | 19.9 | 189.85 | 0.05 | 0.26% | 0.55 | 2.68% |
+
+Excess heat appears when lightly loaded steam mains cannot stay above 100 C. The plant then sends
+more steam than the buildings need, and the surplus is released at the loads. At 25% of design heat
+the plant outlet has reached its temperature limit, so lower demand or higher heat loss raises the
+excess. Other results to keep in mind:
+
+- Other seeds change the layout. Seed 3 reaches 3.97% excess across 16 load levels from 25% to 100%
+  of design heat and its cold-snap peak.
+- Outages can exceed 1%. Of 17 sampled single-pipe outages, the highest excess was 1.19% of demand.
+
+### Scaled campuses
+
+`scaled_campus` keeps total design heat at or below 250 MW while the pipe network keeps growing, so
+large campuses have more pipe per unit of steam. The table compares the smallest possible steam pipe
+loss, with all steam at 100 C, against the superheat the plant can supply at design flow. Solves use
+the default options with a limit of 1000 iterations.
+
+| Junctions | Steam pipe (km) | Minimum loss / available superheat | Status at 100% | Excess at 100% | Excess at 50% | Excess at 25% |
+|---|---|---|---|---|---|---|
+| 134 | 13.1 | 0.03 | Optimal | 0.00% | 0.18% | 4.24% |
+| 500 | 53.3 | 0.06 | Optimal | 0.19% | 2.00% | 12.46% |
+| 1,000 | 113.2 | 0.13 | Optimal | 0.87% | 12.34% | 52.37% |
+| 2,000 | 224.4 | 0.28 | Optimal | 17.91% | 74.10% | 194.49% |
+| 4,000 | 461.2 | 0.58 | Not converged | not available | not measured | not measured |
+| 10,000 | 1139.7 | 1.56 | Not converged | not available | not measured | not measured |
+
+The 2,000-junction solves at 50% and 25% stopped at MadNLP's acceptable tolerance. At 10,000
+junctions the minimum loss exceeds the available superheat, so this physics has no operating point
+at design flow without excess heat. Use the large campuses to study solver scaling, not heat
+delivery.
 
 ## Modeling limits
 
-- Saturation is fixed at 100 C, as in the paper, regardless of pressure. Real steam at 2.7 bar
-  saturates near 130 C, so the model can carry "steam" below its true saturation temperature.
-- Heat lost from steam pipes cools the steam and never condenses it.
+- Heat lost from a steam pipe only cools the steam. The model has no condensation in pipes, so it
+  has no condensate traps or drip legs.
+- Saturation is fixed at 100 C, as in the paper, regardless of pressure. Real steam at 1 MPa
+  saturates near 180 C, so the model can carry "steam" well below its true saturation temperature.
+- Because steam only has its superheat to lose, heat loss and part-load behavior are not predictions
+  of how a real steam network behaves. Excess heat at part load is a consequence of this modeling
+  choice.
 - Steam is an ideal gas with constant specific heat, and water is incompressible.
 - Friction factors are constants given per pipe, not functions of the Reynolds number.
 - The ambient temperature is one constant, fixed when the model is built.

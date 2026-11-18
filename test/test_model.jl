@@ -115,6 +115,22 @@ end
         @test sum(sol.load_shed_W) < 1.0
     end
 
+    @testset "demo campus part load stays within the excess-heat limit" begin
+        net = demo_campus()
+        design = [l.design_heat_W for l in net.loads]
+        for share in (1.0, 0.75, 0.5, 0.35, 0.25)
+            heat = share .* design
+            model = build_steam_model(net; heat_W = heat)
+            sol = solve_steam(model)
+            @test sol.status === :SOLVE_SUCCEEDED
+            check_residuals(model, sol)
+            audit = energy_audit(sol)
+            @test audit.excess_W <= 0.01 * sum(heat)
+            @test audit.shed_W < 1.0
+            @test audit.pipe_loss_W <= 0.05 * audit.plant_output_W
+        end
+    end
+
     @testset "outage with a reversed loop pipe" begin
         # With loop pipe 103 out, the flow in another loop pipe runs against its design direction
         # at hour 2629. A fixed design orientation cannot represent that flow.
