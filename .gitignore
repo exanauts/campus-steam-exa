@@ -17,3 +17,6 @@ site/plots/
 # Local
 .claude/
 *.log
+
+# Library-style root environment: resolved fresh by the test workflow
+/Manifest.toml

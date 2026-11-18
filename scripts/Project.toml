@@ -1,0 +1,22 @@
+[deps]
+CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
+CUDSS = "45b445bb-4962-46a0-9369-b4df9d0f772e"
+CampusSteam = "6e451196-e023-4038-bfd0-4af1b621d80c"
+Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
+ExaModels = "1037b233-b668-4ce9-9b63-f9f681f55dd2"
+JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
+MadNLP = "2621e9c9-9eb4-46b1-8089-e8c72242dfb6"
+MadNLPGPU = "d72a61cc-809d-412f-99be-fd81f4b8a598"
+Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
+
+[sources]
+CampusSteam = {path = ".."}
+
+[compat]
+CUDA = "6"
+CUDSS = "1"
+ExaModels = "0.15"
+JSON = "1"
+MadNLP = "0.11"
+MadNLPGPU = "0.11"
+julia = "1.13"
