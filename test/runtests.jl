@@ -9,3 +9,4 @@ end
 include("test_generator.jl")
 include("test_model.jl")
 include("test_multiperiod.jl")
+include("test_validation.jl")
