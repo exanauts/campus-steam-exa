@@ -212,6 +212,8 @@ function compile_steam_data(
                 (area(p)^2 * p.diameter_m * pref^2),
             b1 = tamb * p.length_m,
             b2 = cs * fref * tref / gamma[e],
+            a = p.length_m * gamma[e] / (cs * fref),
+            tau_amb = tamb / tref,
         ) for (e, p) in enumerate(net.pipes) if pipe_is_steam[e]
     ]
     water_ids = [e for e in 1:np if !pipe_is_steam[e]]

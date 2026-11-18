@@ -49,10 +49,15 @@ function add_steam_constraints(core, data::SteamData, vars, demand)
         for t in data.decay
     )
 
+    # The temperature integral of Eq. (14) uses the inlet-outlet difference implied by the decay law.
+    # Writing it with `temp_out` instead is equal at a feasible point, but multiplies any decay
+    # residual by `c * flow / gamma`, which derails the solver on well-insulated pipes.
     core, steam_pressure = add_con(
         core,
         pressure[t.to]^2 - pressure[t.from]^2 +
-            t.k * flow[t.edge]^2 * (t.b1 + t.b2 * flow[t.edge] * (temp_in[t.edge] - temp_out[t.edge]))
+            t.k * flow[t.edge]^2 * (
+                t.b1 + t.b2 * flow[t.edge] * (temp_in[t.edge] - t.tau_amb) * (1 - exp(-t.a / flow[t.edge]))
+            )
         for t in data.steam_pipes
     )
 
