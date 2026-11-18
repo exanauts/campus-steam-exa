@@ -10,7 +10,7 @@ Scaled, backend-agnostic model data produced by [`compile_steam_data`](@ref). Ho
 generator arrays, variable bounds and starting point. Quantities are in the scaled units set
 by the `SteamModelOptions` references.
 """
-struct SteamData{M, EI, EO, MX, D, S, W, P, L, LP, PL, O}
+struct SteamData{M, EI, EO, MX, D, S, W, P, L, LP, PL, O, PO}
     options::SteamModelOptions
     njunction::Int
     npipe::Int
@@ -46,6 +46,7 @@ struct SteamData{M, EI, EO, MX, D, S, W, P, L, LP, PL, O}
     load_pressure::LP
     plant::PL
     objective_loads::O
+    plant_objective::PO
     bounds::NamedTuple
     start::NamedTuple
 end
@@ -237,13 +238,16 @@ function compile_steam_data(
         for l in 1:nl
     ]
     load_pressure = [(steam = l.steam_junction, water = l.water_junction) for l in net.loads]
-    plant_row = [(edge = ne, a_s = a_s, a_l = a_l, a_w = a_w, tau_sat = tau_sat)]
+    plant_row = [(edge = ne, power = 1, a_s = a_s, a_l = a_l, a_w = a_w, tau_sat = tau_sat)]
     objective_loads = [
         (
             load = l.id,
             shed = opt.shed_weight * l.priority_weight,
             excess = opt.excess_weight,
         ) for l in net.loads
+    ]
+    plant_objective = [
+        (steam = plant.steam_junction, water = plant.water_junction, edge = ne, power = 1),
     ]
 
     # Bounds.
@@ -284,7 +288,8 @@ function compile_steam_data(
         Int[l.steam_junction for l in net.loads], Int[l.water_junction for l in net.loads],
         plant.steam_junction, plant.water_junction, rating_W, junction_is_steam, mass_row,
         demand_W ./ qref, mass_terms, energy_in, energy_out, mixing, decay, steam_pipes,
-        water_pipes, pumps, loads, load_pressure, plant_row, objective_loads, bounds, start,
+        water_pipes, pumps, loads, load_pressure, plant_row, objective_loads, plant_objective,
+        bounds, start,
     )
 end
 

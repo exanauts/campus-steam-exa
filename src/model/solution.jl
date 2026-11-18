@@ -164,8 +164,11 @@ expressions. Fields hold one vector per family: `mass_kg_per_s`, `energy_W`, `mi
 `decay_K`, `steam_pressure_Pa2`, `water_pressure_Pa`, `load_heat_W`, `load_pressure_Pa` (violation
 of steam pressure at or above water pressure) and `plant_cap_W` (violation of the rating).
 """
-function physical_residuals(model::SteamModel, sol::SteamSolution)
-    data, opt = model.data, model.data.options
+physical_residuals(model::SteamModel, sol::SteamSolution) =
+    _physical_residuals(model.data, sol, model.data.plant_rating_W)
+
+function _physical_residuals(data::SteamData, sol::SteamSolution, rating_W)
+    opt = data.options
     np, nl, nj = data.npipe, data.nload, data.njunction
     cs, cw, cl = opt.cp_steam_J_per_kgK, opt.cp_water_J_per_kgK, opt.latent_heat_J_per_kg
     tsat, tamb = opt.saturation_temp_K, opt.ambient_temp_K
@@ -243,7 +246,7 @@ function physical_residuals(model::SteamModel, sol::SteamSolution)
         water_pressure_Pa = water_pressure,
         load_heat_W = load_heat,
         load_pressure_Pa = load_pressure,
-        plant_cap_W = [max(0.0, sol.plant_output_W - data.plant_rating_W)],
+        plant_cap_W = [max(0.0, sol.plant_output_W - rating_W)],
     )
 end
 

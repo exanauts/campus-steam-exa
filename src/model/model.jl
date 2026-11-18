@@ -7,9 +7,13 @@ include("data.jl")
 include("formulation.jl")
 include("solution.jl")
 include("orientation.jl")
+include("multiperiod.jl")
 
 export SteamModelOptions, SteamData, SteamModel, SteamSolution, OrientedSolve
 export compile_steam_data, build_steam_model, solve_steam, extract_solution, set_demand!
 export add_steam_variables, add_steam_constraints, add_steam_objective
 export physical_residuals, energy_audit
 export orient_for_demand, solve_oriented
+export MultiPeriodData, MultiPeriodModel, MultiPeriodSolution, OrientedMultiPeriodSolve
+export compile_multiperiod_data, build_multiperiod_model, solve_multiperiod
+export extract_multiperiod_solution, period_solution, orient_periods, solve_multiperiod_oriented

@@ -19,7 +19,7 @@ function add_steam_variables(core, data::SteamData)
     core, boost = add_var(core, data.npump; lvar = b.boost[1], uvar = b.boost[2], start = s.boost)
     core, shed = add_var(core, data.nload; lvar = 0.0, start = 0.0)
     core, excess = add_var(core, data.nload; lvar = 0.0, start = 0.0)
-    core, plant_power = add_var(core, 1; lvar = b.plant_power[1], uvar = b.plant_power[2], start = s.plant_power)
+    core, plant_power = add_var(core, length(data.plant); lvar = b.plant_power[1], uvar = b.plant_power[2], start = s.plant_power)
     return core, (; pressure, temperature, flow, temp_in, temp_out, boost, shed, excess, plant_power)
 end
 
@@ -85,7 +85,7 @@ function add_steam_constraints(core, data::SteamData, vars, demand)
         core,
         flow[t.edge] * (
             t.a_w * (t.tau_sat - temp_in[t.edge]) + t.a_l + t.a_s * (temp_out[t.edge] - t.tau_sat)
-        ) - plant_power[1]
+        ) - plant_power[t.power]
         for t in data.plant
     )
 
@@ -119,19 +119,20 @@ function add_steam_objective(core, data::SteamData, vars; scale = 1.0)
 
     plant_terms = [
         (
-            steam = data.plant_steam,
-            water = data.plant_water,
-            edge = data.nedge,
+            steam = t.steam,
+            water = t.water,
+            edge = t.edge,
+            power = t.power,
             w_p = scale * opt.pressure_weight * opt.pressure_ref_Pa / qref,
             w_f = scale * opt.flow_weight * opt.flow_ref_kg_per_s / qref,
             w_t = scale * opt.temperature_weight * opt.temperature_ref_K / qref,
             w_q = scale * power * opt.plant_power_weight,
-        ),
+        ) for t in data.plant_objective
     ]
     core, _ = add_obj(
         core,
         t.w_p * (pressure[t.steam] + pressure[t.water]) + t.w_f * flow[t.edge] +
-            t.w_t * temp_out[t.edge] + t.w_q * plant_power[1]
+            t.w_t * temp_out[t.edge] + t.w_q * plant_power[t.power]
         for t in plant_terms
     )
     return core
