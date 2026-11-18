@@ -5,7 +5,9 @@ version = "0.1.0"
 
 [deps]
 ExaModels = "1037b233-b668-4ce9-9b63-f9f681f55dd2"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 MadNLP = "2621e9c9-9eb4-46b1-8089-e8c72242dfb6"
+SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 
 [weakdeps]
 CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
@@ -19,8 +21,10 @@ CampusSteamGPUExt = ["CUDA", "CUDSS", "MadNLPGPU"]
 CUDA = "6"
 CUDSS = "1"
 ExaModels = "0.15"
+LinearAlgebra = "1"
 MadNLP = "0.11"
 MadNLPGPU = "0.11"
+SparseArrays = "1"
 Test = "1"
 julia = "1.13"
 

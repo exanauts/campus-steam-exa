@@ -13,6 +13,11 @@ Each pipe's `from -> to` is its nominal flow direction. Models may assume flow i
 in that direction, which keeps `phi*abs(phi)` smooth. `orient_network` recomputes directions
 when a pipe is out of service, so a looped main can reroute without a reversible-flow model.
 
+`orient_network` directs pipes along the flow at the design heat of every load. It removes the
+out-of-service pipes and renumbers the remaining pipes contiguously in their original order;
+junction and load ids do not change. During an outage, a lightly loaded looped main can carry a
+small reverse flow at part load, so outage models must tolerate that on `is_loop` pipes.
+
 ## Files (one directory per network)
 
 ### `junctions.csv`

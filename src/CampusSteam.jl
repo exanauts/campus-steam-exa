@@ -9,6 +9,19 @@ module CampusSteam
 
 using ExaModels: ExaModels
 using MadNLP: MadNLP
+using LinearAlgebra: Symmetric, cholesky, cholesky!
+using SparseArrays: sparse
+
+# `Pipe` is not exported because it would clash with `Base.Pipe`; use `CampusSteam.Pipe`.
+export Junction, Load, Plant, CampusNetwork, LoadProfiles
+export demo_campus, scaled_campus, generate_profiles, orient_network
+export write_network, read_network, write_profiles, write_weather, read_profiles
+export validate_network, BUILDING_FOOTPRINT_M, DESIGN_OUTDOOR_TEMP_C
+
+include("network.jl")
+include("generator/rng.jl")
+include("generator/campus.jl")
+include("generator/profiles.jl")
 
 """
     gpu_extension_loaded()

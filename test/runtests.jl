@@ -5,3 +5,5 @@ using Test
     @test isdefined(CampusSteam, :gpu_extension_loaded)
     @test CampusSteam.gpu_extension_loaded() === false
 end
+
+include("test_generator.jl")
