@@ -7,3 +7,4 @@ using Test
 end
 
 include("test_generator.jl")
+include("test_model.jl")
