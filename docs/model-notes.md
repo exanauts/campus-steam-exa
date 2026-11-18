@@ -37,7 +37,8 @@ rows. The objective is Eq. (20), with each shed term multiplied by the load's `p
 
 Flow is non-negative in each pipe's nominal `from -> to` direction, as the network contract
 allows, so `phi*abs(phi)` is written as the smooth `phi^2`. A flow reversal is not representable
-in a solve. `orient_network` handles rerouting by recomputing directions before the model is built.
+within one solve, so reversals are handled by re-orienting pipes between solves. See
+[Flow reversal and outages](#flow-reversal-and-outages).
 
 ### `exp(-k/(c*phi*A))` with flow in the denominator
 
@@ -86,16 +87,70 @@ written instead on the plant edge alone, from the plant's flow and its inlet and
 temperatures, and defines a `plant_power` variable whose upper bound is the rating. The row has 4
 nonzeros on every network. The network-wide coupling is carried by the sparse balance rows.
 
-On a 45-load test network (934 variables, 830 constraints, 2822 Jacobian nonzeros) the densest
-Jacobian row has 14 nonzeros, and it comes from a junction balance. No row grows with network size,
-so the KKT system has no dense row or column from the plant.
+On the demo campus (1008 variables, 868 constraints, 3071 Jacobian nonzeros) the densest Jacobian
+row has 16 nonzeros. Only the junction balances vary in length, and they grow with junction degree
+rather than network size, so the plant adds no dense row or column to the KKT system.
 
 ### Redundant mass balance
 
 The network is a closed circuit, so the junction mass balances sum to zero identically. The row at
 the plant's water junction is dropped, and it holds implicitly. The equality Jacobian at the
-solution has full row rank on both networks checked: rank 57 of 57 on the small fixture and 785 of
-785 on the 45-load network.
+solution has full row rank on both networks checked: rank 57 of 57 on the small fixture and 823 of
+823 on the demo campus.
+
+## Flow reversal and outages
+
+With a loop pipe out of service, the flow in another loop pipe can run against its design direction
+at part load. A strict `phi >= 0` bound in the design direction can then distort the solution or
+prevent convergence. The model re-orients per solve instead of allowing reverse flow in the NLP. A
+smooth reversible formulation was rejected because the decay exponent is singular at zero flow and
+the pipe inlet temperature would have to switch with the flow direction.
+
+`solve_oriented` takes the network, the demand and the outage set, and does the following:
+
+1. It solves from two starting orientations: the hydraulic flow direction at this hour's demand
+   (`orient_for_demand`), and the design-load direction (`orient_network`).
+2. A loop pipe that finishes pinned at its minimum flow is flipped and the model solved again. A
+   flip is kept only if the solve converges with a lower objective.
+3. The converged result with the lowest objective is returned.
+
+**Accuracy.** No smoothing is involved, so each returned solution satisfies the same physics to the
+same residuals as any other solve. The approximation is in the search: the direction pattern is a
+heuristic and is not proven optimal. A pump on a pipe running against its installed direction gives
+no boost.
+
+Scanning the 66 single loop-pipe outages at 120 sampled hours found 1600 outage-hour pairs, across
+24 outages, where the demand-based and design-based orientations differ. On 16 of those pairs, spaced
+evenly through the list:
+
+| Result on the 16 pairs | Design orientation only | `solve_oriented` |
+|---|---|---|
+| Converged | 15 | 16 |
+| Lower objective than the other method | 0 | 9, counting the pair where design orientation failed |
+| Same objective as the other method | 7 | 7 |
+
+The objective differences are large in some cases, up to a factor of 3.6 (pipe 104 out at hour
+4600). The test suite covers pipe 103 out at hour 2629, where design orientation alone reached the
+500 iteration limit and `solve_oriented` converged in 88 iterations with no shed load.
+
+## Demo campus results
+
+Solved with the default options at the design heat of 79.695 MW, with the tolerance at 1e-8. The
+CPU runs used one thread and the GPU runs one NVIDIA H200. Each backend was solved three times in
+one session. Solve times exclude the first run, which includes compilation (7.4 s on CPU and 60.6 s
+on GPU).
+
+| Quantity | CPU | GPU |
+|---|---|---|
+| Status | `SOLVE_SUCCEEDED` | `SOLVE_SUCCEEDED` |
+| Objective (W) | 1946093.89 | 1946092.62 |
+| Iterations | 36 | 38 to 39 |
+| Solve time after compilation (s) | 0.037 to 0.038 | 0.143 to 0.365 |
+| Scaled constraint violation | 5.1e-12 | 4.7e-12 to 5.0e-12 |
+| Energy closure (W) | 5.2e-7 | 0.42 |
+
+The plant output is 82.61 MW, with 2.22 MW lost in pipes, 0.70 MW of excess heat at one load and no
+shed load. The GPU objective differs from the CPU objective by a relative 6.5e-7.
 
 ## Verification against the reference code
 
@@ -111,10 +166,36 @@ was a one-off check and the upstream data is not stored in this repository.
 
 The objectives differ by a relative 1.0e-8.
 
+## Part-load excess heat
+
+The demo campus releases a large amount of excess heat at part load. The model follows the paper in
+treating heat loss from a steam pipe as sensible cooling, with no condensation in the pipe. The
+likely mechanism is that steam must still reach every load at 100 C or above, so a lightly loaded
+network keeps its flow high, and the steam that flow carries has to condense at the loads. The
+table supports this: the excess disappears at part load when the heat loss coefficient is lowered.
+
+Intact demo campus, every load scaled by the same factor:
+
+| Share of design heat | Demand (MW) | Excess, demo heat loss (MW) | Excess, paper heat loss (MW) |
+|---|---|---|---|
+| 100% | 79.7 | 0.70 | not converged in 1000 iterations |
+| 75% | 59.8 | 1.55 | 0.00 |
+| 50% | 39.8 | 3.22 | 0.00 |
+| 35% | 27.9 | 6.37 | 0.00 |
+| 25% | 19.9 | 10.11 | 0.00 |
+
+"Demo heat loss" is the generator's coefficient, with a median of 0.648 W/(m K) on steam pipes.
+"Paper heat loss" replaces it with the paper's 0.1 W/(m K) on steam pipes and 0.05 W/(m K) on water
+pipes. With the demo coefficients the plant outlet sits at its 189.85 C limit in all five cases.
+
+Treat excess heat at part load as an artifact of this modeling choice combined with the demo's heat
+loss coefficients, and not as a prediction of real plant behavior.
+
 ## Modeling limits
 
 - Saturation is fixed at 100 C, as in the paper, regardless of pressure. Real steam at 2.7 bar
   saturates near 130 C, so the model can carry "steam" below its true saturation temperature.
+- Heat lost from steam pipes cools the steam and never condenses it.
 - Steam is an ideal gas with constant specific heat, and water is incompressible.
 - Friction factors are constants given per pipe, not functions of the Reynolds number.
 - The ambient temperature is one constant, fixed when the model is built.
@@ -128,6 +209,10 @@ model = build_steam_model(net; heat_W, plant_rating_W, options, backend)
 sol = solve_steam(model; print_level, tol, max_iter)   # other keywords go to madnlp
 sol = solve_steam(net; heat_W, plant_rating_W)         # builds and solves
 set_demand!(model, heat_W)                             # updates demand without a rebuild
+
+# Outages and part load: chooses pipe directions, then solves. Returns an OrientedSolve.
+result = solve_oriented(net; heat_W, out_of_service = [pipe_id])
+result.solution, result.net, result.reversed_pipes, result.source_flow_kg_per_s
 
 physical_residuals(model, sol)   # residual of each family in SI units, computed independently
 energy_audit(sol)                # plant output, delivered heat, pipe losses and closure
@@ -146,5 +231,5 @@ core = add_steam_objective(core, data, vars; scale = 1.0)
 `vars.plant_power[1]` is the natural variable for linking periods with a ramp limit.
 `extract_solution(model, result)` converts a MadNLP result to a `SteamSolution` for a `SteamModel`.
 
-`build_steam_model` accepts any object with the contract's field names, so the fixture in
-`test/fixtures/small_campus.jl` uses named tuples in place of the `CampusNetwork` structs.
+Pipe arrays in a `SteamSolution` follow the pipes of the network that was solved. After an outage
+those ids are renumbered, so use `result.source_pipe` to map them back to the input network.

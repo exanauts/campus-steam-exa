@@ -94,21 +94,49 @@ end
 
     @testset "rejects networks that break the contract" begin
         net = small_campus()
-        reversed = map(p -> p.id == 1 ? merge(p, (from = p.to, to = p.from)) : p, net.pipes)
-        @test_throws ArgumentError build_steam_model(merge(net, (; pipes = reversed)))
-        no_loss = map(p -> merge(p, (; heat_loss_W_per_m2K = 0.0)), net.pipes)
-        @test_throws ArgumentError build_steam_model(merge(net, (; pipes = no_loss)))
+        with_pipes(pipes) = CampusNetwork(net.junctions, pipes, net.loads, net.plant)
+        rebuilt(p; from = p.from, to = p.to, loss = p.heat_loss_W_per_m2K) = CampusSteam.Pipe(
+            p.id, p.side, from, to, p.length_m, p.diameter_m, p.friction_factor, loss,
+            p.max_pump_boost_Pa, p.is_loop,
+        )
+        reversed = [p.id == 1 ? rebuilt(p; from = p.to, to = p.from) : p for p in net.pipes]
+        @test_throws ArgumentError build_steam_model(with_pipes(reversed))
+        @test_throws ArgumentError build_steam_model(with_pipes([rebuilt(p; loss = 0.0) for p in net.pipes]))
         @test_throws ArgumentError build_steam_model(net; heat_W = [1.0e6])
     end
 
-    if isdefined(CampusSteam, :demo_campus)
-        @testset "demo campus" begin
-            net = CampusSteam.demo_campus()
-            model = build_steam_model(net)
-            sol = solve_steam(model)
-            @test sol.status === :SOLVE_SUCCEEDED
-            check_residuals(model, sol)
-            @test abs(energy_audit(sol).closure_W) < 10.0
-        end
+    @testset "demo campus" begin
+        net = demo_campus()
+        model = build_steam_model(net)
+        sol = solve_steam(model)
+        @test sol.status === :SOLVE_SUCCEEDED
+        check_residuals(model, sol)
+        @test abs(energy_audit(sol).closure_W) < 10.0
+        @test sum(sol.load_shed_W) < 1.0
+    end
+
+    @testset "outage with a reversed loop pipe" begin
+        # With loop pipe 103 out, the flow in another loop pipe runs against its design direction
+        # at hour 2629. A fixed design orientation cannot represent that flow.
+        net = demo_campus()
+        out, hour = 103, 2629
+        heat = generate_profiles(net; hours = hour).heat_W[hour, :]
+
+        design = orient_network(net; out_of_service = [out])
+        at_demand = orient_for_demand(net; heat_W = heat, out_of_service = [out])
+        @test length(at_demand.pipes) == length(net.pipes) - 1
+        @test any(a.from != d.from for (a, d) in zip(at_demand.pipes, design.pipes))
+
+        result = solve_oriented(net; heat_W = heat, out_of_service = [out], max_iter = 500)
+        @test result.solution.status === :SOLVE_SUCCEEDED
+        check_residuals(result.model, result.solution)
+        @test abs(energy_audit(result.solution).closure_W) < 10.0
+        @test sum(result.solution.load_shed_W) < 1.0
+
+        # The reversal is reported against the input network, and only on loop pipes.
+        @test !isempty(result.reversed_pipes)
+        @test all(net.pipes[e].is_loop for e in result.reversed_pipes)
+        @test all(result.source_flow_kg_per_s[result.reversed_pipes] .< 0)
+        @test result.source_flow_kg_per_s[out] == 0
     end
 end
