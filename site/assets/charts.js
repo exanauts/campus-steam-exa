@@ -17,7 +17,7 @@ const linTicks = (lo, hi, n = 5) => {
 
 // series: [{ name, color, points: [{ x, y, hollow, note }] }]. marker: { x, label }, passed only when measured.
 export function lineChart(container, spec) {
-  const { title, subtitle, xLabel, yLabel, series, xScale = "linear", yScale = "linear", marker = null, yFormat = compact } = spec;
+  const { title, subtitle, xLabel, yLabel, series, xScale = "linear", yScale = "linear", marker = null, yFormat = compact, labelEnds = null } = spec;
   const box = el("div", { class: "chart" }, container);
   el("h4", {}, box, title);
   if (subtitle) el("p", { class: "sub" }, box, subtitle);
@@ -62,6 +62,9 @@ export function lineChart(container, spec) {
       const pts = [...s.points].sort((a, b) => a.x - b.x);
       el("path", { class: "ln", stroke: s.color, d: pts.map((p, i) => `${i ? "L" : "M"}${sx(p.x).toFixed(1)} ${sy(p.y).toFixed(1)}`).join("") }, svg);
       pts.forEach((p) => el("circle", { cx: sx(p.x), cy: sy(p.y), r: 4.5, fill: p.hollow ? "var(--surface)" : s.color, stroke: p.hollow ? s.color : "var(--surface)", "stroke-width": 2 }, svg));
+      if (labelEnds && pts.length > 1) {
+        [pts[0], pts[pts.length - 1]].forEach((p) => el("text", { class: "dlabel", x: sx(p.x), y: sy(p.y) - 11, "text-anchor": "middle" }, svg, labelEnds(p)));
+      }
     });
     const cross = el("line", { class: "cross", y1: m.t, y2: m.t + ih, visibility: "hidden" }, svg);
     let idx = -1;

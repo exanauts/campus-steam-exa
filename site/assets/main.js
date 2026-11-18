@@ -1,7 +1,8 @@
-import { loadManifest, loadJSON, listed, dataUrl, normalizeNetwork, normalizeBenchmarks, normalizeCalibration, SCENARIO_DIR } from "./data.js";
-import { el, missing, compact, num } from "./format.js";
+import { loadManifest, loadJSON, listed, dataUrl, normalizeNetwork, normalizeBenchmarks, SCENARIO_DIR } from "./data.js";
+import { el, missing, compact } from "./format.js";
 import { lineChart } from "./charts.js";
 import { initHero } from "./hero.js";
+import { normalizeCalibration, renderCalibration, renderAsk, renderSample } from "./calibration.js";
 
 const $ = (id) => document.getElementById(id);
 const REPO = "https://github.com/exanauts/campus-steam-exa";
@@ -25,56 +26,6 @@ function renderFooter(info) {
   if (info.run_date) $("run-date").textContent = info.run_date;
   const hardware = [info.cpu_model, info.gpu_model].filter(Boolean).join(" / ");
   if (hardware) $("hardware").textContent = hardware;
-}
-
-function renderCalibration(cal) {
-  const host = $("calibration");
-  if (!cal || !cal.chart) return missing(host, " The calibration study has not been generated yet.");
-  host.replaceChildren();
-  if (cal.finding) el("p", { class: "lead" }, host, cal.finding);
-  const colors = ["var(--s1)", "var(--s2)"];
-  const c = cal.chart;
-  lineChart(el("div", { class: "charts" }, host), {
-    title: c.title || "Calibration result", subtitle: c.subtitle, xLabel: c.x_label, yLabel: c.y_label,
-    xScale: c.x_scale, yScale: c.y_scale,
-    series: c.series.map((s, i) => ({ name: s.name, color: colors[i % colors.length], points: s.x.map((x, k) => ({ x, y: s.y[k] })) })),
-  });
-}
-
-function renderAsk(cal) {
-  const host = $("ask-figures");
-  const ask = cal?.ask;
-  const items = ask ? [
-    ["Curated tags", ask.tag_count, (v) => `about ${num(v)}`],
-    ["History", ask.years, (v) => `about ${num(v)} years`],
-    ["Rows", ask.rows, (v) => `about ${num(v)}`],
-    ["File size", ask.size_label, (v) => v],
-  ].filter(([, v]) => v !== undefined && v !== null) : [];
-  host.replaceChildren();
-  if (!items.length) {
-    el("p", { class: "note" }, host, "Export size figures are not available in this build.");
-    return;
-  }
-  const dl = el("dl", { class: "stats" }, host);
-  items.forEach(([k, v, f]) => { const d = el("div", {}, dl); el("dt", {}, d, k); el("dd", {}, d, f(v)); });
-}
-
-function renderSample(cal) {
-  const body = $("sample-body");
-  const rows = cal?.sample?.length ? cal.sample : null;
-  const layout = [
-    { DateTime: "timestamp", TagName: "STEAM_HEADER_FLOW", Value: "reading", Quality: "Good" },
-    { DateTime: "timestamp", TagName: "STEAM_HEADER_FLOW", Value: "reading", Quality: "Bad" },
-    { DateTime: "timestamp", TagName: "STEAM_HEADER_TEMP", Value: "reading", Quality: "Good" },
-  ];
-  body.replaceChildren();
-  (rows || layout).forEach((r) => {
-    const good = String(r.Quality).toLowerCase() === "good";
-    const tr = el("tr", { class: good ? null : "bad" }, body);
-    [r.DateTime, r.TagName, r.Value, r.Quality].forEach((v) => el("td", {}, tr, String(v)));
-    el("td", {}, tr, good ? "Yes" : "Excluded");
-  });
-  $("sample-note").textContent = rows ? "Synthetic example rows." : "Layout only. Sample values are not available in this build.";
 }
 
 function renderTemplate() {
@@ -145,9 +96,9 @@ async function main() {
   ]);
   renderFooter(info);
   const cal = normalizeCalibration(calRaw);
-  await guarded($("calibration"), "The calibration result could not be drawn.", () => renderCalibration(cal));
-  await guarded($("ask-figures"), "The export figures could not be read.", () => renderAsk(cal));
-  await guarded(null, "sample", () => renderSample(cal));
+  await guarded($("calibration"), "The calibration result could not be drawn.", () => renderCalibration($("calibration"), cal, networkRaw?.junctions?.id?.length));
+  await guarded($("ask-figures"), "The export figures could not be read.", () => renderAsk($("ask-figures"), cal));
+  await guarded(null, "sample", () => renderSample($("sample-body"), $("sample-note"), cal));
   await guarded($("benchmarks"), "The measurements could not be drawn.", () => renderBenchmarks(normalizeBenchmarks(benchRaw)));
   await guarded($("map"), "The campus playback could not be drawn.", () => initHero(normalizeNetwork(networkRaw)));
 }

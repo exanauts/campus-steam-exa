@@ -108,16 +108,3 @@ export function normalizeBenchmarks(raw) {
   const runs = raw.runs.filter((r) => Number.isFinite(r.size) && Number.isFinite(r.solve_s) && (r.device === "cpu" || r.device === "gpu"));
   return runs.length ? { runs, sizeLabel: raw.size_label || "Variables", notes: raw.notes || null, crossover: raw.crossover || null } : null;
 }
-
-export function normalizeCalibration(raw) {
-  if (!raw) return null;
-  const chart = raw.chart;
-  const seriesOk = chart && Array.isArray(chart.series) && chart.series.length > 0
-    && chart.series.every((s) => isNumArray(s.x) && isNumArray(s.y) && s.x.length === s.y.length);
-  return {
-    finding: typeof raw.finding === "string" ? raw.finding : null,
-    chart: seriesOk ? chart : null,
-    ask: raw.ask || null,
-    sample: Array.isArray(raw.sample_rows) ? raw.sample_rows : null,
-  };
-}

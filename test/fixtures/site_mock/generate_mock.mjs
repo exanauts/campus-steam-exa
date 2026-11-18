@@ -98,21 +98,23 @@ for (const [id, def] of Object.entries(definitions)) {
   });
 }
 
+const calCell = (tags, months, error) => ({ tags, months, hours: months * 730, run: true, converged: true, solver_status: "SOLVE_SUCCEEDED", max_error_percent: error });
+const calSamples = [
+  { time: "2025-01-15 07:00:00", value: 41.2, quality: "Good", used: true },
+  { time: "2025-01-15 08:00:00", value: 99.9, quality: "Bad", used: false },
+  { time: "2025-01-15 09:00:00", value: 43.8, quality: "Good", used: true },
+];
 write("calibration.json", {
-  finding: "Mock finding: fitted heat-loss error falls as more months of history are used.",
-  chart: {
-    title: "Mock calibration error", x_label: "Months of history", y_label: "Heat-loss error (%)",
-    series: [
-      { name: "Fitted model", x: [1, 3, 6, 12, 18, 24], y: [22, 12, 8, 5, 4, 3.5] },
-      { name: "Uncalibrated", x: [1, 3, 6, 12, 18, 24], y: [30, 30, 30, 30, 30, 30] },
-    ],
-  },
-  ask: { tag_count: 25, years: 2, rows: 438000, size_label: "tens of MB" },
-  sample_rows: [
-    { DateTime: "2025-01-15 07:00", TagName: "STEAM_HEADER_FLOW", Value: 41.2, Quality: "Good" },
-    { DateTime: "2025-01-15 08:00", TagName: "STEAM_HEADER_FLOW", Value: -999, Quality: "Bad" },
-    { DateTime: "2025-01-15 09:00", TagName: "STEAM_HEADER_FLOW", Value: 43.8, Quality: "Good" },
-  ],
+  synthetic: true, data_note: "Mock calibration data.", a_field_added_later: { ignored: true },
+  network: { junctions: 40, pipes: 46, loads: 11, description: "Mock network." },
+  historian: { format: ["DateTime", "TagName", "Value", "Quality"], hours: 17520, tags: 25, rows: 438000, file_bytes: 2e7, tag_hours: 438000, good: 400000, excluded_bad: 9000, excluded_uncertain: 2000, excluded_blank: 0, absent: 7000, good_percent: 95.5 },
+  true_coefficients: { groups: ["steam mains", "steam laterals", "condensate return"], estimated: [true, true, false] },
+  bad_quality_example: { tag: "MOCK.TEMP", unit: "K", samples: calSamples, mean_with_bad_sample: 61.6, mean_after_exclusion: 42.5, samples_excluded: 1 },
+  finding: "Mock finding.",
+  chart: { title: "Mock chart", subtitle: "Mock subtitle.", x_label: "Tags used", y_label: "Largest recovery error (%)", x_scale: "linear", y_scale: "log", series: [] },
+  ask: { tag_count: 25, years: 2, rows: 438000, size_label: "19 MiB" },
+  sample_rows: calSamples.map((s) => ({ DateTime: s.time, TagName: "MOCK.TEMP", Value: s.value, Quality: s.quality })),
+  grid: { tag_counts: [5, 10, 15, 25], months: [1, 3], cells: [calCell(5, 1, 40), calCell(10, 1, 12), calCell(15, 1, 6), calCell(25, 1, 2), calCell(25, 3, 1.5), { tags: 5, months: 3, hours: 2190, run: false, reason: "Mock." }] },
 });
 
 const runs = [];
@@ -122,7 +124,7 @@ const runs = [];
 });
 write("benchmarks.json", { size_label: "Variables", runs });
 write("build_info.json", { commit_sha: "0".repeat(40), run_date: "2026-01-01T00:00:00Z", cpu_model: "Mock CPU", gpu_model: "Mock GPU" });
-writeFileSync(join(out, "tag_template.csv"), readFileSync(join(root, "scripts/ci/tag_template.csv")));
+writeFileSync(join(out, "tag_template.csv"), "tag_name,category,unit,description\nMOCK.TEMP,temperature,K,Mock tag\n");
 writeFileSync(join(out, "files.json"), JSON.stringify({ files: [
   "scenarios/network.json", ...Object.keys(definitions).map((id) => `scenarios/${id}.json`),
   "calibration.json", "benchmarks.json", "build_info.json", "tag_template.csv",
