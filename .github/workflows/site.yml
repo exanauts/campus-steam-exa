@@ -56,6 +56,9 @@ jobs:
           source scripts/ci/env.sh
           julia --color=no --project=scripts scripts/run_site.jl 2>&1 | scrub
 
+      - name: Finish site data
+        run: scripts/ci/finish_site_data.sh
+
       - name: Upload site files
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
