@@ -328,11 +328,13 @@ counted in `nonunique_light_flow_rel`.
 
 **`runs`** come from the sweep that wrote the file, at the tightest strict tolerance. Each has `size`
 (variables), `case`, `family`, `device`, `solve_s`, `solve_s_min`, `solve_s_max`, `iterations`, `solved_repeats`,
-`repeats`, `status`, `residual_ratio` and `residual_limit`. Times and iterations are medians over the repeats that
-solved, and are `null` when no repeat solved. The status is `solved` only if every repeat met the tolerance and, on
-the GPU, the KKT residual was at most `residual_limit` (twice) the CPU's. Otherwise it is `partial`, and the site
-states the reason for that point. `residual_ratio` is the GPU's largest KKT residual over the CPU's, and is `null`
-for the CPU and when the two cannot be compared.
+`repeats`, `planned_repeats`, `status`, `residual_ratio` and `residual_limit`. `repeats` counts the repeats that
+ran on that device; `planned_repeats` minus `repeats` were not run, for example when the build's time budget ran out.
+Times and iterations are medians over the repeats that solved, and are `null` when no repeat solved. The status is
+`solved` only if every repeat that ran met the tolerance and, on the GPU, the KKT residual was at most
+`residual_limit` (twice) the CPU's. Otherwise it is `partial`, and the site states the reason for that point.
+`residual_ratio` is the GPU's largest KKT residual over the CPU's, over solved repeats only, and is `null` for the
+CPU and when the two cannot be compared.
 
 **`like_for_like`** entries have `case`, `family`, `junctions`, `periods`, `nvar`, `tol_requested`, `repeats`,
 `cpu_statuses`, `gpu_statuses`, `cpu_solved_repeats`, `gpu_solved_repeats`, `both_solved_every_repeat`,

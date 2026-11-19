@@ -61,13 +61,17 @@ const times = (limit) => (limit === 2 ? "twice" : `${limit} times`);
 // `labels` are short and shared by the legend. `note` carries the counts of this point.
 function pointReason(r) {
   if (r.status === "solved") return { labels: [], note: null };
+  // `repeats` counts the repeats that ran. Planned repeats that did not run are reported as not run.
   const unsolved = r.repeats - r.solved_repeats;
-  const over = r.device === "gpu" && Number.isFinite(r.residual_ratio) && r.residual_ratio > r.residual_limit;
+  const skipped = Number.isFinite(r.planned_repeats) ? Math.max(0, r.planned_repeats - r.repeats) : 0;
+  // The residual ratio compares solved repeats only, so it is read as a reason only when they all solved.
+  const over = unsolved === 0 && r.device === "gpu" && Number.isFinite(r.residual_ratio) && r.residual_ratio > r.residual_limit;
   const labels = [], notes = [];
   if (unsolved > 0) {
     labels.push("A repeat did not solve");
-    notes.push(`median of the ${r.solved_repeats} solved repeat${r.solved_repeats === 1 ? "" : "s"}, leaving out ${unsolved} of ${r.repeats} that did not solve`);
+    notes.push(`median of the ${r.solved_repeats} solved repeat${r.solved_repeats === 1 ? "" : "s"}, leaving out ${unsolved} of ${r.repeats} that ran and did not solve`);
   }
+  if (skipped > 0) notes.push(`${skipped} planned repeat${skipped === 1 ? " was" : "s were"} not run`);
   if (over) {
     labels.push(`GPU reported success, but its residual was more than ${times(r.residual_limit)} the CPU's`);
     notes.push(unsolved > 0

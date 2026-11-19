@@ -433,6 +433,7 @@ function summarize(records)
         entry["solved_repeats"] = length(solved)
         entry["total_s_solved"] = spread(numbers(solved, "total_s"))
         entry["iterations_solved"] = spread(numbers(solved, "iterations"))
+        entry["kkt_residual_solved"] = spread(numbers(solved, "kkt_residual"))
         for key in ("nvar", "ncon", "nnzj", "nnzh")
             entry[key] = get(first_row, key, nothing)
         end
@@ -478,13 +479,16 @@ function like_for_like(summary)
         worst = comparable ? gpu["total_s_solved"]["max"] / cpu["total_s_solved"]["median"] : nothing
         # The requested tolerance applies to each solver's own scaled problem, so the residual both
         # returned points reach on the unscaled model is compared as well.
-        kkt_ratio = comparable ? gpu["kkt_residual"]["max"] / cpu["kkt_residual"]["max"] : nothing
+        # Only repeats that solved are compared: an unsolved repeat already marks the point.
+        comparable = comparable && cpu["kkt_residual_solved"] !== nothing && gpu["kkt_residual_solved"] !== nothing
+        kkt_ratio = comparable ? gpu["kkt_residual_solved"]["max"] / cpu["kkt_residual_solved"]["max"] : nothing
         matched = comparable && kkt_ratio <= ACHIEVED_TOLERANCE_FACTOR
         push!(rows, Dict{String, Any}(
             "case" => cpu["case"], "family" => cpu["family"], "junctions" => cpu["junctions"],
             "periods" => cpu["periods"], "nvar" => cpu["nvar"], "tol_requested" => cpu["tol_requested"],
             "cpu_statuses" => cpu["statuses"], "gpu_statuses" => gpu["statuses"],
-            "repeats" => cpu["repeats"], "cpu_solved_repeats" => cpu["solved_repeats"],
+            "repeats" => cpu["repeats"], "cpu_repeats" => cpu["repeats"], "gpu_repeats" => gpu["repeats"],
+            "cpu_solved_repeats" => cpu["solved_repeats"],
             "gpu_solved_repeats" => gpu["solved_repeats"], "both_solved_every_repeat" => both,
             "cpu_total_s" => cpu["total_s_solved"], "gpu_total_s" => gpu["total_s_solved"],
             "cpu_iterations" => cpu["iterations_solved"], "gpu_iterations" => gpu["iterations_solved"],
@@ -513,14 +517,14 @@ end
 # Points drawn by the site: the median of the solved repeats at the tightest strict tolerance. The
 # status is "solved" only when every repeat met that tolerance and, for the GPU, when the residual it
 # reached matches the CPU's.
-function site_runs(rows, tol)
+function site_runs(rows, tol, planned)
     out = Dict{String, Any}[]
     for r in rows
         (r["tol_requested"] == tol && r["nvar"] !== nothing) || continue
-        for (device, total, iterations, solved, matched, ratio) in (
-                ("cpu", r["cpu_total_s"], r["cpu_iterations"], r["cpu_solved_repeats"], true, nothing),
-                ("gpu", r["gpu_total_s"], r["gpu_iterations"], r["gpu_solved_repeats"], r["achieved_tolerance_matched"],
-                    r["gpu_over_cpu_kkt_residual"]),
+        for (device, total, iterations, ran, solved, matched, ratio) in (
+                ("cpu", r["cpu_total_s"], r["cpu_iterations"], r["cpu_repeats"], r["cpu_solved_repeats"], true, nothing),
+                ("gpu", r["gpu_total_s"], r["gpu_iterations"], r["gpu_repeats"], r["gpu_solved_repeats"],
+                    r["achieved_tolerance_matched"], r["gpu_over_cpu_kkt_residual"]),
             )
             # A device with no solved repeat keeps its entry, with no times, so the page can say so.
             measured = total !== nothing
@@ -530,8 +534,9 @@ function site_runs(rows, tol)
                 "solve_s_min" => measured ? total["min"] : nothing,
                 "solve_s_max" => measured ? total["max"] : nothing,
                 "iterations" => measured ? iterations["median"] : nothing,
-                "status" => solved == r["repeats"] && matched ? "solved" : "partial",
-                "solved_repeats" => solved, "repeats" => r["repeats"],
+                "status" => solved == ran && matched ? "solved" : "partial",
+                # `repeats` counts the repeats that ran; `planned_repeats` - `repeats` were not run.
+                "solved_repeats" => solved, "repeats" => ran, "planned_repeats" => planned,
                 "residual_ratio" => ratio, "residual_limit" => ACHIEVED_TOLERANCE_FACTOR,
             ))
         end
@@ -595,11 +600,11 @@ function bench_document(profile, env, records, not_run, ttfs, extra_not_run)
             GPU_ASYNC_SOLVER => "As $GPU_SOLVER with asynchronous cuDSS, the package default; MadNLP does not report linear solver time in this mode",
             IPOPT_SOLVER => "Ipopt with MUMPS on the same ExaModel, tol = 1e-8",
             "strict_mode" => "Acceptable termination is off, so SOLVE_SUCCEEDED means the requested tolerance was met. bound_relax_factor = 1e-8 on CPU and GPU.",
-            "achieved_tolerance_matched" => "True when the GPU's largest KKT residual over the repeats, recomputed on the unscaled model, is at most $(ACHIEVED_TOLERANCE_FACTOR) times the CPU's.",
+            "achieved_tolerance_matched" => "True when the GPU's largest KKT residual over the solved repeats, recomputed on the unscaled model, is at most $(ACHIEVED_TOLERANCE_FACTOR) times the CPU's.",
         ),
         "agreement_note" => "Agreement with the CPU uses objective, plant output and steam-side quantities. Water-side pressure, return-side temperature and flow in lightly loaded pipes are not unique at the optimum (docs/validation-notes.md) and are reported separately under nonunique_* fields.",
         "size_label" => "Variables",
-        "runs" => tightest === nothing ? Dict{String, Any}[] : site_runs(pairs_rows, tightest),
+        "runs" => tightest === nothing ? Dict{String, Any}[] : site_runs(pairs_rows, tightest, settings.repeats),
         "notes" => tightest === nothing ? nothing : site_notes(tightest, profile),
         "summary" => summary,
         "like_for_like" => pairs_rows,
