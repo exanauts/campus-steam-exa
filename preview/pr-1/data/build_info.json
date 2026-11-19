@@ -1,0 +1,23 @@
+{
+  "commit_sha": "b259441df5b8c903bd1f8cebe8d36318981f7107",
+  "cpu_model": "INTEL(R) XEON(R) PLATINUM 8568Y+",
+  "cuda_device": "NVIDIA H200",
+  "cuda_functional": true,
+  "cuda_runtime_version": "13.4.0",
+  "driver_version": "580.178.04",
+  "gpu_extension_loaded": true,
+  "gpu_model": "NVIDIA H200",
+  "julia_version": "1.13.3",
+  "other_compute_processes_at_start": 0,
+  "other_processes_on_gpu_at_start": false,
+  "package_versions": {
+    "CUDA": "6.5.1",
+    "CUDSS": "1.0.0",
+    "ExaModels": "0.15.0",
+    "MadNLP": "0.11.0",
+    "MadNLPGPU": "0.11.1"
+  },
+  "run_date": "2026-11-19T15:24:46Z",
+  "selected_gpu_index": 2,
+  "selected_gpu_memory_used_mib_at_start": 5
+}
