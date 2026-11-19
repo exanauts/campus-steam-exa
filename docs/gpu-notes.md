@@ -231,16 +231,14 @@ not solve it again. These notes make no claim about accuracy against months of d
 | 25 tags | Variables | CPU | GPU |
 |---|---|---|---|
 | 1 month | 203,676 | `SOLVE_SUCCEEDED`, 29 iterations | `SOLVE_SUCCEEDED`, 25 iterations |
-| 3 months | 611,016 | `SOLVE_SUCCEEDED`, 36 iterations | No committed record, see below |
+| 3 months | 611,016 | `SOLVE_SUCCEEDED`, 36 iterations | Not run in any recorded build |
 | 6 months | 1,222,026 | `SOLVE_SUCCEEDED`, 82 iterations | Not attempted |
 
-**The GPU at 3 months.** The calibration work reported that the GPU hit its 500-iteration limit at 25 tags
-and 3 months while the CPU solved. That GPU run is not in the CI output, because the site build attempts
-the GPU only at 1 month, and no log of it is committed. It is recorded here as a reported failure without a
-source file, and it is not counted as a measurement.
+The site build attempts the GPU only at 25 tags and 1 month.
 
 ## What was not run
 
+- **Calibration on the GPU at 25 tags and 3 months** has not been run in any recorded build.
 - **T = 8,760 did not finish.** One attempt per device, with limits of 1800 s and 1000 iterations. The CPU
   stopped at the time limit after 101 iterations, and the GPU stopped at the iteration limit after 780 s
   ([log](../results/logs/benchmarks_year_attempt.txt)).
@@ -260,5 +258,5 @@ true for it to pay off.
 |---|---|---|
 | Year-long horizons | Not run | The one attempt at T = 8,760 did not finish on either device. The GPU must converge reliably at that size. Iteration counts must stop varying as widely as they do at T = 720, and the factorization must fit in GPU memory |
 | Many-scenario contingency screening | Not run | Scenarios must share one sparsity pattern so that one symbolic analysis and batched factorization can be reused, and each scenario must converge without manual restarts |
-| Calibration over full historian history | Not run | The GPU must solve the longer records that the CPU solves, including the 3-month case reported above, and the problem must fit in GPU memory |
+| Calibration over full historian history | Not run | The GPU must solve the longer records that the CPU solves, and the problem must fit in GPU memory. The 3-month case has not been run on the GPU in any recorded build |
 | Embedded learned load models | Not run | The learned model must be expressed in forms ExaModels can evaluate on the GPU, and function evaluation must become a large share of solve time. Today it is a small share |
