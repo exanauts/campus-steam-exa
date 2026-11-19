@@ -100,4 +100,13 @@ Always check `solution.converged` before reading results.
 - `site.yml` builds the site data on a self-hosted GPU runner and deploys to GitHub Pages. It must
   trigger only on `push` to `main` and `workflow_dispatch`, never on pull requests, and keep minimal
   `permissions`.
-- A push to `main` redeploys the public site, so run the tests before pushing.
+- Every commit that lands on `main` rebuilds and redeploys the public site.
+
+## Branches and pull requests
+
+- Do not commit to `main` directly. Create a branch for any change or experiment, however small.
+- Open a pull request to bring a branch into `main`. The tests run on the pull request, and the site
+  build runs only after the merge.
+- Experiments that are not meant for the site can stay on their branch. Nothing on a branch is deployed.
+- Before merging, run `Pkg.test()` and, for changes to the model, generator, scripts or `site/`, run
+  `julia --project scripts/run_all.jl` and look at the page locally.
