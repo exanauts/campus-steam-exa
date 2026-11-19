@@ -1,16 +1,20 @@
 import { el, num, hourLabel, missing, dataTable, showTip, hideTip } from "./format.js";
 import { loadJSON, listed, normalizeScenario, SCENARIO_DIR } from "./data.js";
+import { createTimeline } from "./timeline.js";
 
 const HOURS_PER_SECOND = 6;
 // Shed load below this size, in MW or MWh, is solver residue rather than a result.
 const SHED_MIN = 0.01;
 const DEFAULT_TITLE = "How a campus steam network carries a hard week";
-// The scenario shown first, when it is in the build.
-const FIRST_SCENARIO = "cold_snap";
+// The scenario shown first, when it is in the build: the one where the plant falls short.
+const FIRST_SCENARIO = "plant_derate";
 // Fixed temperature color scale, so that colors compare across scenarios. About nine tenths of the
 // steam temperatures in the four scenarios fall inside this range. Anything outside is drawn in the
 // end color, and the key says so.
 const COLOR_SCALE_C = [105, 125];
+// Flow arrows: half-length in screen pixels, and the shortest pipe on screen that gets one.
+const ARROW_PX = 5;
+const ARROW_MIN_PIPE_PX = 30;
 // Marker outline for each building type, drawn around the origin with half-size r.
 const SHAPES = {
   critical: (r) => `M0 ${-1.3 * r}L${1.3 * r} 0L0 ${1.3 * r}L${-1.3 * r} 0Z`,
@@ -26,6 +30,8 @@ const reduceMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)")
 const $ = (id) => document.getElementById(id);
 const sum = (a) => a.reduce((x, y) => x + y, 0);
 const fixed = (v, digits = 1) => v.toFixed(digits);
+// MW with one decimal, without a trailing .0.
+const mw = (v) => String(+v.toFixed(1));
 const typeName = (t) => TYPE_NAMES[t] || t;
 const fileOf = (id) => `${SCENARIO_DIR}${id}.json`;
 
@@ -53,29 +59,50 @@ function shedByTypeText(f) {
   return parts.join(", ");
 }
 
-function findingText(s, f, network) {
-  const total = s.summary.total_shed_MWh;
-  const shed = total >= SHED_MIN;
-  const peak = `output peaks at ${fixed(s.output[f.peakHour])} MW of ${fixed(s.rating[f.peakHour])} MW available`;
-  const critical = s.summary.critical_shed_MWh >= SHED_MIN ? `${fixed(s.summary.critical_shed_MWh)} MWh of critical load is shed` : "no critical load is shed";
-  const weights = s.comparison ? " with the priority weights by building type" : "";
-  const outcome = shed
-    ? `${fixed(total)} MWh goes unserved (${shedByTypeText(f)})${weights}, and ${critical}.`
-    : `The plant carries it: ${peak}, and no load is shed.`;
+const lower = (t) => typeName(t).toLowerCase();
+
+// One short claim per scenario for the h1. Every number is read from the scenario file.
+function headlineText(s, f) {
   const event = s.events[0];
-  const span = event ? event.last_hour - event.first_hour + 1 : 0;
-  if (s.id === "cold_snap" && event) {
-    return `Cold snap: loads run ${Math.round((event.factor - 1) * 100)} percent higher for ${span} hours, with a ${event.shoulder_hours}-hour ramp on each side. ${outcome}`;
-  }
-  if (s.id === "plant_derate" && event) {
-    return `One of ${network.plant.n_boilers} boilers out for ${span} hours leaves ${fixed(event.rating_MW)} MW available. ${outcome}`;
-  }
-  if (s.id === "pipe_out" && event) {
+  const lead = !event ? (s.title || "Normal week")
+    : event.kind === "boiler_out" ? "One boiler out"
+    : event.kind === "pipe_out" ? `Pipe ${event.pipe} out`
+    : event.kind === "load_surge" && Number.isFinite(event.factor) ? `Loads up ${Math.round((event.factor - 1) * 100)}%`
+    : (s.title || "Event");
+  const total = s.summary.total_shed_MWh, critical = s.summary.critical_shed_MWh;
+  if (total < SHED_MIN) {
     const reversed = s.reroute?.reversed_steam_pipes?.length;
-    const reroute = reversed ? ` Flow reverses in ${reversed} other steam pipe${reversed > 1 ? "s" : ""} to reroute around it.` : "";
-    return `Steam main pipe ${event.pipe} out for ${span} hours. ${outcome}${reroute}`;
+    if (reversed) return `${lead}: steam reroutes through ${reversed} other pipe${reversed > 1 ? "s" : ""}, and every building gets its heat`;
+    if (!event) return `${lead}: every building gets its heat`;
+    return `${lead}: every building gets its heat, with output peaking at ${mw(s.output[f.peakHour])} of ${mw(s.rating[f.peakHour])} MW`;
   }
-  return `${s.title}: ${shed ? outcome : `the plant carries the week, ${peak}, and no load is shed.`}`;
+  const short = f.types.filter((t) => t !== "critical" && f.weekByType[t] >= SHED_MIN).sort((a, b) => f.weekByType[b] - f.weekByType[a]);
+  const lost = short.length === 1 ? `${lower(short[0])} lose ${fixed(f.weekByType[short[0]])} MWh`
+    : short.length === 2 ? `${lower(short[0])} and ${lower(short[1])} lose ${fixed(f.weekByType[short[0]] + f.weekByType[short[1]])} MWh`
+    : short.length ? `${fixed(total - (critical >= SHED_MIN ? critical : 0))} MWh goes unserved` : null;
+  const crit = critical >= SHED_MIN ? `critical buildings lose ${fixed(critical)} MWh` : "critical buildings lose none";
+  return lost ? `${lead}: ${lost}, ${crit}` : `${lead}: ${crit}`;
+}
+
+// The detail under the headline: what happened over the week, read from the scenario file.
+function detailText(s, f) {
+  const total = s.summary.total_shed_MWh;
+  const event = s.events[0];
+  const parts = [];
+  const reroute = s.reroute?.reversed_steam_pipes;
+  if (event?.kind === "pipe_out" && reroute?.length) {
+    parts.push(`Flow reverses in steam pipe${reroute.length > 1 ? "s" : ""} ${reroute.map((r) => r.pipe).join(" and ")} to reroute around pipe ${event.pipe}; the arrows on the map show it.`);
+  }
+  if (total >= SHED_MIN) {
+    const shed = f.types.filter((t) => f.weekByType[t] >= SHED_MIN).sort((a, b) => f.weekByType[b] - f.weekByType[a]);
+    const split = shed.length === 1 ? `all of it in ${lower(shed[0])}` : shed.map((t) => `${lower(t)} ${fixed(f.weekByType[t])} MWh`).join(", ");
+    const avail = event?.kind === "boiler_out" ? `With ${mw(Math.min(...s.rating))} MW available during the outage, the plant` : "The plant";
+    const weights = s.comparison ? ", with the priority weights by building type" : "";
+    parts.push(`${avail} falls short in ${f.shedHours} hours and ${fixed(total)} MWh of heat goes unserved: ${split}${weights}.`);
+  } else {
+    parts.push(`Heat demand peaks at ${mw(Math.max(...s.demand))} MW and plant output at ${mw(s.output[f.peakHour])} MW, against ${mw(s.rating[f.peakHour])} MW available. No load is shed.`);
+  }
+  return parts.join(" ");
 }
 
 function typeTable(host, caption, types, cases) {
@@ -163,7 +190,15 @@ export async function initHero(network) {
 
   const cache = new Map();
   const state = { s: null, f: null, hour: 0, playing: false, visible: true, token: 0 };
-  let cursor = null, cursorX = () => 0;
+  const timeline = createTimeline($("timeline"), $("timeline-legend"), scrubber, {
+    shedMin: SHED_MIN,
+    onSeek(h, done) {
+      if (!state.s) return;
+      if (state.playing) setPlaying(false);
+      state.hour = h;
+      render(done);
+    },
+  });
 
   const fetchScenario = (id) => {
     if (!cache.has(id)) cache.set(id, loadJSON(fileOf(id)).then((raw) => normalizeScenario(raw, network)));
@@ -178,35 +213,8 @@ export async function initHero(network) {
     const shed = s.shed[hour] >= SHED_MIN ? s.shed[hour] : 0;
     const text = `${hourLabel(hour)}: plant output ${fixed(s.output[hour])} MW, demand ${fixed(s.demand[hour])} MW, shed ${fixed(shed)} MW.`;
     scrubber.setAttribute("aria-valuetext", text);
-    if (cursor) { cursor.setAttribute("x1", cursorX(hour)); cursor.setAttribute("x2", cursorX(hour)); }
+    timeline.setHour(hour);
     if (announce) $("hero-live").textContent = text;
-  }
-
-  function drawStrip() {
-    const { s } = state;
-    const host = $("strip");
-    host.replaceChildren();
-    const W = Math.max(200, host.clientWidth - 22), H = 42;
-    const top = Math.max(network.plant.rating_MW, ...s.rating, ...s.output);
-    const sx = (h) => (s.hours > 1 ? (h / (s.hours - 1)) * W : 0);
-    const sy = (v) => H - 3 - (v / top) * (H - 6);
-    const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, preserveAspectRatio: "none" }, host);
-    s.events.forEach((e) => el("rect", { x: sx(e.first_hour - 1), y: 0, width: sx(e.last_hour - 1) - sx(e.first_hour - 1), height: H, fill: "var(--ink)", opacity: 0.07 }, svg));
-    s.shed.forEach((v, h) => {
-      if (v >= SHED_MIN) el("rect", { x: sx(h) - W / s.hours / 2, y: 0, width: Math.max(1.5, W / s.hours), height: H, fill: "var(--shed)", opacity: 0.3 }, svg);
-    });
-    const path = (a) => a.map((v, h) => `${h ? "L" : "M"}${sx(h).toFixed(1)} ${sy(v).toFixed(1)}`).join("");
-    el("path", { d: path(s.rating), fill: "none", stroke: "var(--ink-3)", "stroke-width": 1 }, svg);
-    el("path", { d: path(s.output), fill: "none", stroke: "var(--s1)", "stroke-width": 2 }, svg);
-    cursor = el("line", { y1: 0, y2: H, stroke: "var(--ink)", "stroke-width": 1 }, svg);
-    cursorX = sx;
-    const days = $("strip-days");
-    days.replaceChildren();
-    for (let d = 0; d < Math.ceil(s.hours / 24); d++) {
-      const label = el("span", {}, days);
-      el("span", { class: "word" }, label, "Day ");
-      label.append(String(d + 1));
-    }
   }
 
   function renderTables() {
@@ -262,6 +270,7 @@ export async function initHero(network) {
     view.notice.hidden = false;
     $("hero-title").textContent = s?.title || DEFAULT_TITLE;
     $("hero-sub").hidden = true;
+    $("hero-context").hidden = true;
     panel.hidden = true;
     transport.hidden = true;
     $("map-key").hidden = true;
@@ -285,11 +294,14 @@ export async function initHero(network) {
     view.prepare(s);
     scrubber.max = s.hours - 1;
     state.hour = Math.min(state.hour, s.hours - 1);
-    $("hero-title").textContent = findingText(s, state.f, network);
+    $("hero-title").textContent = headlineText(s, state.f);
     const sub = $("hero-sub");
-    sub.hidden = !s.description;
-    sub.textContent = s.description || "";
-    drawStrip();
+    sub.hidden = false;
+    sub.textContent = detailText(s, state.f);
+    const context = $("hero-context");
+    context.hidden = !s.description;
+    context.textContent = s.description || "";
+    timeline.show(s);
     renderTables();
     render(true);
   }
@@ -307,7 +319,7 @@ export async function initHero(network) {
     if (Math.abs(map.clientWidth - lastWidth) < 4) return;
     lastWidth = map.clientWidth;
     view.resize();
-    if (state.s) { drawStrip(); render(false); }
+    if (state.s) { timeline.redraw(); render(false); }
   }).observe(map);
 
   await select(first.value);
@@ -326,11 +338,11 @@ function buildMap(host, network) {
   const px = (j) => j.x - x0, py = (j) => y1 - j.y;
   const svg = el("svg", {
     viewBox: `0 0 ${vw} ${vh}`, role: "img",
-    "aria-label": "Map of the fictional campus steam network. Pipes are colored by steam temperature, from the hot plant end to the cooler far ends, and drawn wider for larger flows. Lightly loaded pipes are faded. Buildings are marked by type with a shape and a color, sized by design heat, and empty out when their type is short of heat. The status panel and the tables below give the values as text.",
+    "aria-label": "Map of the fictional campus steam network. Pipes are colored by steam temperature, from the hot plant end to the cooler far ends, and drawn wider for larger flows. Small arrows show which way steam flows in each loaded pipe. Lightly loaded pipes are faded. Buildings are marked by type with a shape and a color, sized by design heat, and empty out when their type is short of heat. The status panel and the tables below give the values as text.",
   }, host);
   const notice = el("div", { hidden: "" }, host);
   const defs = el("defs", {}, svg);
-  const pipeLayer = el("g", {}, svg), hitLayer = el("g", {}, svg), markLayer = el("g", {}, svg), bldgLayer = el("g", {}, svg);
+  const pipeLayer = el("g", {}, svg), arrowLayer = el("g", { class: "arrows" }, svg), hitLayer = el("g", {}, svg), markLayer = el("g", {}, svg), bldgLayer = el("g", {}, svg);
   // Each pipe has its own gradient, so its color runs from the temperature at one end to the other.
   const pipes = new Map(network.pipes.map((p) => {
     const a = network.junctions.get(p.from), b = network.junctions.get(p.to);
@@ -339,7 +351,10 @@ function buildMap(host, network) {
     const stops = [el("stop", { offset: 0 }, gradient), el("stop", { offset: 1 }, gradient)];
     const node = el("line", { class: "pipe", ...ends, "stroke-width": 1.5 }, pipeLayer);
     el("line", { class: "pipe-hit", ...ends, "data-pipe": p.id }, hitLayer);
-    return [p.id, { node, stops, from: p.from, to: p.to, mx: (px(a) + px(b)) / 2, my: (py(a) + py(b)) / 2, mark: null, info: null }];
+    // Direction of the pipe from its `from` end to its `to` end, in degrees on screen. A positive flow runs that way.
+    const angle = (Math.atan2(py(b) - py(a), px(b) - px(a)) * 180) / Math.PI;
+    const length = Math.hypot(px(b) - px(a), py(b) - py(a));
+    return [p.id, { node, stops, from: p.from, to: p.to, mx: (px(a) + px(b)) / 2, my: (py(a) + py(b)) / 2, angle, length, mark: null, arrow: null, info: null }];
   }));
   // The filled part of a marker is clipped from the top by the share of that type's load not served.
   const clips = new Map(TYPE_ORDER.map((t) => {
@@ -370,9 +385,15 @@ function buildMap(host, network) {
 
   function drawOutMarks() {
     markLayer.replaceChildren();
-    pipes.forEach((p) => {
+    arrowLayer.replaceChildren();
+    const a = ARROW_PX * unit;
+    pipes.forEach((p, id) => {
       const d = 7 * unit;
       p.mark = el("path", { class: "out-mark", visibility: "hidden", d: `M${p.mx - d} ${p.my - d}L${p.mx + d} ${p.my + d}M${p.mx - d} ${p.my + d}L${p.mx + d} ${p.my - d}` }, markLayer);
+      // Pipes too short on screen to carry an arrow clearly get none.
+      p.arrow = p.length >= ARROW_MIN_PIPE_PX * unit
+        ? el("path", { class: "flow-arrow", "data-arrow": id, visibility: "hidden", d: `M${-a} ${-0.85 * a}L${a} 0L${-a} ${0.85 * a}Z`, "stroke-width": 2.2 * unit }, arrowLayer)
+        : null;
     });
   }
 
@@ -446,7 +467,12 @@ function buildMap(host, network) {
       const temperature = out ? null : pipeTemperature(s, p, h);
       const faded = !out && (!s.flowTrusted || !s.temperatureTrusted || s.flowMarks.get(pipe.id)?.[h] || temperature === null);
       p.node.classList.toggle("faded", !!faded);
-      p.info = { id: pipe.id, out, faded: !!faded, flow, temperature };
+      p.info = { id: pipe.id, out, faded: !!faded, flow, temperature, arrow: !!p.arrow };
+      if (p.arrow) {
+        const shown = !out && !faded && Math.abs(flow) > 0;
+        p.arrow.setAttribute("visibility", shown ? "visible" : "hidden");
+        if (shown) p.arrow.setAttribute("transform", `translate(${p.mx.toFixed(1)} ${p.my.toFixed(1)}) rotate(${(p.angle + (flow < 0 ? 180 : 0)).toFixed(1)})`);
+      }
       if (out || faded) {
         p.node.style.stroke = "";
         p.node.setAttribute("stroke-width", out ? 2 : 1.25);
@@ -478,7 +504,7 @@ function buildMap(host, network) {
         if (pipe.faded) return el("div", {}, t, "Lightly loaded this hour. Its flow and temperature are not unique, so no value is shown.");
         const [hot, cool] = [...pipe.temperature].sort((a, b) => b - a);
         el("div", {}, t, hot - cool >= 0.05 ? `Steam cools from ${fixed(hot)} C to ${fixed(cool)} C along it` : `Steam at ${fixed(hot)} C`);
-        el("div", {}, t, `Flow ${fixed(Math.abs(pipe.flow))} kg/s`);
+        el("div", {}, t, `Flow ${fixed(Math.abs(pipe.flow))} kg/s${pipe.arrow ? ", in the direction of the arrow" : ""}`);
       });
     }
     const g = e.target.closest?.("[data-load]");
@@ -505,13 +531,18 @@ function buildKey(host, types, weightOf) {
     el("path", { class: `bldg-outline t-${type}${short ? " short" : ""}`, d }, svg);
   };
   const pipesRow = el("div", { class: "key-row" }, host);
-  const a = el("span", {}, pipesRow);
-  a.append(`Steam temperature: ${COLOR_SCALE_C[0]} C or cooler`);
+  el("span", { class: "key-lead" }, pipesRow, "Steam temperature:");
+  const a = el("span", { class: "key-ramp" }, pipesRow);
+  a.append(`${COLOR_SCALE_C[0]} C or cooler`);
   el("i", { class: "ramp" }, a);
   a.append(`${COLOR_SCALE_C[1]} C or hotter`);
   el("span", {}, pipesRow, "Wider line: more flow");
   const f = el("span", {}, pipesRow); el("i", { class: "line-key faded" }, f); f.append("Faded: lightly loaded this hour, not a prediction");
   const d = el("span", {}, pipesRow); el("i", { class: "line-key" }, d); d.append("Pipe out of service");
+  const arrow = el("span", {}, pipesRow);
+  const asvg = el("svg", { class: "key-mark map", viewBox: "-8 -8 16 16", "aria-hidden": "true" }, arrow);
+  el("path", { class: "flow-arrow", d: "M-5 -4.25L5 0L-5 4.25Z" }, asvg);
+  arrow.append("Arrow: direction of steam flow");
   const bldgRow = el("div", { class: "key-row" }, host);
   if (weightOf) el("span", { class: "key-lead" }, bldgRow, "Priority for heat, highest first:");
   types.forEach((t, i) => {
