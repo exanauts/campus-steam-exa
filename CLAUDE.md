@@ -52,7 +52,8 @@ Always check `solution.converged` before reading results.
 | Task | Command |
 |---|---|
 | Tests | `julia --project=. -e 'using Pkg; Pkg.test()'` |
-| Everything the site shows (about 20 minutes with a GPU) | `julia --project scripts/run_all.jl` |
+| Everything the site shows (about 15 minutes with a GPU and many cores) | `julia --project scripts/run_all.jl` |
+| One part of the site data | `julia --project=scripts scripts/run_site.jl scenarios` (or `calibration`, `benchmarks`, then `merge`) |
 | Validation against JuMP and Ipopt | `julia --project=validation validation/run_validation.jl` |
 | Local benchmark sweep (long) | `julia --project=scripts scripts/site/benchmarks.jl local` |
 | Preview the site | run `scripts/run_all.jl`, then `python3 -m http.server -d site` |
@@ -63,7 +64,9 @@ Always check `solution.converged` before reading results.
 - `src/model/`: the optimization model, pipe orientation, and the multi-period model.
 - `src/historian.jl`, `src/calibration.jl`: historian-style CSV ingest and pipe coefficient fitting.
 - `ext/CampusSteamGPUExt.jl`: GPU support.
-- `scripts/site/`: scenarios, calibration and benchmarks that write `site/data/`.
+- `scripts/site/`: scenarios, calibration and benchmarks that write `site/data/`, `merge.jl`, which
+  combines them, and `pool.jl`, the worker pool for independent solves. `scripts/run_site.jl` runs one
+  part or the merge.
 - `site/`: the static page. `site/data/` is generated and not committed.
 - `validation/`: an independent JuMP and Ipopt model in its own environment.
 - `docs/`: model notes, validation notes, GPU notes, and the data schemas (`network-schema.md`,
@@ -97,14 +100,26 @@ Always check `solution.converged` before reading results.
 ## CI
 
 - `test.yml` runs the tests on GitHub-hosted runners.
-- `site.yml` builds the site data on a self-hosted GPU runner, about 20 minutes, and publishes to the
-  `gh-pages` branch, which GitHub Pages serves.
+- `site.yml` builds the site data in three parallel jobs (scenarios, calibration, benchmarks) on
+  self-hosted GPU runners of one machine, merges their artifacts in a `merge` job, and publishes to the
+  `gh-pages` branch, which GitHub Pages serves. Scenarios and calibration run their independent solves
+  on a pool of worker processes (`SITE_WORKERS`, default a quarter of the CPU threads, 1 runs serially);
+  the benchmarks stay serial. The longest job took about 6 minutes locally. See `docs/site-data.md` under
+  "Build".
+  - `scripts/ci/select_gpu.sh` gives the benchmark job a GPU that no other build job holds; the other two
+    share one. GPUs 0 and 1 are never used (`GPU_EXCLUDE`). `scripts/ci/cpu_set.sh` pins each job to
+    its own CPU cores.
+  - Pooled output must not depend on the worker count: workers return results, and the files are written
+    afterwards by the part's own process.
+  - Each part has a time budget that a normal build stays well inside. Anything that does not fit is
+    reported as not run, never as not converged. If a part grows, raise its budget or move work between
+    parts rather than letting points be skipped.
   - A commit on `main` replaces the public site.
   - A pull request from a branch of this repository gets a full preview at
     `https://exanauts.github.io/campus-steam-exa/preview/pr-<number>/`, linked in a comment on the
     request. The preview is removed when the request is merged or closed.
   - Pull requests from forks are not built, so outside code never runs on the GPU runner. Keep that
-    condition, and keep the build job at read-only `permissions`.
+    condition, and keep the build and merge jobs at read-only `permissions`.
   - A newer commit on a branch cancels the build of the older one.
 
 ## Branches and pull requests
