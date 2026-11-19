@@ -517,24 +517,34 @@ function site_runs(rows, tol)
     out = Dict{String, Any}[]
     for r in rows
         (r["tol_requested"] == tol && r["nvar"] !== nothing) || continue
-        for (device, total, iterations, solved, matched) in (
-                ("cpu", r["cpu_total_s"], r["cpu_iterations"], r["cpu_solved_repeats"], true),
-                ("gpu", r["gpu_total_s"], r["gpu_iterations"], r["gpu_solved_repeats"], r["achieved_tolerance_matched"]),
+        for (device, total, iterations, solved, matched, ratio) in (
+                ("cpu", r["cpu_total_s"], r["cpu_iterations"], r["cpu_solved_repeats"], true, nothing),
+                ("gpu", r["gpu_total_s"], r["gpu_iterations"], r["gpu_solved_repeats"], r["achieved_tolerance_matched"],
+                    r["gpu_over_cpu_kkt_residual"]),
             )
-            total === nothing && continue
+            # A device with no solved repeat keeps its entry, with no times, so the page can say so.
+            measured = total !== nothing
             push!(out, Dict{String, Any}(
-                "size" => r["nvar"], "case" => r["case"], "device" => device,
-                "solve_s" => total["median"], "solve_s_min" => total["min"],
-                "solve_s_max" => total["max"], "iterations" => iterations["median"],
+                "size" => r["nvar"], "case" => r["case"], "family" => r["family"], "device" => device,
+                "solve_s" => measured ? total["median"] : nothing,
+                "solve_s_min" => measured ? total["min"] : nothing,
+                "solve_s_max" => measured ? total["max"] : nothing,
+                "iterations" => measured ? iterations["median"] : nothing,
                 "status" => solved == r["repeats"] && matched ? "solved" : "partial",
                 "solved_repeats" => solved, "repeats" => r["repeats"],
+                "residual_ratio" => ratio, "residual_limit" => ACHIEVED_TOLERANCE_FACTOR,
             ))
         end
     end
     return out
 end
 
-site_notes(tol, source) = "Synthetic data. Median solve time of the repeats that met a tolerance of $tol on both CPU and GPU, from the $source sweep. Hollow points mark sizes where some repeats did not meet it, or where the GPU's KKT residual was more than $(ACHIEVED_TOLERANCE_FACTOR) times the CPU's."
+function site_notes(tol, profile)
+    source = profile === :ci ? "the sweep run by this site build" : "the $profile sweep"
+    return "Synthetic data. Each point is the median over the repeats that met a tolerance of $tol, from $source. " *
+        "A hollow point marks a size where a repeat did not solve, or where the GPU reported success but its " *
+        "largest residual was more than $(round(Int, ACHIEVED_TOLERANCE_FACTOR)) times the CPU's."
+end
 
 # Output ------------------------------------------------------------------------------------------
 
@@ -590,7 +600,7 @@ function bench_document(profile, env, records, not_run, ttfs, extra_not_run)
         "agreement_note" => "Agreement with the CPU uses objective, plant output and steam-side quantities. Water-side pressure, return-side temperature and flow in lightly loaded pipes are not unique at the optimum (docs/validation-notes.md) and are reported separately under nonunique_* fields.",
         "size_label" => "Variables",
         "runs" => tightest === nothing ? Dict{String, Any}[] : site_runs(pairs_rows, tightest),
-        "notes" => tightest === nothing ? nothing : site_notes(tightest, string(profile)),
+        "notes" => tightest === nothing ? nothing : site_notes(tightest, profile),
         "summary" => summary,
         "like_for_like" => pairs_rows,
         "crossover" => Dict{String, Any}(
@@ -637,8 +647,8 @@ end
 """
     run_benchmarks(outdir; profile = :ci)
 
-Run a benchmark sweep and write `benchmarks.json` and `benchmarks.csv` to `outdir`. The committed
-GPU notes in `results/gpu_notes.json` are copied there as `gpu_notes.json`.
+Run a benchmark sweep and write `benchmarks.json` and `benchmarks.csv` to `outdir`. Both files hold
+only the solves of this sweep.
 """
 function run_benchmarks(outdir; profile::Symbol = :ci)
     settings = BENCH_PROFILES[profile]
@@ -675,22 +685,12 @@ function run_benchmarks(outdir; profile::Symbol = :ci)
     document["calibration"] = calibration
     settings.gpu_memory && (document["gpu_memory"] = gpu_memory_table(bench_cases(settings)))
     document["sweep_runtime_s"] = time() - started
-    local_summary = joinpath(BENCH_ROOT, "results", "benchmarks_summary.json")
-    if profile === :ci && isfile(local_summary)
-        document["local_sweep"] = JSON.parsefile(local_summary)
-        # The local sweep has no calibration step to read; this build's outcome is in `calibration`.
-        filter!(x -> get(x, "item", "") != "Calibration CPU and GPU outcome", document["local_sweep"]["not_run"])
-        document["runs"] = document["local_sweep"]["runs"]
-        document["notes"] = document["local_sweep"]["notes"]
-    end
     text = JSON.json(json_safe(document), 2)
     csv = records_csv(records)
     assert_bench_public_safe(text)
     assert_bench_public_safe(csv)
     write(joinpath(outdir, "benchmarks.json"), text)
     write(joinpath(outdir, "benchmarks.csv"), csv)
-    notes = joinpath(BENCH_ROOT, "results", "gpu_notes.json")
-    isfile(notes) && cp(notes, joinpath(outdir, "gpu_notes.json"); force = true)
     @info "Benchmarks finished" profile runtime_s = round(document["sweep_runtime_s"]; digits = 1)
     return document
 end

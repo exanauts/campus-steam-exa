@@ -12,7 +12,7 @@ fictional Example University.
 | `network.json` | Junctions, pipes, loads and plant |
 | `baseline.json` | A normal winter week |
 | `cold_snap.json` | The same week with every load 50 percent higher for 48 hours |
-| `plant_derate.json` | The generated cold-snap week with one of four boilers out for 48 hours |
+| `plant_derate.json` | The week the weather generator flags as its cold snap, with one of four boilers out for 48 hours. This is not the week of `cold_snap.json` |
 | `pipe_out.json` | The normal week with steam main pipe 20 out of service for 48 hours |
 
 Each hour is a steady state, and the hours are coupled only by the plant ramp limit. The model has no
@@ -27,6 +27,10 @@ show those labels with the results.
 | `cold_snap` | 1177 to 1344 | Loads at 150 percent in hours 49 to 96, building over hours 46 to 48 and fading over hours 97 to 99 |
 | `plant_derate` | 889 to 1056 | Rating 82.5 MW instead of 110 MW in hours 25 to 72 |
 | `pipe_out` | 1177 to 1344 | Pipe 20 out of service in hours 49 to 96 |
+
+`cold_snap` and `plant_derate` use different weeks. `cold_snap` multiplies the demand of the normal winter
+week by a load surge. `plant_derate` keeps the unscaled demand of the week that the weather generator flags
+as its cold snap (`is_cold_snap`), whose weather is colder on average than the normal week.
 
 The cold snap builds over three hours because a 50 percent step is 30.3 MW, more than the 27.5 MW/h
 ramp limit. With a step, the model shed 0.98 MWh at the end of the surge because of the ramp limit alone.
@@ -209,7 +213,9 @@ and `error_message`.
 
 **`seasonal_check`** has `run`, `tags`, `months`, `groups`, `true_loss_multiplier` and
 `true_friction_multiplier`. When `run` is `true`, `windows` lists `label`, `first_hour`, `solver_status`,
-`converged`, `solve_s` and, if converged, `estimate`. When `run` is `false`, `reason` says why.
+`converged`, `solve_s` and, if converged, `estimate`, `error_percent`, `max_error_percent`, `max_error_group`
+and `max_error_coefficient`. The errors compare each estimated group with its true group mean, as in the grid
+cells. When `run` is `false`, `reason` says why.
 
 ### Why recovery error does not keep falling with more data
 
@@ -249,9 +255,10 @@ generic names of the curated synthetic tags, to be replaced with a site's own ta
 
 ## Benchmarks
 
-`scripts/site/benchmarks.jl` defines `run_benchmarks(outdir)`, which writes `benchmarks.json`,
-`benchmarks.csv` and `gpu_notes.json` to `site/data/`. All data is synthetic. The findings are explained in
-[`docs/gpu-notes.md`](gpu-notes.md).
+`scripts/site/benchmarks.jl` defines `run_benchmarks(outdir)`, which writes `benchmarks.json` and
+`benchmarks.csv` to `site/data/`. All data is synthetic. The deployed files hold only the solves of the CI sweep
+of that build. The local sweep is committed in `results/`, is explained in [`docs/gpu-notes.md`](gpu-notes.md),
+and is not shown on the site.
 
 ### Sweeps
 
@@ -318,21 +325,17 @@ counted in `nonunique_light_flow_rel`.
 | `time_to_first_solve`, `gpu_memory` | Array | Fresh-process measurements. Local sweep only |
 | `not_run` | Array | Each entry has `item` or a case, and `reason` |
 | `records` | Array | The rows of `benchmarks.csv` |
-| `local_sweep` | Object | The committed local summary, `results/benchmarks_summary.json` |
 
-**`runs`** come from the local sweep when its summary is committed, at the tightest strict tolerance. Each has
-`size` (variables), `case`, `device`, `solve_s`, `solve_s_min`, `solve_s_max`, `iterations`, `solved_repeats`,
-`repeats` and `status`. The status is `solved` only if every repeat met the tolerance and, on the GPU, the KKT
-residual was at most twice the CPU's. Otherwise it is `partial`.
+**`runs`** come from the sweep that wrote the file, at the tightest strict tolerance. Each has `size`
+(variables), `case`, `family`, `device`, `solve_s`, `solve_s_min`, `solve_s_max`, `iterations`, `solved_repeats`,
+`repeats`, `status`, `residual_ratio` and `residual_limit`. Times and iterations are medians over the repeats that
+solved, and are `null` when no repeat solved. The status is `solved` only if every repeat met the tolerance and, on
+the GPU, the KKT residual was at most `residual_limit` (twice) the CPU's. Otherwise it is `partial`, and the site
+states the reason for that point. `residual_ratio` is the GPU's largest KKT residual over the CPU's, and is `null`
+for the CPU and when the two cannot be compared.
 
 **`like_for_like`** entries have `case`, `family`, `junctions`, `periods`, `nvar`, `tol_requested`, `repeats`,
 `cpu_statuses`, `gpu_statuses`, `cpu_solved_repeats`, `gpu_solved_repeats`, `both_solved_every_repeat`,
 `cpu_total_s`, `gpu_total_s`, `cpu_iterations`, `gpu_iterations`, `cpu_kkt_residual`, `gpu_kkt_residual`,
 `gpu_max_objective_rel`, `gpu_over_cpu_time`, `gpu_slowest_over_cpu_median`, `gpu_over_cpu_kkt_residual` and
 `achieved_tolerance_matched`. Times and iterations cover the repeats that solved.
-
-### `gpu_notes.json`
-
-A copy of `results/gpu_notes.json`. It has `label`, `source_commit`, `run_date`, `device`, `details`, `findings`
-(each with `id`, `title`, `text`, `evidence`), `not_run` (each with `item`, `status`, and `evidence` where a log
-exists) and `roadmap` (each with `item`, `status`, which is always `not run`, and `needs`).

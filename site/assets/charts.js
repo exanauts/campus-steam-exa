@@ -15,9 +15,10 @@ const linTicks = (lo, hi, n = 5) => {
   return out;
 };
 
-// series: [{ name, color, points: [{ x, y, hollow, note }] }]. marker: { x, label }, passed only when measured.
+// series: [{ name, color, points: [{ x, y, hollow, hollowLabels, note }] }]. marker: { x, label }, passed only when measured.
+// hollowLabels say in the legend why points are hollow. missingText(seriesName, x) fills table cells without a point.
 export function lineChart(container, spec) {
-  const { title, subtitle, xLabel, yLabel, series, xScale = "linear", yScale = "linear", marker = null, yFormat = compact, labelEnds = null } = spec;
+  const { title, subtitle, xLabel, yLabel, series, xScale = "linear", yScale = "linear", marker = null, yFormat = compact, labelEnds = null, missingText = () => "not measured" } = spec;
   const box = el("div", { class: "chart" }, container);
   el("h4", {}, box, title);
   if (subtitle) el("p", { class: "sub" }, box, subtitle);
@@ -25,7 +26,11 @@ export function lineChart(container, spec) {
   if (series.length > 1 || anyHollow) {
     const legend = el("ul", { class: "legend" }, box);
     series.forEach((s) => { const li = el("li", {}, legend); el("i", { style: `border-color:${s.color}` }, li); li.append(s.name); });
-    if (anyHollow) { const li = el("li", {}, legend); el("i", { class: "hollow" }, li); li.append("Stopped at a looser tolerance"); }
+    [...new Set(series.flatMap((s) => s.points.flatMap((p) => (p.hollow && p.hollowLabels) || [])))].forEach((label) => {
+      const li = el("li", {}, legend);
+      el("i", { class: "hollow" }, li);
+      li.append(label);
+    });
   }
   const holder = el("div", {}, box);
   const xs = [...new Set(series.flatMap((s) => s.points.map((p) => p.x)))].sort((a, b) => a - b);
@@ -108,7 +113,7 @@ export function lineChart(container, spec) {
   dataTable(box, `Table of values: ${title}`, [xLabel, ...series.map((s) => s.name)],
     xs.map((v) => [compact(v), ...series.map((s) => {
       const p = s.points.find((q) => q.x === v);
-      return p ? yFormat(p.y) + (p.note ? ` (${p.note})` : "") : "not measured";
+      return p ? yFormat(p.y) + (p.note ? ` (${p.note})` : "") : missingText(s.name, v);
     })]));
   return box;
 }

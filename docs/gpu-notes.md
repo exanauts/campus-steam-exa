@@ -146,9 +146,10 @@ tolerance of 1e-6 ended with `INFEASIBLE_PROBLEM_DETECTED`, while the two other 
 ## KKT behavior and regularization
 
 From [`results/gpu_diagnostics.csv`](../results/gpu_diagnostics.csv), produced by
-[`scripts/site/gpu_diagnostics.jl`](../scripts/site/gpu_diagnostics.jl), with three repeats per row.
+[`scripts/site/gpu_diagnostics.jl`](../scripts/site/gpu_diagnostics.jl), with three repeats per row. Restoration
+iterations are the sum over the three repeats.
 
-| Case | Variant | Device | Repeats solved | Iterations | Iterations with inertia regularization | Restoration iterations | Mean refinement steps | Largest refinement steps |
+| Case | Variant | Device | Repeats solved | Iterations | Iterations with inertia regularization | Restoration iterations (sum over repeats) | Mean refinement steps | Largest refinement steps |
 |---|---|---|---|---|---|---|---|---|
 | Demo campus (132 junctions) | Default | CPU | 3 of 3 | 51 to 51 | 12% | 0 | 1.1 | 2 |
 | Demo campus (132 junctions) | Default | GPU | 3 of 3 | 85 to 190 | 91% | 13 | 8.9 | 30 |
@@ -251,12 +252,13 @@ The site build attempts the GPU only at 25 tags and 1 month.
 
 ## Where the GPU may pay off later
 
-Nothing in this section has been run, and no speedup is projected. Each item states what would need to be
+Nothing in this section has produced a result, and no speedup is projected. Year-long horizons were attempted
+once and did not finish. The other items have not been run. Each item states what would need to be
 true for it to pay off.
 
 | Opportunity | Status | What would need to be true |
 |---|---|---|
-| Year-long horizons | Not run | The one attempt at T = 8,760 did not finish on either device. The GPU must converge reliably at that size. Iteration counts must stop varying as widely as they do at T = 720, and the factorization must fit in GPU memory |
+| Year-long horizons | Did not finish | The one attempt at T = 8,760 did not finish on either device. The GPU must converge reliably at that size. Iteration counts must stop varying as widely as they do at T = 720, and the factorization must fit in GPU memory |
 | Many-scenario contingency screening | Not run | Scenarios must share one sparsity pattern so that one symbolic analysis and batched factorization can be reused, and each scenario must converge without manual restarts |
 | Calibration over full historian history | Not run | The GPU must solve the longer records that the CPU solves, and the problem must fit in GPU memory. The 3-month case has not been run on the GPU in any recorded build |
 | Embedded learned load models | Not run | The learned model must be expressed in forms ExaModels can evaluate on the GPU, and function evaluation must become a large share of solve time. Today it is a small share |

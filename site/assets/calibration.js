@@ -9,7 +9,9 @@ const TABLE_TAGS = 25;
 
 // All wording of the section is here, so it can be revised without touching the drawing code.
 const TEXT = {
-  leadFalling: (first, last) => `With one month of data, more of the right tags reduce the recovery error: the largest error falls from ${first.label} with ${first.tags} tags to ${last.label} with ${last.tags} tags.`,
+  intro: "What the data buys is pipe heat-loss and friction values fitted to the plant, so that scenarios reflect that network. The test below shows how closely those values can be estimated from hourly readings. It uses a simulated campus and simulated historian-style CSV readings, not data from a real plant.",
+  definition: "Recovery error is how far the estimated pipe heat-loss and friction values are from the known true values in the simulated campus. A smaller number means a closer estimate. This test measures only that accuracy. It does not measure savings or any other benefit.",
+  leadFalling: (first, last) => `With one month of data, more tags reduce the recovery error: the largest error falls from ${first.label} with ${first.tags} tags to ${last.label} with ${last.tags} tags.`,
   leadMixed: (first, last) => `With one month of data, the largest recovery error is ${first.label} with ${first.tags} tags and ${last.label} with ${last.tags} tags.`,
   chartTitle: "Largest recovery error against number of tags, with one month of data",
   chartNote: "Every point on this chart uses one month of data. The table below shows longer records with 25 tags.",
@@ -18,7 +20,8 @@ const TEXT = {
   monthsHead: ["Months of data", "Largest recovery error"],
   notRun: "Not run",
   notConverged: "Did not converge",
-  method: "The campus in this test is simulated, so its true pipe coefficients are known, and the recovery error compares each estimate with those true values. This is a test on synthetic data, not a result from a real plant.",
+  seasonCompared: (s) => `Accuracy depends on which season the data covers. With ${s.tags} tags and one month of data, the largest recovery error was ${s.first.label} for ${s.first.window} (${s.first.where}) and ${s.second.label} for ${s.second.window} (${s.second.where}).`,
+  seasonMissing: (s) => `Accuracy can depend on which season the data covers. With ${s.tags} tags, the largest recovery error for ${s.first.window} was ${s.first.label}. The same fit for ${s.second.window} has no result in this build: ${s.second.outcome}.`,
   noChart: " The calibration study has not produced a converged result in this build.",
   noFigures: "Export size figures are not available in this build.",
   figuresNote: "Measured on the synthetic export used in this demonstration.",
@@ -29,6 +32,19 @@ const TEXT = {
 };
 
 const percent = (v) => `${v.toFixed(1)}%`;
+
+// The largest recovery error of each seasonal window, as computed by the build.
+function seasonalWindows(check) {
+  const windows = Array.isArray(check?.windows) ? check.windows : [];
+  if (check?.run !== true || windows.length < 2 || !Number.isFinite(windows[0].max_error_percent)) return null;
+  const describe = (w) => ({
+    window: w.label,
+    label: Number.isFinite(w.max_error_percent) ? percent(w.max_error_percent) : null,
+    where: `${w.max_error_group}, ${w.max_error_coefficient === "loss" ? "heat loss" : "friction"}`,
+    outcome: w.converged === true ? "no error was recorded" : `the solver stopped with status ${w.solver_status}`,
+  });
+  return { tags: check.tags, first: describe(windows[0]), second: describe(windows[1]) };
+}
 
 export function normalizeCalibration(raw) {
   if (!raw) return null;
@@ -45,7 +61,7 @@ export function normalizeCalibration(raw) {
         : c.converged === true && Number.isFinite(c.max_error_percent) ? percent(c.max_error_percent) : TEXT.notConverged,
     }));
   return {
-    points, months,
+    points, months, seasonal: seasonalWindows(raw.seasonal_check),
     findings: Array.isArray(raw.findings) ? raw.findings.filter((f) => typeof f === "string") : [],
     subtitle: raw.chart?.subtitle || null, xLabel: raw.chart?.x_label || "Tags used", yLabel: raw.chart?.y_label || "Largest recovery error (%)",
     ask: raw.ask || null, historian: raw.historian || null,
@@ -59,7 +75,10 @@ export function renderCalibration(host, cal) {
   host.replaceChildren();
   const first = cal.points[0], last = cal.points[cal.points.length - 1];
   const falling = cal.points.every((p, i) => i === 0 || p.error < cal.points[i - 1].error);
+  el("p", {}, host, TEXT.intro);
+  el("p", {}, host, TEXT.definition);
   el("p", { class: "lead" }, host, falling ? TEXT.leadFalling(first, last) : TEXT.leadMixed(first, last));
+  if (cal.seasonal) el("p", { class: "lead" }, host, cal.seasonal.second.label ? TEXT.seasonCompared(cal.seasonal) : TEXT.seasonMissing(cal.seasonal));
   lineChart(el("div", { class: "charts" }, host), {
     title: TEXT.chartTitle, subtitle: cal.subtitle, xLabel: cal.xLabel, yLabel: cal.yLabel, yScale: "log",
     labelEnds: (p) => percent(p.y), yFormat: (v) => `${+v.toPrecision(3)}`,
@@ -81,7 +100,6 @@ export function renderCalibration(host, cal) {
     });
   }
   const scope = el("ul", { class: "scope" }, host);
-  el("li", {}, scope, TEXT.method);
   cal.findings.forEach((f) => el("li", {}, scope, f));
 }
 

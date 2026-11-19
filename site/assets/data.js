@@ -105,6 +105,10 @@ export function normalizeScenario(raw, network) {
 
 export function normalizeBenchmarks(raw) {
   if (!raw || !Array.isArray(raw.runs) || !raw.runs.length) return null;
-  const runs = raw.runs.filter((r) => Number.isFinite(r.size) && Number.isFinite(r.solve_s) && (r.device === "cpu" || r.device === "gpu"));
-  return runs.length ? { runs, sizeLabel: raw.size_label || "Variables", notes: raw.notes || null, crossover: raw.crossover || null } : null;
+  const known = raw.runs.filter((r) => Number.isFinite(r.size) && (r.device === "cpu" || r.device === "gpu"));
+  const runs = known.filter((r) => Number.isFinite(r.solve_s));
+  // Entries without a time are sizes where a device solved none of its repeats.
+  const unsolved = known.filter((r) => !Number.isFinite(r.solve_s));
+  const skipped = Array.isArray(raw.not_run) ? raw.not_run.filter((x) => x.case).length : 0;
+  return runs.length ? { runs, unsolved, skipped, sizeLabel: raw.size_label || "Variables", notes: raw.notes || null, crossover: raw.crossover || null } : null;
 }

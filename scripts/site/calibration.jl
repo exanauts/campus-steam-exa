@@ -69,6 +69,23 @@ function _cal_bad_example(table, series::HistorianSeries; tag = "FAR-1.STM.TEMP"
     )
 end
 
+# Relative error of each estimated group against the true group mean, in percent.
+function _cal_error_percent(hist, result)
+    errors = recovery_errors(result, hist.truth)
+    estimated = findall(hist.groups.estimated)
+    return Dict(
+        "loss" => Dict(hist.groups.names[g] => _cal_round(100 * errors.loss[g]; digits = 3) for g in estimated),
+        "friction" => Dict(hist.groups.names[g] => _cal_round(100 * errors.friction[g]; digits = 3) for g in estimated),
+    )
+end
+
+# The largest entry of `_cal_error_percent`, and the group and coefficient it belongs to.
+function _cal_largest_error(error_percent)
+    entries = [(value, group, coefficient) for (coefficient, groups) in error_percent for (group, value) in groups]
+    value, group, coefficient = argmax(first, sort(entries; by = e -> (e[2], e[3])))
+    return Dict{String, Any}("max_error_percent" => value, "max_error_group" => group, "max_error_coefficient" => coefficient)
+end
+
 function _cal_point(hist, net, series, nominal_state, n_tags, months; backend = nothing, solver...)
     hours = months * CampusSteam.HOURS_PER_MONTH
     problem = CalibrationProblem(
@@ -95,10 +112,7 @@ function _cal_point(hist, net, series, nominal_state, n_tags, months; backend = 
     )
     if result.converged
         cell["estimate"] = Dict("loss" => _cal_round.(result.loss), "friction" => _cal_round.(result.friction))
-        cell["error_percent"] = Dict(
-            "loss" => Dict(hist.groups.names[g] => _cal_round(100 * errors.loss[g]; digits = 3) for g in estimated),
-            "friction" => Dict(hist.groups.names[g] => _cal_round(100 * errors.friction[g]; digits = 3) for g in estimated),
-        )
+        cell["error_percent"] = _cal_error_percent(hist, result)
         cell["max_error_percent"] = _cal_round(
             100 * maximum(vcat(errors.loss[estimated], errors.friction[estimated])); digits = 3,
         )
@@ -166,10 +180,11 @@ function _cal_seasonal_check(hist, net, series, january, wall_limit_s)
     result = solve_calibration(build_calibration_model(problem); max_iter = CAL_MAX_ITER, max_wall_time = wall_limit_s)
     check["run"] = true
     check["windows"] = Any[
-        Dict(
+        merge(Dict{String, Any}(
             "label" => "month 1", "first_hour" => 1, "solver_status" => january["solver_status"],
             "converged" => true, "solve_s" => january["solve_s"], "estimate" => january["estimate"],
-        ),
+            "error_percent" => january["error_percent"],
+        ), _cal_largest_error(january["error_percent"])),
         Dict{String, Any}(
             "label" => "month 7", "first_hour" => offset + 1, "solver_status" => result.status,
             "converged" => result.converged, "solve_s" => _cal_round(result.solve_time_s; digits = 2),
@@ -177,6 +192,8 @@ function _cal_seasonal_check(hist, net, series, january, wall_limit_s)
     ]
     if result.converged
         check["windows"][2]["estimate"] = Dict("loss" => _cal_round.(result.loss), "friction" => _cal_round.(result.friction))
+        check["windows"][2]["error_percent"] = _cal_error_percent(hist, result)
+        merge!(check["windows"][2], _cal_largest_error(check["windows"][2]["error_percent"]))
     end
     return check
 end
@@ -197,17 +214,19 @@ end
 
 function _cal_findings(net, hist, identifiability, seasonal, grid)
     finest = identifiability[end]
+    fitted = join(hist.groups.names[hist.groups.estimated], " and ")
     findings = String[
-        "All data is synthetic. The network is a synthetic $(length(net.junctions))-junction campus, not the $(length(demo_campus().junctions))-junction demo campus shown elsewhere on this site.",
-        "Coefficients are estimated per pipe group, not per pipe: at most $(finest["pipe_directions_resolved_12_months"]) of $(finest["pipe_coefficients"]) per-pipe directions are resolved by $(finest["tags"]) tags.",
-        "Condensate-return coefficients are not estimated. They are held at nominal and would need their own condensate-side tags.",
-        "Recovery error is measured against the length-weighted mean of the true pipe coefficients in each group, and pipes in a group differ by a seeded $(100 * CampusSteam.TRUE_PIPE_SPREAD)% spread.",
+        "All data is simulated. This test uses a separate $(length(net.junctions))-junction simulated campus, not the $(length(demo_campus().junctions))-junction campus drawn on the map at the top of this page.",
+        "One heat-loss value and one friction value are fitted for each group of pipes ($fitted), not for each pipe. A calculation of what the readings can reveal predicts that $(finest["tags"]) tags over 12 months would pin down, to within about 10%, at most $(finest["pipe_directions_resolved_12_months"]) independent combinations of the $(finest["pipe_coefficients"]) pipe-by-pipe values.",
+        "Heat-loss and friction values for the condensate return pipes are not fitted. They stay at their starting values, and fitting them would need tags on the condensate side.",
+        "The simulated pipes in a group are not identical: each pipe's true value varies from the group's value by about $(100 * CampusSteam.TRUE_PIPE_SPREAD)% (one standard deviation). Each fitted value is therefore compared with the average true value of its group, with longer pipes counting for more.",
     ]
     months = _cal_months_finding(grid)
     months === nothing || push!(findings, months)
     if get(seasonal, "run", false) && haskey(seasonal["windows"][2], "estimate")
         first_month, seventh = seasonal["windows"][1]["estimate"], seasonal["windows"][2]["estimate"]
-        push!(findings, "The steam-mains friction multiplier was estimated at $(first_month["friction"][1]) from month 1 and $(seventh["friction"][1]) from month 7, against a true group mean of $(seasonal["true_friction_multiplier"][1]).")
+        value(x) = round(x; digits = 3)
+        push!(findings, "The friction value of the $(seasonal["groups"][1]) was estimated at $(value(first_month["friction"][1])) from month 1 and $(value(seventh["friction"][1])) from month 7. Its true group average is $(value(seasonal["true_friction_multiplier"][1])).")
     end
     return findings
 end
@@ -249,7 +268,7 @@ function _cal_chart(grid)
     isempty(series) && return nothing
     return Dict(
         "title" => "Coefficient recovery error against number of tags",
-        "subtitle" => "Synthetic data. Largest relative error over the estimated steam-side coefficient groups.",
+        "subtitle" => "Simulated data. The largest error, in percent, among the fitted steam-side heat-loss and friction values.",
         "x_label" => "Tags used",
         "y_label" => "Largest recovery error (%)",
         "x_scale" => "linear",

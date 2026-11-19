@@ -172,7 +172,7 @@ CPU with one thread. Solve times exclude the first run, which includes compilati
 | Energy closure (W) | -2.4e-8 |
 
 The plant output is 80.06 MW, with 0.36 MW lost in pipes, no excess heat and no shed load. GPU
-results have not been measured on this data.
+results on this campus are in [`docs/gpu-notes.md`](gpu-notes.md).
 
 ## Verification against the reference code
 
@@ -235,23 +235,9 @@ excess. Other results to keep in mind:
 ### Scaled campuses
 
 `scaled_campus` keeps total design heat at or below 250 MW while the pipe network keeps growing, so
-large campuses have more pipe per unit of steam. The table compares the smallest possible steam pipe
-loss, with all steam at 100 C, against the superheat the plant can supply at design flow. Solves use
-the default options with a limit of 1000 iterations.
-
-| Junctions | Steam pipe (km) | Minimum loss / available superheat | Status at 100% | Excess at 100% | Excess at 50% | Excess at 25% |
-|---|---|---|---|---|---|---|
-| 134 | 13.1 | 0.03 | Optimal | 0.00% | 0.18% | 4.24% |
-| 500 | 53.3 | 0.06 | Optimal | 0.19% | 2.00% | 12.46% |
-| 1,000 | 113.2 | 0.13 | Optimal | 0.87% | 12.34% | 52.37% |
-| 2,000 | 224.4 | 0.28 | Optimal | 17.91% | 74.10% | 194.49% |
-| 4,000 | 461.2 | 0.58 | Not converged | not available | not measured | not measured |
-| 10,000 | 1139.7 | 1.56 | Not converged | not available | not measured | not measured |
-
-The 2,000-junction solves at 50% and 25% stopped at MadNLP's acceptable tolerance. At 10,000
-junctions the minimum loss exceeds the available superheat, so this physics has no operating point
-at design flow without excess heat. Use the large campuses to study solver scaling, not heat
-delivery.
+large campuses have more pipe per unit of steam. The committed record of scaled solves covers 200 to 800
+junctions: [`results/validation_size_sweep.csv`](../results/validation_size_sweep.csv), written by
+[`validation/run_validation.jl`](../validation/run_validation.jl).
 
 ## Modeling limits
 
@@ -332,6 +318,9 @@ a limit of 1000 iterations per solve. Reversed pipes are 4, 8, 11, 12 and 18 in 
 
 ### Measurements
 
+**Superseded by [`docs/gpu-notes.md`](gpu-notes.md).** This table is an earlier measurement, kept for the record.
+Use the GPU notes for the current CPU and GPU comparison.
+
 Demo campus, first T hours of the synthetic profiles, default ramp limit, no outage. Generator commit
 `a1e75b6`. Times exclude compilation. The tolerance is 1e-8 with a limit of 1000 iterations. The CPU
 runs use MadNLP's default MUMPS solver. The GPU runs use one NVIDIA H200 with cuDSS and
@@ -348,7 +337,8 @@ violation, and closure is the largest hourly energy balance error.
 | 720 | 725,760 | 625,679 | 2,156,398 | GPU | `SOLVED_TO_ACCEPTABLE_LEVEL` | 149 | 0.250 | 12.980 | 7.6e-8 | 5.9e-3 |
 
 The GPU runs at T = 168 and T = 720 stopped at MadNLP's acceptable level and did not reach 1e-8.
-T = 8,760 has not been run on this data.
+T = 8,760 was attempted once per device and neither solve finished, as recorded in
+[`docs/gpu-notes.md`](gpu-notes.md) and the [log](../results/logs/benchmarks_year_attempt.txt).
 
 ### Multi-period API
 

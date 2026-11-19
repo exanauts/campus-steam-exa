@@ -74,7 +74,8 @@ function plant_derate_case(net, profiles; hours = cold_snap_week(profiles), outa
     rating[outage] .= one_boiler_out_W(net)
     return scenario_case(
         "plant_derate", "One boiler out",
-        "The generated cold-snap week with one of four boilers out for 48 hours, so the plant cannot meet the peak.",
+        "The week of unusually cold weather in the generated year (hours $(first(hours)) to $(last(hours))), with its own demand and one of four boilers out for 48 hours, so the plant cannot meet the peak. " *
+        "This is a different week from the Cold snap tab, which raises every load $(round(Int, 100 * (SURGE_FACTOR - 1))) percent for 48 hours in the normal winter week.",
         hours, profiles.heat_W[hours, :], rating;
         events = Any[Dict("kind" => "boiler_out", "first_hour" => first(outage), "last_hour" => last(outage),
             "rating_MW" => one_boiler_out_W(net) / 1.0e6)],
