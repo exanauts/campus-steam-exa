@@ -43,6 +43,10 @@ export function normalizeNetwork(raw) {
   const junctions = rows(raw.junctions, ["id", "side", "kind", "x_m", "y_m"]);
   const pipes = rows(raw.pipes, ["id", "side", "from", "to"]);
   const loads = rows(raw.loads, ["id", "name", "type", "steam_junction", "design_heat_MW"]);
+  // Optional: the weight the optimizer puts on each building's unserved heat.
+  if (loads && Array.isArray(raw.loads.priority_weight) && raw.loads.priority_weight.length === loads.length) {
+    loads.forEach((l, i) => { l.priority_weight = raw.loads.priority_weight[i]; });
+  }
   const plant = raw.plant;
   if (!junctions || !pipes || !loads || !plant || !Number.isFinite(plant.rating_MW)) return null;
   const steam = new Map(junctions.filter((j) => j.side === "steam").map((j) => [j.id, { id: j.id, kind: j.kind, x: j.x_m, y: j.y_m }]));

@@ -153,7 +153,12 @@ export async function initHero(network) {
   const panel = $("panel"), transport = $("transport"), scrubber = $("scrubber"), play = $("play");
   map.closest(".stage").classList.add("has-panel");
   $("map-key").hidden = false;
-  buildKey($("map-key"), TYPE_ORDER.filter((t) => network.loads.some((l) => l.type === t)));
+  // Building types in the order the optimizer protects them: the larger the weight, the later it is shed.
+  const weightOf = (t) => network.loads.find((l) => l.type === t && Number.isFinite(l.priority_weight))?.priority_weight;
+  const keyTypes = TYPE_ORDER.filter((t) => network.loads.some((l) => l.type === t));
+  const ranked = keyTypes.every((t) => weightOf(t) !== undefined);
+  if (ranked) keyTypes.sort((a, b) => weightOf(b) - weightOf(a));
+  buildKey($("map-key"), keyTypes, ranked ? weightOf : null);
   const ui = buildPanel(panel, network);
 
   const cache = new Map();
@@ -491,7 +496,7 @@ function buildMap(host, network) {
   return { notice, prepare, update, resize, setVisible: (on) => { svg.style.display = on ? "" : "none"; } };
 }
 
-function buildKey(host, types) {
+function buildKey(host, types, weightOf) {
   host.replaceChildren();
   const marker = (parent, type, short) => {
     const svg = el("svg", { class: "key-mark map", viewBox: "-8 -8 16 16", "aria-hidden": "true" }, parent);
@@ -508,9 +513,16 @@ function buildKey(host, types) {
   const f = el("span", {}, pipesRow); el("i", { class: "line-key faded" }, f); f.append("Faded: lightly loaded this hour, not a prediction");
   const d = el("span", {}, pipesRow); el("i", { class: "line-key" }, d); d.append("Pipe out of service");
   const bldgRow = el("div", { class: "key-row" }, host);
-  types.forEach((t) => { const item = el("span", {}, bldgRow); marker(item, t, false); item.append(typeName(t)); });
-  el("span", {}, bldgRow, "Larger marker: larger design heat");
-  if (types.length) { const e = el("span", {}, bldgRow); marker(e, types[types.length - 1], true); e.append("Emptying marker: that building type is short of heat"); }
+  if (weightOf) el("span", { class: "key-lead" }, bldgRow, "Priority for heat, highest first:");
+  types.forEach((t, i) => {
+    const item = el("span", {}, bldgRow);
+    marker(item, t, false);
+    item.append(weightOf ? `${i + 1}. ${typeName(t)} (weight ${num(weightOf(t))})` : typeName(t));
+  });
+  const noteRow = el("div", { class: "key-row" }, host);
+  if (weightOf) el("span", {}, noteRow, "When heat is short, the lowest priority is shed first");
+  el("span", {}, noteRow, "Larger marker: larger design heat");
+  if (types.length) { const e = el("span", {}, noteRow); marker(e, types[types.length - 1], true); e.append("Emptying marker: that building type is short of heat"); }
 }
 
 function buildPanel(host, network) {

@@ -1,6 +1,6 @@
 // "What the data buys": reads calibration.json (docs/site-data.md, "Calibration").
 // Fields the page does not use are ignored, so the file can grow without changing this module.
-import { el, missing, num } from "./format.js";
+import { el, missing, num, dataTable } from "./format.js";
 import { lineChart } from "./charts.js";
 
 // The chart holds the length of record fixed. The table shows the largest tag set at each length.
@@ -9,6 +9,8 @@ const TABLE_TAGS = 25;
 
 // All wording of the section is here, so it can be revised without touching the drawing code.
 const TEXT = {
+  tag: (example) => `A tag is one named measurement that the plant already records over time, such as a flow meter, a pressure or temperature sensor, or whether a boiler is running. In the export requested here, each tag gives one reading per hour.${example ? ` For example, the tag ${example.name} is "${example.description.toLowerCase()}".` : ""}`,
+  tagList: (n) => `The ${n} tags used in this test`,
   intro: "What the data buys is pipe heat-loss and friction values fitted to the plant, so that scenarios reflect that network. The test below shows how closely those values can be estimated from hourly readings. It uses a simulated campus and simulated historian-style CSV readings, not data from a real plant.",
   definition: "Recovery error is how far the estimated pipe heat-loss and friction values are from the known true values in the simulated campus. A smaller number means a closer estimate. This test measures only that accuracy. It does not measure savings or any other benefit.",
   leadFalling: (first, last) => `With one month of data, more tags reduce the recovery error: the largest error falls from ${first.label} with ${first.tags} tags to ${last.label} with ${last.tags} tags.`,
@@ -67,6 +69,11 @@ export function normalizeCalibration(raw) {
     ask: raw.ask || null, historian: raw.historian || null,
     example: raw.bad_quality_example || null,
     sampleRows: Array.isArray(raw.sample_rows) ? raw.sample_rows : null,
+    tags: raw.tags_by_category && typeof raw.tags_by_category === "object"
+      ? Object.entries(raw.tags_by_category).flatMap(([category, list]) => (Array.isArray(list) ? list : [])
+        .filter((t) => t && typeof t.name === "string" && typeof t.description === "string")
+        .map((t) => ({ category, name: t.name, unit: t.unit ?? "", description: t.description })))
+      : [],
   };
 }
 
@@ -76,6 +83,7 @@ export function renderCalibration(host, cal) {
   const first = cal.points[0], last = cal.points[cal.points.length - 1];
   const falling = cal.points.every((p, i) => i === 0 || p.error < cal.points[i - 1].error);
   el("p", {}, host, TEXT.intro);
+  el("p", {}, host, TEXT.tag(cal.tags[0]));
   el("p", {}, host, TEXT.definition);
   el("p", { class: "lead" }, host, falling ? TEXT.leadFalling(first, last) : TEXT.leadMixed(first, last));
   if (cal.seasonal) el("p", { class: "lead" }, host, cal.seasonal.second.label ? TEXT.seasonCompared(cal.seasonal) : TEXT.seasonMissing(cal.seasonal));
@@ -115,6 +123,10 @@ export function renderAsk(host, cal) {
   if (!items.length) {
     el("p", { class: "note" }, host, TEXT.noFigures);
     return;
+  }
+  if (cal.tags.length) {
+    const label = (c) => c.charAt(0).toUpperCase() + c.slice(1);
+    dataTable(host, TEXT.tagList(cal.tags.length), ["Category", "Tag name", "What it measures", "Unit"], cal.tags.map((t) => [label(t.category), t.name, t.description, t.unit]));
   }
   const dl = el("dl", { class: "stats" }, host);
   items.forEach(([k, v, f]) => { const d = el("div", {}, dl); el("dt", {}, d, k); el("dd", {}, d, f(v)); });
