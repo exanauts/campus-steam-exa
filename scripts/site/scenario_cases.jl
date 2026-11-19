@@ -15,7 +15,7 @@ const SURGE_FACTOR = 1.5
 # Hours over which the surge builds and fades. A step of 50 percent exceeds the plant ramp limit.
 const SURGE_SHOULDER = 3
 const DERATE_PERIODS = 25:72
-const OUTAGE_PIPE = 20
+const OUTAGE_PIPE = 4
 const OUTAGE_PERIODS = 49:96
 const UNIFORM_PRIORITY_WEIGHT = 10.0
 # Peak hours of the cold-snap week for the deeper derate, with one boiler left running.

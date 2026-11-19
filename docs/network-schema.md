@@ -18,6 +18,29 @@ out-of-service pipes and renumbers the remaining pipes contiguously in their ori
 junction and load ids do not change. During an outage, a lightly loaded looped main can carry a
 small reverse flow at part load, so outage models must tolerate that on `is_loop` pipes.
 
+## Layout of the generated campuses
+
+`demo_campus` and `scaled_campus` lay out one plant at campus size by the same rule:
+
+- The plant sits on the south edge. A west and an east trunk main leave it along a header, turn
+  north at the corners and pass a series of branch stations. Every main is sized for its own flow,
+  so the trunks taper away from the plant.
+- Branch mains run east or west from the stations, and each building hangs off a branch by a short
+  lateral. Mains run straight with bends at corners and one jog in the west trunk. No pipe crosses
+  another pipe or a building footprint (`BUILDING_FOOTPRINT_M`).
+- Two cross-ties join the trunks and close two loops around an open quad lined with classrooms.
+  The middle of the first tie feeds a short clinic spur toward the plant, so the critical buildings
+  receive steam from both trunks; the middle of the second feeds a north spine to an outlying housing
+  group. On campuses with three or more stations per trunk, the east trunk detours around the lab
+  district as a ring, and the outermost branches start with a long untapped run to outlying
+  buildings. The rest of the network is a tree.
+- Housing lies to the west, labs to the east, classrooms around the quad and clinics on the spur.
+- Building sizes are redrawn, within the same ranges, until no looped main changes flow direction
+  over the load mixes of a year, so models can orient every pipe once along the design flow. This
+  holds for the demo campus and the 40-junction calibration campus over the generated year; larger
+  scaled campuses keep the best draw found and are solved at design heat.
+- The water side mirrors the steam side pipe for pipe and is drawn with a small offset.
+
 ## Files (one directory per network)
 
 ### `junctions.csv`
@@ -72,7 +95,7 @@ small reverse flow at part load, so outage models must tolerate that on `is_loop
 ## Julia API (`CampusSteam`)
 
 ```julia
-demo_campus(; seed = 1)::CampusNetwork          # about 45 loads, 130-140 junctions
+demo_campus(; seed = 1)::CampusNetwork          # 45 loads, 166 junctions, 2 loops
 scaled_campus(n_junctions; seed = 1)::CampusNetwork
 generate_profiles(net; seed = 1, hours = 8760)::LoadProfiles
 orient_network(net; out_of_service = Int[])::CampusNetwork

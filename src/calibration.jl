@@ -361,7 +361,11 @@ function curated_tags(net::CampusNetwork, design_state::AbstractVector, s::_Stat
     far = by_distance([l.steam_junction for l in net.loads])
     plant = net.plant.steam_junction
     is_load = Set(l.steam_junction for l in net.loads)
-    mid = by_distance([j.id for j in net.junctions if j.side == "steam" && j.id != plant && !(j.id in is_load)])
+    # Main junctions where the laterals to the farthest buildings branch off, so that the pressure
+    # and temperature drops along those laterals are measured; then the farthest other junctions.
+    tap_of = Dict(p.to => p.from for p in net.pipes if p.side == "steam" && p.to in is_load)
+    others = by_distance([j.id for j in net.junctions if j.side == "steam" && j.id != plant && !(j.id in is_load)])
+    mid = unique([[tap_of[j] for j in far if tap_of[j] != plant]; others])
     steam_pipes = [p.id for p in net.pipes if p.side == "steam"]
     mains = sort(steam_pipes; by = e -> (-design_state[_iflow(s, e)], e))
     buildings = sort(collect(1:s.nl); by = l -> (-design_state[_iflow(s, s.np + l)], l))
@@ -380,13 +384,13 @@ function curated_tags(net::CampusNetwork, design_state::AbstractVector, s::_Stat
         pres("FAR-1.STM.PRES", far[1], "Steam pressure at the building farthest from the plant"),
         flow("MAIN-1.STM.FLOW", mains[1], "Steam flow in the most heavily loaded main"),
         flow("MAIN-2.STM.FLOW", mains[2], "Steam flow in the second most heavily loaded main"),
-        temp("MID-1.STM.TEMP", mid[1], "Steam temperature at the farthest street junction"),
-        pres("MID-1.STM.PRES", mid[1], "Steam pressure at the farthest street junction"),
+        temp("MID-1.STM.TEMP", mid[1], "Steam temperature where the lateral to the farthest building branches off"),
+        pres("MID-1.STM.PRES", mid[1], "Steam pressure where the lateral to the farthest building branches off"),
         temp("FAR-2.STM.TEMP", far[2], "Steam temperature at the second farthest building"),
         pres("FAR-2.STM.PRES", far[2], "Steam pressure at the second farthest building"),
         flow("MAIN-3.STM.FLOW", mains[3], "Steam flow in the third most heavily loaded main"),
-        temp("MID-2.STM.TEMP", mid[2], "Steam temperature at the second farthest street junction"),
-        pres("MID-2.STM.PRES", mid[2], "Steam pressure at the second farthest street junction"),
+        temp("MID-2.STM.TEMP", mid[2], "Steam temperature at the next branch-off point toward the far buildings"),
+        pres("MID-2.STM.PRES", mid[2], "Steam pressure at the next branch-off point toward the far buildings"),
         run_state(1),
         run_state(2),
         run_state(3),

@@ -132,10 +132,10 @@ end
     end
 
     @testset "outage with a reversed loop pipe" begin
-        # With loop pipe 103 out, the flow in another loop pipe runs against its design direction
-        # at hour 2629. A fixed design orientation cannot represent that flow.
+        # With loop pipe 18 out, the flow in another loop pipe runs against its design direction
+        # at hour 3326. A fixed design orientation cannot represent that flow.
         net = demo_campus()
-        out, hour = 103, 2629
+        out, hour = 18, 3326
         heat = generate_profiles(net; hours = hour).heat_W[hour, :]
 
         design = orient_network(net; out_of_service = [out])

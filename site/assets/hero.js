@@ -314,8 +314,10 @@ function buildMap(host, network) {
   const pts = [...network.junctions.values()];
   const xs = pts.map((j) => j.x), ys = pts.map((j) => j.y);
   const pad = 46;
+  // The plant label sits under the plant, which is on the south edge, so the bottom margin is wider.
+  const bottomPad = pad + 54;
   const x0 = Math.min(...xs) - pad, y1 = Math.max(...ys) + pad;
-  const vw = Math.max(...xs) - x0 + pad, vh = y1 - Math.min(...ys) + pad;
+  const vw = Math.max(...xs) - x0 + pad, vh = y1 - Math.min(...ys) + bottomPad;
   const px = (j) => j.x - x0, py = (j) => y1 - j.y;
   const svg = el("svg", {
     viewBox: `0 0 ${vw} ${vh}`, role: "img",
@@ -356,7 +358,7 @@ function buildMap(host, network) {
   }));
   const pj = network.junctions.get(network.plant.junction);
   const plantMark = el("rect", { class: "plant" }, svg);
-  const plantText = el("text", { "text-anchor": "start" }, svg, "Plant");
+  const plantText = el("text", { "text-anchor": "middle" }, svg, "Plant");
 
   let unit = 1, size = 10, current = null, facts = null, hourNow = 0, maxFlow = 1;
   const typeInfo = new Map();
@@ -383,7 +385,7 @@ function buildMap(host, network) {
     const s = size * 1.7;
     plantMark.setAttribute("x", px(pj) - s / 2); plantMark.setAttribute("y", py(pj) - s / 2);
     plantMark.setAttribute("width", s); plantMark.setAttribute("height", s);
-    plantText.setAttribute("x", px(pj) + s / 2 + 6 * unit); plantText.setAttribute("y", py(pj) + 5 * unit);
+    plantText.setAttribute("x", px(pj)); plantText.setAttribute("y", py(pj) + s / 2 + 15 * unit);
     plantText.setAttribute("font-size", 13 * unit); plantText.setAttribute("stroke-width", 3 * unit);
     drawOutMarks();
     if (current) update(current, facts, hourNow);

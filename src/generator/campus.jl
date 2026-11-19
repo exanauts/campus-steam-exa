@@ -1,10 +1,18 @@
 # Synthetic campus layout and pipe sizing for the fictional Example University.
 #
-# Layout. Streets form a jittered grid. Each block holds up to four buildings, one
-# per quadrant, and each building connects by a short service lateral to the street
-# intersection at its block corner, so laterals never cross. Two feeders join the
-# plant, south of the grid, to adjacent intersections. The return network mirrors the
-# steam network and is drawn with a small offset.
+# Layout (see `_campus_layout`). The plant sits on the south edge. Two trunk mains leave it
+# along a header, turn north at the corners and pass a series of branch stations; the trunks
+# taper because every main is sized for its own flow. Branch mains run east-west from the
+# stations, and buildings hang off the branches by short laterals. Two cross-ties join the
+# trunks around an open quad lined with classrooms and close the two loops. The first tie feeds
+# a short clinic spur toward the plant from its middle, so the clinics get steam from both
+# trunks; the second feeds a north spine to an outlying housing group. On larger campuses the
+# east trunk detours around the lab district as a ring, and the outermost branches start with a
+# long untapped run to outlying buildings. Everything else is a tree. Mains run straight with
+# bends at the corners and one jog in the west trunk, and no pipe crosses another pipe or a
+# building footprint. Building sizes are drawn until no looped main changes direction over the
+# load mixes of a year. The return network mirrors the steam network and is drawn with a small
+# offset.
 #
 # Parameter ranges (all synthetic, typical of campus steam systems):
 #   Supply steam            1.0 MPa absolute, 463 K (about 10 K superheat)
@@ -20,7 +28,7 @@
 #                           surface, each with a 10 % spread; small steam pipes lose at least
 #                           0.20 W/(m K) per metre. See `_STEAM_HEAT_LOSS_U`.
 #   Condensate pumps        150-300 kPa at buildings, 400 kPa on the plant return
-#   Plant rating            at least 1.35 times the total design heat
+#   Plant rating            at least 1.35 times the total design heat, in 5 MW steps
 #   Boiler ramp limit       25 % of rating per hour
 
 """
@@ -67,14 +75,6 @@ _steam_heat_loss_u(d) = max(_STEAM_HEAT_LOSS_U, _STEAM_MIN_LINE_LOSS_W_PER_MK / 
 # Every main can carry at least 15 % of the campus flow during an outage, up to this flow. Without
 # the cap, large campuses get oversized mains that run nearly empty and cool the steam too far.
 const _MAIN_FLOW_FLOOR_KG_S = 6.0
-
-# Block types of the demo campus, south to north (rows) and west to east (columns).
-const _DEMO_BLOCKS = ["housing" "classroom" "critical" "housing";
-                      "housing" "classroom" "classroom" "lab";
-                      "housing" "lab" "lab" "lab"]
-# Most of one block stays open as the central quad.
-const _DEMO_QUAD_BLOCK = (2, 2)
-const _DEMO_QUAD_KEEP = (0, 0)
 
 _fully_rough_friction(d) = 0.25 / log10(_ROUGHNESS_M / (3.7 * d))^2
 
@@ -159,87 +159,540 @@ function _size_side!(draft::Vector{_DraftPipe}, n::Int, root::Int, demand_kg_s::
     return draft
 end
 
-function _block_types(rng::SplitMix64, nx::Int, ny::Int, demo::Bool)
-    demo && return _DEMO_BLOCKS
-    types = Matrix{String}(undef, ny, nx)
-    for j in 1:ny, i in 1:nx
-        u = _uniform!(rng)
-        types[j, i] = u < 0.06 ? "critical" : u < 0.32 ? "lab" : u < 0.66 ? "housing" : "classroom"
-    end
-    # Every campus has a hospital-like block next to the plant.
-    types[1, max(1, div(nx, 2))] = "critical"
-    return types
+# ---------------------------------------------------------------------------
+# Layout
+# ---------------------------------------------------------------------------
+
+# Geometry ranges in metres. Mains run east-west or north-south; laterals leave them at right angles.
+const _TAP_FIRST_M = (90.0, 110.0)          # station to the first tap of a branch
+const _TAP_SPACING_EW_M = (82.0, 105.0)     # between taps on an east-west main
+const _TAP_SPACING_NS_M = (62.0, 85.0)      # between taps on a north-south main
+const _LATERAL_NS_M = (42.0, 52.0)          # lateral to a building north or south of its main
+const _LATERAL_EW_M = (50.0, 60.0)          # lateral to a building east or west of its main
+const _LATERAL_AHEAD_M = (72.0, 82.0)       # lateral that continues past the last tap
+const _FIRST_STATION_M = (225.0, 255.0)     # plant header to the first cross-tie
+const _SPUR_FIRST_M = (110.0, 115.0)        # first cross-tie to the first tap of the clinic spur
+const _SPINE_CLEARANCE_M = 130.0            # north spine taps start this far past the last station
+const _QUAD_M = (300.0, 340.0)              # between the two cross-ties
+const _QUAD_WIDE_M = (345.0, 375.0)         # the same, with a branch station halfway
+const _STATION_SPACING_M = (185.0, 260.0)   # between branch stations farther out
+const _DEAD_END_RUN_M = (220.0, 300.0)      # untapped run toward an outlying group of buildings
+const _JOG_M = (35.0, 55.0)                 # sideways jog of the west trunk
+const _JOG_RISE_M = 100.0
+const _RING_CORNER_M = (85.0, 100.0)        # last tap of a ring side to the ring corner
+# Half a footprint plus a clear margin, so inner branches stop short of the middle of the campus.
+const _INNER_CLEARANCE_M = 60.0
+
+# Load counts of the demo campus, which also set the mix of scaled campuses.
+const _DEMO_LOAD_COUNTS = ("critical" => 4, "classroom" => 9, "housing" => 16, "lab" => 16)
+
+# A possible building position on a lateral from main node `tap`. Slots of lower `rank` are filled
+# first; every tap at the end of a main has one slot of rank 1, so no main ends without a building.
+# Slots above `_LAST_RANK` stay empty: south of the first cross-tie is kept for the clinic spur.
+const _LAST_RANK = 3
+struct _Slot
+    tap::Int
+    x::Float64
+    y::Float64
+    rank::Int
+    zone::Symbol
 end
 
-# Build a campus with `nx` by `ny` street intersections and `n_loads` buildings.
-function _build_campus(nx::Int, ny::Int, n_loads::Int, seed::Integer; demo::Bool = false)
-    layout = _stream(seed, 1)
-    sizing_rng = _stream(seed, 2)
+# A tree branch off a trunk. `station` is 0 for the plant header, 1 and 2 for the cross-tie
+# stations, -1 for the station halfway between them, and 3 or more for stations farther out.
+struct _BranchSpec
+    side::Symbol        # :west or :east trunk
+    station::Int
+    kind::Symbol        # :outer, :inner or :header
+    min_taps::Int
+    max_taps::Int
+    weight::Float64
+    dead_end::Bool      # starts with a long untapped run
+end
 
-    # Street grid.
-    xs = cumsum([0.0; [_uniform!(layout, 230.0, 300.0) for _ in 1:(nx - 1)]])
-    ys = cumsum([0.0; [_uniform!(layout, 180.0, 240.0) for _ in 1:(ny - 1)]])
-    street_x = [round(xs[i] + _uniform!(layout, -8.0, 8.0); digits = 1) for i in 1:nx, j in 1:ny]
-    street_y = [round(ys[j] + _uniform!(layout, -8.0, 8.0); digits = 1) for i in 1:nx, j in 1:ny]
+mutable struct _Layout
+    x::Vector{Float64}                       # main nodes; node 1 is the plant
+    y::Vector{Float64}
+    pipes::Vector{Tuple{Int,Int,Symbol}}     # (upstream, downstream, role)
+    slots::Vector{_Slot}
+    quad::Tuple{Float64,Float64}
+end
 
-    # Building slots: (block i, block j, quadrant sx, quadrant sy).
-    slots = NTuple{4,Int}[]
-    for j in 1:(ny - 1), i in 1:(nx - 1), sy in 0:1, sx in 0:1
-        demo && (i, j) == _DEMO_QUAD_BLOCK && (sx, sy) != _DEMO_QUAD_KEEP && continue
-        push!(slots, (i, j, sx, sy))
+function _node!(L::_Layout, x, y)
+    push!(L.x, round(x; digits = 1))
+    push!(L.y, round(y; digits = 1))
+    return length(L.x)
+end
+
+# Taps of inner branches, which must fit in half the width between the trunks.
+_inner_taps(K::Int) = K <= 2 ? 0 : min(2, max(1, round(Int, K / 2)))
+
+# Branch stations per trunk for a campus with `per_side` junctions on each side.
+_stations_for(per_side::Int) = max(2, round(Int, sqrt(per_side / 9)))
+
+function _branch_specs(rng::SplitMix64, K::Int)
+    specs = _BranchSpec[]
+    weight() = _uniform!(rng, 0.6, 1.5)
+    many = typemax(Int)
+    # A main junction without a building must not become the dead end of a main when one pipe is
+    # out, because a main that serves nothing has no defined flow. So the top stations of a small
+    # campus always carry a branch, and corners without a branch carry a building (see below).
+    if K == 2
+        for (side, station, required) in ((:west, 2, 1), (:east, 2, 1), (:west, 1, 0), (:east, 1, 0))
+            push!(specs, _BranchSpec(side, station, :outer, required, many, weight(), false))
+        end
+        push!(specs, _BranchSpec(:west, 0, :header, 0, many, 0.6 * weight(), false))
+        push!(specs, _BranchSpec(:east, 0, :header, 0, many, 0.6 * weight(), false))
+        return specs
     end
-    length(slots) >= n_loads ||
-        throw(ArgumentError("A $nx by $ny street grid cannot hold $n_loads buildings."))
-    if length(slots) > n_loads
-        chosen = sort!(_shuffle!(layout, collect(eachindex(slots)))[1:n_loads])
-        slots = slots[chosen]
+    # Required branches first, then optional ones in priority order.
+    push!(specs, _BranchSpec(:west, 1, :outer, 1, many, weight(), false))
+    push!(specs, _BranchSpec(:west, 2, :outer, 1, many, weight(), false))
+    for k in 3:K
+        push!(specs, _BranchSpec(:west, k, :outer, 1, many, weight(), k == K))
+        push!(specs, _BranchSpec(:east, k, :outer, 1, many, weight(), k == K))
     end
-    block_types = _block_types(layout, nx - 1, ny - 1, demo)
+    m_in = _inner_taps(K)
+    for k in 3:K
+        push!(specs, _BranchSpec(:west, k, :inner, 0, m_in, 0.5 * weight(), false))
+        push!(specs, _BranchSpec(:east, k, :inner, 0, m_in, 0.5 * weight(), false))
+    end
+    push!(specs, _BranchSpec(:west, 0, :header, 0, many, 0.6 * weight(), false))
+    push!(specs, _BranchSpec(:east, 0, :header, 0, many, 0.6 * weight(), false))
+    push!(specs, _BranchSpec(:west, -1, :outer, 0, many, weight(), false))
+    # The north spine leaves the middle of the second cross-tie. Its buildings are a large sink
+    # where the flows from both trunks meet, which keeps the flow direction in that tie fixed.
+    pushfirst!(specs, _BranchSpec(:center, 2, :spine, 2, many, 2.0 * weight(), true))
+    return specs
+end
 
-    # Junction ids on one side: plant, then intersections, then buildings.
-    n_street = nx * ny
-    n_side = 1 + n_street + n_loads
-    street_id(i, j) = 1 + (j - 1) * nx + i
-    building_id(k) = 1 + n_street + k
-    plant_i = max(1, div(nx, 2))
-    plant_x = round((street_x[plant_i, 1] + street_x[plant_i + 1, 1]) / 2; digits = 1)
-    plant_y = round(minimum(street_y) - 140.0; digits = 1)
+# Share `T` taps among the branches: the required minimum, then one tap per optional branch in
+# priority order, then the rest by weight. Returns `nothing` when `T` is below the minimum.
+function _allocate_taps(specs::Vector{_BranchSpec}, T::Int)
+    taps = [s.min_taps for s in specs]
+    left = T - sum(taps)
+    left < 0 && return nothing
+    for (i, s) in enumerate(specs)
+        left == 0 && break
+        if taps[i] == 0 && s.max_taps > 0
+            taps[i] = 1
+            left -= 1
+        end
+    end
+    while left > 0
+        best, score = 0, Inf
+        for (i, s) in enumerate(specs)
+            taps[i] < s.max_taps || continue
+            v = (taps[i] + 1) / s.weight
+            if v < score
+                best, score = i, v
+            end
+        end
+        best == 0 && return nothing
+        taps[best] += 1
+        left -= 1
+    end
+    return taps
+end
 
-    positions = Vector{Tuple{Float64,Float64}}(undef, n_side)
-    kinds = Vector{String}(undef, n_side)
-    positions[1] = (plant_x, plant_y)
-    kinds[1] = "plant"
-    for j in 1:ny, i in 1:nx
-        positions[street_id(i, j)] = (street_x[i, j], street_y[i, j])
-        kinds[street_id(i, j)] = "junction"
+const _NORTH = (0.0, 1.0)
+const _SOUTH = (0.0, -1.0)
+const _EAST = (1.0, 0.0)
+const _WEST = (-1.0, 0.0)
+
+# Building positions beside main node `tap`, one per unit vector in `sides`.
+function _side_slots!(L::_Layout, rng, tap, sides, ranks, zones)
+    for (side, rank, zone) in zip(sides, ranks, zones)
+        offset = side[2] == 0 ? _uniform!(rng, _LATERAL_EW_M...) : _uniform!(rng, _LATERAL_NS_M...)
+        push!(L.slots, _Slot(tap, round(L.x[tap] + side[1] * offset; digits = 1),
+                             round(L.y[tap] + side[2] * offset; digits = 1), rank, zone))
+    end
+end
+
+# A straight tree branch from `start` in direction `dir` with `ntaps` taps. Each tap serves a
+# building on either side; the last one can also serve a building straight ahead.
+function _branch!(L::_Layout, rng, start, dir, ntaps; extra_run = 0.0, sides = nothing,
+                  ahead = true, zone = :west)
+    sides = something(sides, dir[2] == 0 ? [_NORTH, _SOUTH] : [_EAST, _WEST])
+    spacing = dir[2] == 0 ? _TAP_SPACING_EW_M : _TAP_SPACING_NS_M
+    prev = start
+    dist = _uniform!(rng, _TAP_FIRST_M...) + extra_run
+    for t in 1:ntaps
+        t > 1 && (dist += _uniform!(rng, spacing...))
+        tap = _node!(L, L.x[start] + dir[1] * dist, L.y[start] + dir[2] * dist)
+        push!(L.pipes, (prev, tap, :main))
+        prev = tap
+        order = length(sides) == 2 && _uniform!(rng) < 0.5 ? reverse(sides) : sides
+        _side_slots!(L, rng, tap, order, [1, 3][1:length(order)], fill(zone, length(order)))
+        if t == ntaps && ahead
+            offset = _uniform!(rng, _LATERAL_AHEAD_M...)
+            push!(L.slots, _Slot(tap, round(L.x[tap] + dir[1] * offset; digits = 1),
+                                 round(L.y[tap] + dir[2] * offset; digits = 1), 2, zone))
+        end
+    end
+    return prev
+end
+
+# A cross-tie between stations `a` and `b` on the two trunks, with buildings on both sides. With
+# `hub` set to `_NORTH` or `_SOUTH`, the middle tap leaves that side free for a branch and is
+# returned; otherwise the result is 0. `ranks` gives the slot ranks south and north of the tie.
+function _cross_tie!(L::_Layout, rng, a, b, south_zone, north_zone; hub = nothing, ranks = (1, 2),
+                     max_taps = typemax(Int))
+    lo = L.x[a] + _uniform!(rng, _TAP_FIRST_M...)
+    hi = L.x[b] - _uniform!(rng, _TAP_FIRST_M...)
+    span = hi - lo
+    n = clamp(round(Int, span / 100) + 1, 1, max_taps)
+    while n > 1 && span / (n - 1) < _TAP_SPACING_EW_M[1]
+        n -= 1
+    end
+    hub === nothing || iseven(n) && (n -= 1)
+    middle = (n + 1) ÷ 2
+    # Taps shift a little along the tie where the spacing leaves room.
+    jitter = n == 1 ? 0.0 : clamp((span / (n - 1) - _TAP_SPACING_EW_M[1] - 2.0) / 2, 0.0, 12.0)
+    prev, hub_tap = a, 0
+    for t in 1:n
+        x = n == 1 ? (lo + hi) / 2 : lo + span * (t - 1) / (n - 1)
+        is_hub = hub !== nothing && t == middle
+        is_hub || (x += _uniform!(rng, -jitter, jitter))
+        tap = _node!(L, x, L.y[a])
+        push!(L.pipes, (prev, tap, :main))
+        prev = tap
+        if is_hub
+            hub_tap = tap
+            side, zone = hub == _NORTH ? (_SOUTH, south_zone) : (_NORTH, north_zone)
+            _side_slots!(L, rng, tap, [side], [1], [zone])
+        else
+            _side_slots!(L, rng, tap, [_SOUTH, _NORTH], [ranks...], [south_zone, north_zone])
+        end
+    end
+    push!(L.pipes, (prev, b, :main))
+    return hub_tap
+end
+
+# The clinic spur: a short main south from the first cross-tie toward the plant, with buildings on
+# both sides of each tap.
+function _clinic_spur!(L::_Layout, rng, hub, n_taps)
+    prev = hub
+    y = L.y[hub] - _uniform!(rng, _SPUR_FIRST_M...)
+    for t in 1:n_taps
+        t > 1 && (y -= _uniform!(rng, _TAP_SPACING_NS_M[1], _TAP_SPACING_NS_M[1] + 6.0))
+        tap = _node!(L, L.x[hub], y)
+        push!(L.pipes, (prev, tap, :main))
+        prev = tap
+        _side_slots!(L, rng, tap, [_WEST, _EAST], [1, 1], [:clinic, :clinic])
+    end
+end
+
+# A ring main east of the east trunk, from station `a` out and back to station `b` farther north.
+# Buildings inside the ring are filled before the ones outside.
+function _ring!(L::_Layout, rng, a, b, n_taps)
+    x0, ya, yb = L.x[a], L.y[a], L.y[b]
+    prev = a
+    dist = _uniform!(rng, _TAP_FIRST_M...)
+    for t in 1:n_taps
+        t > 1 && (dist += _uniform!(rng, _TAP_SPACING_EW_M...))
+        tap = _node!(L, x0 + dist, ya)
+        push!(L.pipes, (prev, tap, :main))
+        prev = tap
+        _side_slots!(L, rng, tap, [_NORTH, _SOUTH], [1, 3], [:east, :east])
+    end
+    xr = x0 + dist + _uniform!(rng, _RING_CORNER_M...)
+    corner = _node!(L, xr, ya)
+    push!(L.pipes, (prev, corner, :main))
+    _side_slots!(L, rng, corner, [_EAST], [1], [:east])
+    prev = corner
+    y = ya + _uniform!(rng, 110.0, 120.0)
+    while y <= yb - 110.0
+        tap = _node!(L, xr, y)
+        push!(L.pipes, (prev, tap, :main))
+        prev = tap
+        _side_slots!(L, rng, tap, [_WEST, _EAST], [1, 3], [:east, :east])
+        y += _uniform!(rng, _TAP_SPACING_NS_M...)
+    end
+    corner = _node!(L, xr, yb)
+    push!(L.pipes, (prev, corner, :main))
+    _side_slots!(L, rng, corner, [_EAST], [1], [:east])
+    prev = corner
+    lo = x0 + _uniform!(rng, _TAP_FIRST_M...)
+    hi = xr - _uniform!(rng, _RING_CORNER_M...)
+    n = n_taps
+    while n > 1 && (hi - lo) / (n - 1) < _TAP_SPACING_EW_M[1]
+        n -= 1
+    end
+    for t in n:-1:1
+        tap = _node!(L, n == 1 ? (lo + hi) / 2 : lo + (hi - lo) * (t - 1) / (n - 1), yb)
+        push!(L.pipes, (prev, tap, :main))
+        prev = tap
+        _side_slots!(L, rng, tap, [_SOUTH, _NORTH], [1, 3], [:east, :east])
+    end
+    push!(L.pipes, (prev, b, :main))
+end
+
+# Main nodes, mains and building slots for `K` stations per trunk and `taps[i]` taps on branch
+# `specs[i]`. The plant sits on the south edge. A west and an east trunk leave it along a header,
+# turn north and pass the stations. Two cross-ties join the trunks around the central quad, and for
+# `K >= 3` the east trunk runs as a ring around the lab district. Every other branch is a tree.
+function _campus_layout(seed::Integer, K::Int, specs::Vector{_BranchSpec}, taps::Vector{Int})
+    rng = _stream(seed, 4)
+    L = _Layout([0.0], [0.0], Tuple{Int,Int,Symbol}[], _Slot[], (0.0, 0.0))
+    count_of(side, station, kind) =
+        sum((n for (s, n) in zip(specs, taps) if (s.side, s.station, s.kind) == (side, station, kind)); init = 0)
+
+    m_in = _inner_taps(K)
+    gap = K == 2 ? _uniform!(rng, 300.0, 340.0) :
+          2 * (_TAP_FIRST_M[2] + (m_in - 1) * _TAP_SPACING_EW_M[2] + _INNER_CLEARANCE_M) +
+          _uniform!(rng, 40.0, 80.0)
+    xw = -gap * _uniform!(rng, 0.42, 0.52)
+    xe = xw + gap
+    has_mid = count_of(:west, -1, :outer) > 0
+    # Larger campuses have more clinics, so the spur and the room for it grow.
+    n_spur = max(2, K - 2)
+    y1 = _uniform!(rng, _FIRST_STATION_M...) + (n_spur - 2) * (_TAP_SPACING_NS_M[1] + 6.0)
+    y2 = y1 + _uniform!(rng, (has_mid ? _QUAD_WIDE_M : _QUAD_M)...)
+    L.quad = ((xw + xe) / 2, (y1 + y2) / 2)
+
+    station = Dict{Tuple{Symbol,Int},Int}()
+    station[(:west, 0)] = _node!(L, xw, 0.0)
+    station[(:east, 0)] = _node!(L, xe, 0.0)
+    push!(L.pipes, (1, station[(:west, 0)], :feeder))
+    push!(L.pipes, (1, station[(:east, 0)], :feeder))
+
+    # West trunk.
+    prev = station[(:west, 0)]
+    station[(:west, 1)] = _node!(L, xw, y1)
+    push!(L.pipes, (prev, station[(:west, 1)], :main))
+    prev = station[(:west, 1)]
+    if has_mid
+        station[(:west, -1)] = _node!(L, xw, y1 + (y2 - y1) / 2 + _uniform!(rng, -5.0, 5.0))
+        push!(L.pipes, (prev, station[(:west, -1)], :main))
+        prev = station[(:west, -1)]
+    end
+    station[(:west, 2)] = _node!(L, xw, y2)
+    push!(L.pipes, (prev, station[(:west, 2)], :main))
+    prev = station[(:west, 2)]
+    if K >= 3
+        x = xw - _uniform!(rng, _JOG_M...)
+        jog = _node!(L, x, y2 + _JOG_RISE_M)
+        push!(L.pipes, (prev, jog, :main))
+        prev, y = jog, y2
+        for k in 3:K
+            y += _uniform!(rng, _STATION_SPACING_M...)
+            station[(:west, k)] = _node!(L, x, y)
+            push!(L.pipes, (prev, station[(:west, k)], :main))
+            prev = station[(:west, k)]
+        end
     end
 
-    # Buildings, numbered per type.
-    counters = Dict(t => 0 for t in _LOAD_TYPES)
-    names = String[]
-    types = String[]
-    heats = Float64[]
-    corners = Int[]
-    for (k, (i, j, sx, sy)) in enumerate(slots)
-        x = xs[i] + (sx == 0 ? 0.25 : 0.75) * (xs[i + 1] - xs[i]) + _uniform!(layout, -5.0, 5.0)
-        y = ys[j] + (sy == 0 ? 0.25 : 0.75) * (ys[j + 1] - ys[j]) + _uniform!(layout, -5.0, 5.0)
-        positions[building_id(k)] = (round(x; digits = 1), round(y; digits = 1))
-        kinds[building_id(k)] = "load"
-        type = block_types[j, i]
-        counters[type] += 1
-        push!(names, string(_NAME_PREFIX[type], " ", lpad(counters[type], 2, '0')))
-        push!(types, type)
-        low, high = _HEAT_RANGE_W[type]
-        push!(heats, _uniform!(layout, low, high))
-        push!(corners, street_id(i + sx, j + sy))
+    # East trunk. On larger campuses it loops around the lab district between the two cross-tie
+    # stations instead of running straight.
+    prev = station[(:east, 0)]
+    station[(:east, 1)] = _node!(L, xe, y1)
+    push!(L.pipes, (prev, station[(:east, 1)], :main))
+    station[(:east, 2)] = _node!(L, xe, y2)
+    if K >= 3
+        _ring!(L, rng, station[(:east, 1)], station[(:east, 2)], max(2, m_in))
+    else
+        push!(L.pipes, (station[(:east, 1)], station[(:east, 2)], :main))
+    end
+    prev, y = station[(:east, 2)], y2
+    for k in 3:K
+        y += _uniform!(rng, _STATION_SPACING_M...)
+        station[(:east, k)] = _node!(L, xe, y)
+        push!(L.pipes, (prev, station[(:east, k)], :main))
+        prev = station[(:east, k)]
     end
 
-    # Large campuses keep the plant plausible by serving many smaller buildings.
+    # Cross-ties. The first one feeds the clinic spur from both trunks, the second the north spine.
+    # A small campus has one tap on each tie.
+    max_taps = K >= 3 ? typemax(Int) : 1
+    hub1 = _cross_tie!(L, rng, station[(:west, 1)], station[(:east, 1)], :tie1_south, :tie1_north;
+                       hub = K >= 3 ? _SOUTH : nothing, ranks = K >= 3 ? (4, 1) : (1, 2), max_taps)
+    hub1 > 0 && _clinic_spur!(L, rng, hub1, n_spur)
+    station[(:center, 2)] = _cross_tie!(L, rng, station[(:west, 2)], station[(:east, 2)],
+                                        :tie2_south, :tie2_north; hub = K >= 3 ? _NORTH : nothing,
+                                        max_taps)
+    top = maximum(L.y[station[(side, K)]] for side in (:west, :east))
+
+    # A header corner without a branch serves one building beyond the corner.
+    for (side, dir) in ((:west, _WEST), (:east, _EAST))
+        count_of(side, 0, :header) == 0 &&
+            _side_slots!(L, rng, station[(side, 0)], [dir], [1], [side])
+    end
+
+    # Tree branches.
+    for (s, n) in zip(specs, taps)
+        n == 0 && continue
+        start = station[(s.side, s.station)]
+        outward = s.side == :west ? _WEST : _EAST
+        if s.kind == :spine
+            run = max(0.0, top + _SPINE_CLEARANCE_M - L.y[start] - _TAP_FIRST_M[2])
+            _branch!(L, rng, start, _NORTH, n; extra_run = run, zone = :north)
+        elseif s.kind == :header
+            _branch!(L, rng, start, outward, n; sides = [_NORTH], zone = s.side)
+        elseif s.kind == :inner
+            _branch!(L, rng, start, (-outward[1], 0.0), n; ahead = false, zone = :central)
+        elseif s.dead_end
+            # A long untapped run out from the last station, then north to an outlying group.
+            bend = _node!(L, L.x[start] + outward[1] * _uniform!(rng, _DEAD_END_RUN_M...), L.y[start])
+            push!(L.pipes, (start, bend, :main))
+            _branch!(L, rng, bend, _NORTH, n; extra_run = 15.0, zone = s.side)
+        else
+            _branch!(L, rng, start, outward, n; zone = s.side)
+        end
+    end
+    return L
+end
+
+# Which slots get a building: rank 1 first, then rank 2, then rank 3, in random order within a rank.
+function _choose_slots(rng::SplitMix64, slots::Vector{_Slot}, n_loads::Int)
+    order = Int[]
+    for rank in 1:_LAST_RANK
+        append!(order, _shuffle!(rng, [i for (i, s) in enumerate(slots) if s.rank == rank]))
+    end
+    return sort!(order[1:n_loads])
+end
+
+# Building types by district: clinics on the first cross-tie nearest the plant, classrooms around
+# the quad, housing to the west and labs to the east.
+function _assign_types(slots::Vector{_Slot}, chosen::Vector{Int}, counts, quad)
+    type = Dict{Int,String}()
+    free = copy(chosen)
+    function claim!(n, t, primary, key)
+        ranked = vcat(sort([i for i in free if slots[i].zone in primary]; by = key),
+                      sort([i for i in free if !(slots[i].zone in primary)]; by = key))
+        for i in ranked[1:n]
+            type[i] = t
+        end
+        filter!(i -> !haskey(type, i), free)
+    end
+    claim!(counts["critical"], "critical", (:clinic, :tie1_south),
+           i -> (slots[i].zone != :clinic, hypot(slots[i].x, slots[i].y), i))
+    claim!(counts["classroom"], "classroom", (:tie1_north, :tie2_south),
+           i -> (hypot(slots[i].x - quad[1], slots[i].y - quad[2]), i))
+    claim!(counts["housing"], "housing", (), i -> (slots[i].x, slots[i].y, i))
+    for i in free
+        type[i] = "lab"
+    end
+    return [type[i] for i in chosen]
+end
+
+function _load_counts(n_loads::Int, demo::Bool)
+    demo && return Dict(_DEMO_LOAD_COUNTS)
+    total = sum(last, _DEMO_LOAD_COUNTS)
+    critical = max(1, round(Int, n_loads * 4 / total))
+    classroom = max(1, round(Int, n_loads * 9 / total))
+    housing = max(1, round(Int, n_loads * 16 / total))
+    return Dict("critical" => critical, "classroom" => classroom, "housing" => housing,
+                "lab" => n_loads - critical - classroom - housing)
+end
+
+# The smallest number of branch taps that fits the requested size. With `n_loads` given, that is
+# the first layout with enough building slots; with `per_side` given, it is the first layout in
+# which every remaining junction can be a building.
+function _plan_campus(seed::Integer, K::Int; n_loads = nothing, per_side = nothing)
+    specs = _branch_specs(_stream(seed, 5), K)
+    for T in 0:100_000
+        taps = _allocate_taps(specs, T)
+        taps === nothing && continue
+        L = _campus_layout(seed, K, specs, taps)
+        # Every slot of rank 1 must get its building.
+        loads = n_loads === nothing ? per_side - length(L.x) : n_loads
+        loads < count(s -> s.rank == 1, L.slots) && return nothing
+        loads <= count(s -> s.rank <= _LAST_RANK, L.slots) && return (L, loads)
+    end
+    return nothing
+end
+
+# Design heat by building. A stratified draw within each type's range keeps the campus total near
+# the mean of the ranges, so the plant rating does not jump with the seed. Large campuses keep the
+# plant plausible by serving many smaller buildings.
+function _draw_heats(rng::SplitMix64, types::Vector{String}, demo::Bool)
+    heats = zeros(length(types))
+    for t in _LOAD_TYPES
+        members = findall(==(t), types)
+        isempty(members) && continue
+        strata = _shuffle!(rng, collect(0:(length(members) - 1)))
+        low, high = _HEAT_RANGE_W[t]
+        for (k, m) in enumerate(members)
+            heats[m] = low + (high - low) * (strata[k] + _uniform!(rng)) / length(members)
+        end
+    end
     raw_total = sum(heats)
     shrink = (!demo && raw_total > _SCALED_MAX_TOTAL_HEAT_W) ?
              _SCALED_MAX_TOTAL_HEAT_W / raw_total : 1.0
-    heats = [round(h * shrink / 1000) * 1000 for h in heats]
-    total_heat = sum(heats)
+    return [round(h * shrink / 1000) * 1000 for h in heats]
+end
+
+# Draws of building sizes tried, and the smallest flow a looped main must keep in its design
+# direction, as a share of the plant flow, over the load mixes below.
+const _SIZE_DRAWS = 40
+const _DIRECTION_MARGIN = 0.004
+# Outdoor conditions (0 at the balance point, 1 at design) and (hour of day, day of week) pairs
+# that span the load mixes of `generate_profiles`.
+const _MIX_WEATHER = (0.0, 0.3, 0.6, 1.0)
+const _MIX_HOURS = ((3, 0), (7, 0), (13, 0), (19, 0), (3, 5), (13, 5))
+
+# Smallest flow, as a share of the plant flow, that a looped main keeps in one direction over the
+# load mixes; negative when some main changes direction.
+function _direction_margin(steam::Vector{_DraftPipe}, n::Int, heats, types, junction)
+    us = [p.from for p in steam]
+    vs = [p.to for p in steam]
+    marked = fill(false, n)
+    marked[junction] .= true
+    loop = _loop_edges(n, us, vs, 1, marked)
+    any(loop) || return Inf
+    r = [_sizing_resistance(p, _STEAM_SIZING.density) for p in steam]
+    lo = fill(Inf, length(steam))
+    hi = fill(-Inf, length(steam))
+    mixes = [(1.0, nothing); [(w, h) for w in _MIX_WEATHER for h in _MIX_HOURS]]
+    for (w, hour) in mixes
+        injection = zeros(n)
+        for (k, t) in enumerate(types)
+            base = _BASE_FRACTION[t]
+            pattern = hour === nothing ? 1.0 : _pattern(t, hour...)
+            injection[junction[k]] = -heats[k] * (base + (1 - base) * w) * pattern
+        end
+        injection ./= -sum(injection)
+        injection[1] += 1.0
+        _, phi = _solve_hydraulics(n, us, vs, r, injection, 1)
+        lo .= min.(lo, phi)
+        hi .= max.(hi, phi)
+    end
+    margin = Inf
+    for e in findall(loop)
+        m = lo[e] > 0 ? lo[e] : hi[e] < 0 ? -hi[e] : -min(hi[e], -lo[e])
+        margin = min(margin, m)
+    end
+    return margin
+end
+
+# Build a campus on a planned layout with `n_loads` buildings.
+function _build_campus(L::_Layout, n_loads::Int, seed::Integer; demo::Bool = false)
+    layout = _stream(seed, 1)
+    sizing_rng = _stream(seed, 2)
+
+    chosen = _choose_slots(layout, L.slots, n_loads)
+    types = _assign_types(L.slots, chosen, _load_counts(n_loads, demo), L.quad)
+
+    n_main = length(L.x)
+    n_side = n_main + n_loads
+    building_id(k) = n_main + k
+    positions = Vector{Tuple{Float64,Float64}}(undef, n_side)
+    kinds = Vector{String}(undef, n_side)
+    for j in 1:n_main
+        positions[j] = (L.x[j], L.y[j])
+        kinds[j] = j == 1 ? "plant" : "junction"
+    end
+    for (k, i) in enumerate(chosen)
+        positions[building_id(k)] = (L.slots[i].x, L.slots[i].y)
+        kinds[building_id(k)] = "load"
+    end
+
+    counters = Dict(t => 0 for t in _LOAD_TYPES)
+    names = map(types) do t
+        counters[t] += 1
+        string(_NAME_PREFIX[t], " ", lpad(counters[t], 2, '0'))
+    end
 
     # Topology shared by both sides, listed in steam-flow direction.
     template = _DraftPipe[]
@@ -249,26 +702,34 @@ function _build_campus(nx::Int, ny::Int, n_loads::Int, seed::Integer; demo::Bool
         length_m = round(hypot(dx, dy) * _uniform!(layout, a, b); digits = 1)
         push!(template, _draft(from, to, length_m, role))
     end
-    add_pipe!(1, street_id(plant_i, 1), :feeder, 1.05, 1.15)
-    add_pipe!(1, street_id(plant_i + 1, 1), :feeder, 1.05, 1.15)
-    for j in 1:ny, i in 1:(nx - 1)
-        add_pipe!(street_id(i, j), street_id(i + 1, j), :main, 1.03, 1.10)
+    for (from, to, role) in L.pipes
+        role == :feeder ? add_pipe!(from, to, role, 1.05, 1.15) : add_pipe!(from, to, role, 1.03, 1.10)
     end
-    for j in 1:(ny - 1), i in 1:nx
-        add_pipe!(street_id(i, j), street_id(i, j + 1), :main, 1.03, 1.10)
-    end
-    for k in 1:n_loads
-        add_pipe!(corners[k], building_id(k), :lateral, 1.10, 1.30)
+    for (k, i) in enumerate(chosen)
+        add_pipe!(L.slots[i].tap, building_id(k), :lateral, 1.10, 1.30)
     end
 
-    demand = zeros(n_side)
-    for k in 1:n_loads
-        demand[building_id(k)] = heats[k] / _LATENT_HEAT_J_PER_KG
+    # Building sizes are drawn until no looped main changes direction over the typical load mixes
+    # of a year, because models orient every pipe once along the design flow. The draw with the
+    # largest margin is kept if none reaches the target.
+    best = nothing
+    for attempt in 1:_SIZE_DRAWS
+        heats = _draw_heats(_stream(seed, 10 + attempt), types, demo)
+        demand = zeros(n_side)
+        for k in 1:n_loads
+            demand[building_id(k)] = heats[k] / _LATENT_HEAT_J_PER_KG
+        end
+        steam = [_draft(p.from, p.to, p.length_m, p.role) for p in template]
+        _size_side!(steam, n_side, 1, demand, _STEAM_SIZING)
+        margin = _direction_margin(steam, n_side, heats, types, building_id.(1:n_loads))
+        if best === nothing || margin > best.margin
+            best = (; heats, demand, steam, margin)
+        end
+        margin >= _DIRECTION_MARGIN && break
     end
-
-    steam = [_draft(p.from, p.to, p.length_m, p.role) for p in template]
+    (; heats, demand, steam) = best
+    total_heat = sum(heats)
     water = [_draft(p.to, p.from, p.length_m, p.role) for p in template]
-    _size_side!(steam, n_side, 1, demand, _STEAM_SIZING)
 
     for p in steam
         p.friction = round(_fully_rough_friction(p.diameter_m) * _uniform!(sizing_rng, 0.95, 1.05);
@@ -331,32 +792,37 @@ end
 """
     demo_campus(; seed = 1) -> CampusNetwork
 
-The demo network of the fictional Example University: 45 buildings on a 5 by 4 street
-grid, 132 junctions over both sides, with looped mains and a central quad. The seed
-changes geometry and building sizes but never the counts.
+The demo network of the fictional Example University: 45 buildings on a trunk-and-branch steam
+network with two loops, a central quad, a clinic spur and three long dead-end runs, 166
+junctions over both sides. The seed changes geometry and building sizes but never the load
+counts.
 """
-demo_campus(; seed::Integer = 1) = _build_campus(5, 4, 45, seed; demo = true)
+function demo_campus(; seed::Integer = 1)
+    n_loads = sum(last, _DEMO_LOAD_COUNTS)
+    plan = _plan_campus(seed, 3; n_loads)
+    plan === nothing && error("No demo layout fits $n_loads buildings.")
+    return _build_campus(plan[1], plan[2], seed; demo = true)
+end
 
 """
     scaled_campus(n_junctions; seed = 1) -> CampusNetwork
 
-A campus with exactly `n_junctions` junctions over both sides. `n_junctions` must be
-even, because the two sides mirror each other, and at least 40. Building sizes shrink
-on large campuses so that the total design heat stays at or below 250 MW.
+A campus with exactly `n_junctions` junctions over both sides, laid out by the same
+trunk, branch and loop rule as the demo campus. `n_junctions` must be even, because the two
+sides mirror each other, and at least 40. Building sizes shrink on large campuses so that the
+total design heat stays at or below 250 MW.
 """
 function scaled_campus(n_junctions::Integer; seed::Integer = 1)
     iseven(n_junctions) ||
         throw(ArgumentError("n_junctions must be even because both sides mirror each other; got $n_junctions."))
     n_junctions >= 40 || throw(ArgumentError("n_junctions must be at least 40; got $n_junctions."))
-    per_side = div(Int(n_junctions), 2) - 1    # junctions other than the plant
-    target = max(6, round(Int, 0.31 * per_side))
-    ny = max(2, floor(Int, sqrt(0.8 * target)))
-    nx = max(3, ceil(Int, target / ny))
-    while true
-        n_loads = per_side - nx * ny
-        n_loads >= 1 ||
-            throw(ArgumentError("n_junctions = $n_junctions is too small for a street grid."))
-        n_loads <= 4 * (nx - 1) * (ny - 1) && return _build_campus(nx, ny, n_loads, seed)
-        nx += 1
+    per_side = div(Int(n_junctions), 2)
+    K = _stations_for(per_side)
+    while K >= 2
+        plan = _plan_campus(seed, K; per_side)
+        plan === nothing || return _build_campus(plan[1], plan[2], seed)
+        K -= 1
     end
+    throw(ArgumentError("n_junctions = $n_junctions is too small for a trunk and branch layout."))
 end
+
