@@ -97,16 +97,22 @@ Always check `solution.converged` before reading results.
 ## CI
 
 - `test.yml` runs the tests on GitHub-hosted runners.
-- `site.yml` builds the site data on a self-hosted GPU runner and deploys to GitHub Pages. It must
-  trigger only on `push` to `main` and `workflow_dispatch`, never on pull requests, and keep minimal
-  `permissions`.
-- Every commit that lands on `main` rebuilds and redeploys the public site.
+- `site.yml` builds the site data on a self-hosted GPU runner, about 20 minutes, and publishes to the
+  `gh-pages` branch, which GitHub Pages serves.
+  - A commit on `main` replaces the public site.
+  - A pull request from a branch of this repository gets a full preview at
+    `https://exanauts.github.io/campus-steam-exa/preview/pr-<number>/`, linked in a comment on the
+    request. The preview is removed when the request is merged or closed.
+  - Pull requests from forks are not built, so outside code never runs on the GPU runner. Keep that
+    condition, and keep the build job at read-only `permissions`.
+  - A newer commit on a branch cancels the build of the older one.
 
 ## Branches and pull requests
 
 - Do not commit to `main` directly. Create a branch for any change or experiment, however small.
-- Open a pull request to bring a branch into `main`. The tests run on the pull request, and the site
-  build runs only after the merge.
-- Experiments that are not meant for the site can stay on their branch. Nothing on a branch is deployed.
+- Open a pull request to bring a branch into `main`. The tests run on it, and the site is rebuilt for it
+  and published as a preview, so look at the preview link before merging.
+- Experiments that are not meant for the site can stay on a branch without a pull request. Nothing is
+  built or published for a branch until a pull request is opened.
 - Before merging, run `Pkg.test()` and, for changes to the model, generator, scripts or `site/`, run
   `julia --project scripts/run_all.jl` and look at the page locally.

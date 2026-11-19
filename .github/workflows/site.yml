@@ -1,19 +1,32 @@
 name: site
 
+# Builds the site data on the GPU runner and publishes it to the gh-pages branch.
+#   push to main          -> the public site
+#   pull request          -> a preview under preview/pr-<number>/, removed when the request closes
+# Pull requests build only from branches of this repository, which only members and collaborators
+# can push. Requests from forks are skipped, so their code never reaches the self-hosted runner.
+
 on:
   push:
     branches: [main]
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
   workflow_dispatch:
 
 permissions:
   contents: read
 
+# A newer commit on the same branch or pull request cancels the build of the older one.
 concurrency:
-  group: campus-steam-site
-  cancel-in-progress: false
+  group: site-${{ github.event.pull_request.number && format('pr-{0}', github.event.pull_request.number) || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
+    if: >-
+      github.event_name != 'pull_request' ||
+      (github.event.action != 'closed' &&
+       github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: [self-hosted, Linux, X64, gpu, cuda, kkt]
     timeout-minutes: 90
     defaults:
@@ -23,13 +36,15 @@ jobs:
       CI_JULIA_VERSION: "1.13.3"
       # Never scheduled on these GPUs, whatever their memory use.
       GPU_EXCLUDE: "0,1"
+      # A pull request builds its head commit, not the merge commit GitHub prepares.
+      BUILD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
     steps:
       # Plain git and scripts/ci instead of actions/checkout and setup-julia:
       # those actions print absolute runner paths in the public job log.
       - name: Check out commit
         run: |
           git init -q .
-          git fetch -q --depth=1 --no-tags "https://github.com/${GITHUB_REPOSITORY}.git" "$GITHUB_SHA"
+          git fetch -q --depth=1 --no-tags "https://github.com/${GITHUB_REPOSITORY}.git" "$BUILD_SHA"
           git checkout -q --force FETCH_HEAD
           git clean -qffdx
 
@@ -54,6 +69,8 @@ jobs:
       - name: Build site data
         run: |
           source scripts/ci/env.sh
+          # The build records this commit in the page footer.
+          export GITHUB_SHA="$BUILD_SHA"
           julia --color=no --project=scripts scripts/run_site.jl 2>&1 | scrub
 
       - name: Finish site data
@@ -67,18 +84,17 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
-  # Packaging runs on a GitHub-hosted runner: upload-pages-artifact logs the
-  # absolute temp path of the machine it runs on.
+  # Publishing runs on a GitHub-hosted runner and is the only job that can write to the repository.
   deploy:
     needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      contents: write
+      pull-requests: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
     steps:
       - name: Download site files
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
@@ -86,11 +102,46 @@ jobs:
           name: site-build
           path: site
 
-      - name: Package Pages artifact
-        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
-        with:
-          path: site
+      - name: Check out publishing script
+        run: |
+          git init -q repo
+          git -C repo fetch -q --depth=1 --no-tags "https://github.com/${GITHUB_REPOSITORY}.git" "$GITHUB_SHA"
+          git -C repo checkout -q FETCH_HEAD -- scripts/ci/publish_pages.sh
 
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
+      - name: Publish
+        run: |
+          if [ -n "$PR_NUMBER" ]; then
+            bash repo/scripts/ci/publish_pages.sh preview "$PR_NUMBER" site
+          else
+            bash repo/scripts/ci/publish_pages.sh site site
+          fi
+
+      - name: Link the preview on the pull request
+        if: github.event_name == 'pull_request'
+        run: |
+          url="https://${GITHUB_REPOSITORY_OWNER}.github.io/${GITHUB_REPOSITORY#*/}/preview/pr-${PR_NUMBER}/"
+          body="Preview of this pull request: ${url}
+
+          Built from commit ${{ github.event.pull_request.head.sha }}. It updates on each push and is removed when the pull request closes. The page can take a minute to appear after this comment."
+          gh pr comment "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --edit-last --create-if-none --body "$body"
+
+  remove-preview:
+    if: >-
+      github.event_name == 'pull_request' && github.event.action == 'closed' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+    steps:
+      - name: Check out publishing script
+        run: |
+          git init -q repo
+          git -C repo fetch -q --depth=1 --no-tags "https://github.com/${GITHUB_REPOSITORY}.git" "${{ github.event.pull_request.base.sha }}"
+          git -C repo checkout -q FETCH_HEAD -- scripts/ci/publish_pages.sh
+
+      - name: Remove the preview
+        run: bash repo/scripts/ci/publish_pages.sh remove "$PR_NUMBER"
