@@ -33,6 +33,7 @@ write("scenarios/network.json", {
 
 const HOURS = 168;
 const OUT_PIPE = 20;
+const REVERSED = [4, 8];
 const steamPipes = pipes.filter((p) => p.side === "steam");
 const steamNodes = junctions.filter((j) => j.side === "steam");
 const uniqueness = {
@@ -68,7 +69,10 @@ for (const [id, def] of Object.entries(definitions)) {
     plantRows.excess_MW.push(0);
     plantRows.losses_MW.push(0.4);
     const out = (p) => id === "pipe_out" && inEvent(h) && +p.id === OUT_PIPE;
-    flow.push(pipes.map((p, i) => (out(p) ? null : round((p.side === "steam" ? 1 : 3) * (i % 9 === 0 ? 0.2 : 2 + (i % 7) * 4) * (demand / 60), 2))));
+    // Pipe 9 always runs against its from -> to direction, and the rerouted pipes reverse during the outage,
+    // so the page draws flow arrows both ways.
+    const sign = (p) => (+p.id === 9 || (id === "pipe_out" && inEvent(h) && REVERSED.includes(+p.id)) ? -1 : 1);
+    flow.push(pipes.map((p, i) => (out(p) ? null : round(sign(p) * (p.side === "steam" ? 1 : 3) * (i % 9 === 0 ? 0.2 : 2 + (i % 7) * 4) * (demand / 60), 2))));
     loss.push(pipes.map((p) => (out(p) ? null : 4)));
     temperature.push(steamNodes.map((_, i) => round(150 - (i / steamNodes.length) * 40, 2)));
     pressure.push(steamNodes.map(() => 900));
@@ -94,22 +98,35 @@ for (const [id, def] of Object.entries(definitions)) {
       deeper_derate: { title: "One boiler running", description: "Mock stress case.", rating_MW: ratingMW / boilers, hours: 9, first_hour_of_synthetic_year: 939,
         cases: [compareCase("Priority weights by building type", { lab: 90, classroom: 120, housing: 60, critical: 1 }), compareCase("Uniform priority weight", { lab: 80, classroom: 90, housing: 70, critical: 31 })] },
     } } : {}),
-    ...(id === "pipe_out" ? { reroute: { pipe_out: OUT_PIPE, first_hour: 49, last_hour: 96, reference_scenario: "baseline", reversed_steam_pipes: [{ pipe: 4, hours: 48 }, { pipe: 8, hours: 48 }], largest_flow_changes: [] } } : {}),
+    ...(id === "pipe_out" ? { reroute: { pipe_out: OUT_PIPE, first_hour: 49, last_hour: 96, reference_scenario: "baseline", reversed_steam_pipes: REVERSED.map((pipe) => ({ pipe, hours: 48 })), largest_flow_changes: [] } } : {}),
   });
 }
 
 const calCell = (tags, months, error) => ({ tags, months, hours: months * 730, run: true, converged: true, solver_status: "SOLVE_SUCCEEDED", max_error_percent: error });
+// Values are stored in K, as in the real file. The page shows them in C.
 const calSamples = [
-  { time: "2025-01-15 07:00:00", value: 41.2, quality: "Good", used: true },
-  { time: "2025-01-15 08:00:00", value: 99.9, quality: "Bad", used: false },
-  { time: "2025-01-15 09:00:00", value: 43.8, quality: "Good", used: true },
+  { time: "2025-01-15 07:00:00", value: 433.2, quality: "Good", used: true },
+  { time: "2025-01-15 08:00:00", value: 612.9, quality: "Bad", used: false },
+  { time: "2025-01-15 09:00:00", value: 435.8, quality: "Good", used: true },
 ];
+const seasonWindow = (label, firstHour, error, group, coefficient) => ({
+  label, first_hour: firstHour, solver_status: "SOLVE_SUCCEEDED", converged: true, solve_s: 10,
+  estimate: { loss: [1.3, 1.1, 1], friction: [1.2, 0.9, 1] }, error_percent: {}, max_error_percent: error, max_error_group: group, max_error_coefficient: coefficient,
+});
 write("calibration.json", {
   synthetic: true, data_note: "Mock calibration data.", a_field_added_later: { ignored: true },
   network: { junctions: 40, pipes: 46, loads: 11, description: "Mock network." },
   historian: { format: ["DateTime", "TagName", "Value", "Quality"], hours: 17520, tags: 25, rows: 438000, file_bytes: 2e7, tag_hours: 438000, good: 400000, excluded_bad: 9000, excluded_uncertain: 2000, excluded_blank: 0, absent: 7000, good_percent: 95.5 },
-  true_coefficients: { groups: ["steam mains", "steam laterals", "condensate return"], estimated: [true, true, false] },
-  bad_quality_example: { tag: "MOCK.TEMP", unit: "K", samples: calSamples, mean_with_bad_sample: 61.6, mean_after_exclusion: 42.5, samples_excluded: 1 },
+  true_coefficients: { groups: ["steam mains", "steam laterals", "condensate return"], estimated: [true, true, false], loss_multiplier: [1.3, 1.15, 0.85], friction_multiplier: [1.25, 0.91, 1.2], pipe_spread_percent: 3 },
+  tags_by_category: {
+    flow: [{ name: "MOCK.FLOW", unit: "kg/s", description: "Mock steam flow" }],
+    pressure: [{ name: "MOCK.PRES", unit: "Pa", description: "Mock steam pressure" }],
+    temperature: [{ name: "MOCK.TEMP", unit: "K", description: "Mock steam temperature" }],
+    "run state": [{ name: "MOCK.RUN", unit: "0/1", description: "Mock boiler running" }],
+  },
+  seasonal_check: { run: true, tags: 25, months: 1, groups: ["steam mains", "steam laterals", "condensate return"], true_loss_multiplier: [1.3, 1.15, 0.85], true_friction_multiplier: [1.25, 0.91, 1.2],
+    windows: [seasonWindow("month 1", 1, 1.5, "steam laterals", "loss"), seasonWindow("month 7", 4381, 4.5, "steam mains", "friction")] },
+  bad_quality_example: { tag: "MOCK.TEMP", unit: "K", samples: calSamples, mean_with_bad_sample: 493.97, mean_after_exclusion: 434.5, samples_excluded: 1 },
   finding: "Mock finding.",
   findings: ["Mock finding about the network.", "Mock finding about the coefficient groups."],
   chart: { title: "Mock chart", subtitle: "Mock subtitle.", x_label: "Tags used", y_label: "Largest recovery error (%)", x_scale: "linear", y_scale: "log", series: [] },

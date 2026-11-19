@@ -7,7 +7,7 @@ const logTicks = (lo, hi) => {
   for (let e = a; e <= b; e++) for (const s of steps) { const v = s * 10 ** e; if (v >= lo * 0.999 && v <= hi * 1.001) out.push(v); }
   return out.length >= 2 ? out : [lo, hi];
 };
-const linTicks = (lo, hi, n = 5) => {
+export const linTicks = (lo, hi, n = 5) => {
   const raw = (hi - lo) / n, mag = 10 ** Math.floor(Math.log10(raw));
   const step = [1, 2, 2.5, 5, 10].map((m) => m * mag).find((s) => s >= raw);
   const out = [];
