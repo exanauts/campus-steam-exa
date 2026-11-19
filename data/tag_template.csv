@@ -6,13 +6,13 @@ FAR-1.STM.TEMP,temperature,K,Steam temperature at the building farthest from the
 FAR-1.STM.PRES,pressure,Pa,Steam pressure at the building farthest from the plant
 MAIN-1.STM.FLOW,flow,kg/s,Steam flow in the most heavily loaded main
 MAIN-2.STM.FLOW,flow,kg/s,Steam flow in the second most heavily loaded main
-MID-1.STM.TEMP,temperature,K,Steam temperature at the farthest street junction
-MID-1.STM.PRES,pressure,Pa,Steam pressure at the farthest street junction
+MID-1.STM.TEMP,temperature,K,Steam temperature where the lateral to the farthest building branches off
+MID-1.STM.PRES,pressure,Pa,Steam pressure where the lateral to the farthest building branches off
 FAR-2.STM.TEMP,temperature,K,Steam temperature at the second farthest building
 FAR-2.STM.PRES,pressure,Pa,Steam pressure at the second farthest building
 MAIN-3.STM.FLOW,flow,kg/s,Steam flow in the third most heavily loaded main
-MID-2.STM.TEMP,temperature,K,Steam temperature at the second farthest street junction
-MID-2.STM.PRES,pressure,Pa,Steam pressure at the second farthest street junction
+MID-2.STM.TEMP,temperature,K,Steam temperature at the next branch-off point toward the far buildings
+MID-2.STM.PRES,pressure,Pa,Steam pressure at the next branch-off point toward the far buildings
 BLR-1.RUN,run state,0/1,Boiler 1 running
 BLR-2.RUN,run state,0/1,Boiler 2 running
 BLR-3.RUN,run state,0/1,Boiler 3 running

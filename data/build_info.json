@@ -1,5 +1,5 @@
 {
-  "commit_sha": "81ae5d83fbf8e9081ad6e2eed409553530384418",
+  "commit_sha": "b3ec91bd31af4146b5662a00a0e087129a8829e0",
   "cpu_model": "INTEL(R) XEON(R) PLATINUM 8568Y+",
   "cuda_device": "NVIDIA H200",
   "cuda_functional": true,
@@ -17,7 +17,7 @@
     "MadNLP": "0.11.0",
     "MadNLPGPU": "0.11.1"
   },
-  "run_date": "2026-11-19T15:12:52Z",
-  "selected_gpu_index": 3,
+  "run_date": "2026-11-19T15:50:38Z",
+  "selected_gpu_index": 2,
   "selected_gpu_memory_used_mib_at_start": 5
 }
