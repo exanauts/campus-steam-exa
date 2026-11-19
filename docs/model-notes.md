@@ -143,36 +143,37 @@ same residuals as any other solve. The approximation is in the search: the direc
 heuristic and is not proven optimal. A pump on a pipe running against its installed direction gives
 no boost.
 
-Scanning the 66 single loop-pipe outages at 120 sampled hours found 1636 outage-hour pairs, across
-24 outages, where the demand-based and design-based orientations differ. On 16 of those pairs, spaced
-evenly through the list:
+Scanning the 52 single loop-pipe outages of the demo campus (steam and water side) at 120 evenly
+spaced hours found 658 outage-hour pairs, across 12 outages, where the demand-based and design-based
+orientations differ. On 16 of those pairs, spaced evenly through the list:
 
 | Result on the 16 pairs | Design orientation only | `solve_oriented` |
 |---|---|---|
 | Converged | 16 | 16 |
-| Lower objective than the other method | 0 | 13 |
-| Same objective as the other method | 3 | 3 |
+| Lower objective than the other method | 0 | 10 |
+| Same objective as the other method | 6 | 6 |
 
-The objective differences are large in some cases, up to a factor of 2.1 (pipe 79 out at hour
-5439). The test suite covers pipe 103 out at hour 2629, where `solve_oriented` converges in 42
-iterations with no shed load and one pipe reversed.
+The objective differences are large in some cases, up to a factor of 2.1 (pipe 4 out at hour
+4933). The test suite covers pipe 18 out at hour 3326, where `solve_oriented` converges in 52
+iterations with no shed load and three pipes reversed.
 
 ## Demo campus results
 
-Solved with the default options at the design heat of 79.695 MW, with the tolerance at 1e-8, on the
+Solved with the default options at the design heat of 80.088 MW, with the tolerance at 1e-8, on the
 CPU with one thread. Solve times exclude the first run, which includes compilation.
 
 | Quantity | CPU |
 |---|---|
 | Status | `SOLVE_SUCCEEDED` |
-| Objective (W) | 1250425.89 |
-| Iterations | 51 |
-| Solve time after compilation (s) | 0.053 |
-| Scaled constraint violation | 1.1e-12 |
-| Energy closure (W) | -2.4e-8 |
+| Objective (W) | 1250416.33 |
+| Iterations | 52 |
+| Solve time after compilation (s) | 0.081 |
+| Scaled constraint violation | 6.5e-13 |
+| Energy closure (W) | 1.5e-7 |
 
-The plant output is 80.06 MW, with 0.36 MW lost in pipes, no excess heat and no shed load. GPU
-results on this campus are in [`docs/gpu-notes.md`](gpu-notes.md).
+The plant output is 80.35 MW, with 0.27 MW lost in pipes, no excess heat and no shed load. GPU
+results in [`docs/gpu-notes.md`](gpu-notes.md) were measured on the earlier street-grid layout of
+this campus and have not been repeated.
 
 ## Verification against the reference code
 
@@ -192,19 +193,23 @@ integral described under numerical hazards and has not been repeated since.
 ## Synthetic demo data
 
 All network data is synthetic and describes the fictional Example University. It does not describe
-any real campus.
+any real campus. The demo campus has 166 junctions and 168 pipes over both sides and 45 buildings
+(16 labs, 16 housing, 9 classrooms, 4 clinics). Two trunk mains leave the plant on the south edge,
+two cross-ties close two loops, a clinic spur and a north spine hang off the middle of the ties, and
+the rest is a tree with three long dead-end runs; see the layout section of
+[`docs/network-schema.md`](network-schema.md).
 
 | Quantity | Value |
 |---|---|
 | Plant supply | 1.0 MPa, 189.85 C, which is also the steam temperature limit |
 | Steam pipe heat loss | 0.35 W/(m2 K) of pipe surface, and at least 0.20 W/(m K) per metre, with a 10% spread |
 | Condensate pipe heat loss | 0.175 W/(m2 K) of pipe surface, with a 10% spread |
-| Steam line coefficient on the demo campus | 0.18 to 0.68 W/(m K), median 0.215 |
+| Steam line coefficient on the demo campus | 0.18 to 0.68 W/(m K), median 0.218 |
 | Plant rating | 110 MW from 4 boilers, 82.5 MW with one boiler out |
-| Design heat | 79.7 MW |
-| Peak demand | 87.5 MW in the cold snap, 76.1 MW outside it |
+| Design heat | 80.1 MW |
+| Peak demand | 88.3 MW in the cold snap, 76.7 MW outside it |
 
-With one boiler out, the plant cannot meet the cold-snap peak and sheds 5.36 MW. Outside the cold
+With one boiler out, the plant falls 5.80 MW short of the cold-snap peak demand. Outside the cold
 snap it meets the peak with one boiler out.
 
 The steam coefficients correspond to about 60 to 190 mm of insulation with a conductivity of
@@ -216,21 +221,22 @@ Intact demo campus with every load scaled by the same factor, and the cold-snap 
 
 | Case | Demand (MW) | Plant outlet (C) | Excess (MW) | Excess share of demand | Pipe loss (MW) | Pipe loss share of plant output |
 |---|---|---|---|---|---|---|
-| Cold-snap peak | 87.5 | 116.76 | 0.00 | 0.00% | 0.36 | 0.41% |
-| 100% of design | 79.7 | 118.19 | 0.00 | 0.00% | 0.36 | 0.45% |
-| 75% | 59.8 | 125.06 | 0.00 | 0.00% | 0.38 | 0.63% |
-| 50% | 39.8 | 140.43 | 0.00 | 0.00% | 0.42 | 1.05% |
-| 35% | 27.9 | 163.69 | 0.00 | 0.00% | 0.49 | 1.71% |
-| 25% | 19.9 | 189.85 | 0.05 | 0.26% | 0.55 | 2.68% |
+| Cold-snap peak | 88.3 | 107.02 | 0.00 | 0.00% | 0.26 | 0.30% |
+| 100% of design | 80.1 | 108.31 | 0.00 | 0.00% | 0.27 | 0.33% |
+| 75% | 60.1 | 111.25 | 0.00 | 0.00% | 0.27 | 0.45% |
+| 50% | 40.0 | 117.44 | 0.00 | 0.00% | 0.28 | 0.71% |
+| 35% | 28.0 | 126.12 | 0.00 | 0.00% | 0.30 | 1.07% |
+| 25% | 20.0 | 138.96 | 0.00 | 0.00% | 0.33 | 1.62% |
 
 Excess heat appears when lightly loaded steam mains cannot stay above 100 C. The plant then sends
-more steam than the buildings need, and the surplus is released at the loads. At 25% of design heat
-the plant outlet has reached its temperature limit, so lower demand or higher heat loss raises the
-excess. Other results to keep in mind:
+more steam than the buildings need, and the surplus is released at the loads. On the demo campus the
+plant outlet stays below its 189.85 C limit down to 25% of design heat, so no excess appears in
+these cases. Other results to keep in mind:
 
-- Other seeds change the layout. Seed 3 reaches 3.97% excess across 16 load levels from 25% to 100%
-  of design heat and its cold-snap peak.
-- Outages can exceed 1%. Of 17 sampled single-pipe outages, the highest excess was 1.19% of demand.
+- Other seeds change the layout. Seed 3 shows no excess across 16 load levels from 25% to 100% of
+  design heat and its cold-snap peak.
+- Of 17 single loop-pipe outages sampled evenly from the 52, none produced excess heat at design
+  heat. Outages at part load were not sampled.
 
 ### Scaled campuses
 
@@ -308,13 +314,19 @@ The direction pattern is a heuristic and is not proven optimal. `build_multiperi
 `out_of_service` and no `networks` uses `:demand`, which does no search.
 
 Demo campus, hours 2600 to 2767 of the synthetic year, loop pipe 1 out in periods 20 to 60, CPU, with
-a limit of 1000 iterations per solve. Reversed pipes are 4, 8, 11, 12 and 18 in all 41 outage periods.
+a limit of 1000 iterations per solve. Pipe 1 is the west feeder from the plant. With the `:demand`
+start, pipes 3, 18, 19, 20 and 27 to 31 run reversed in all 41 outage periods: the west trunk is fed
+backward through both cross-ties. The other starts reverse the same pipes except pipe 27 in some or
+all periods.
 
 | Starting orientation | Status | Iterations | Objective (Wh) | Shed (MWh) |
 |---|---|---|---|---|
-| `:search` | `SOLVE_SUCCEEDED` | 136 | 2.10774e8 | 0.000 |
-| `:demand` | `SOLVE_SUCCEEDED` | 115 | 2.11540e8 | 0.575 |
-| `:design` | `SOLVE_SUCCEEDED` | 110 | 2.36593e8 | 0.000 |
+| `:search` | `SOLVE_SUCCEEDED` | 127 | 2.11217e8 | 0.000 |
+| `:demand` | `SOLVE_SUCCEEDED` | 118 | 2.10975e8 | 0.000 |
+| `:design` | `SOLVE_SUCCEEDED` | 105 | 2.28808e8 | 0.001 |
+
+Here the `:demand` start reached a slightly lower objective than `:search`, which shows that the
+search is a heuristic.
 
 ### Measurements
 

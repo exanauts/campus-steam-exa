@@ -1,2 +1,2 @@
 steam_junction,water_junction,rating_W,n_boilers,ramp_limit_W_per_h,supply_temp_K,supply_pressure_Pa,return_pressure_Pa
-1,67,1.1e8,4,2.75e7,463.0,1.0e6,250000.0
+1,84,1.1e8,4,2.75e7,463.0,1.0e6,250000.0

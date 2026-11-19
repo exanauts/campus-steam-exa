@@ -13,7 +13,7 @@ fictional Example University.
 | `baseline.json` | A normal winter week |
 | `cold_snap.json` | The same week with every load 50 percent higher for 48 hours |
 | `plant_derate.json` | The week the weather generator flags as its cold snap, with one of four boilers out for 48 hours. This is not the week of `cold_snap.json` |
-| `pipe_out.json` | The normal week with steam main pipe 20 out of service for 48 hours |
+| `pipe_out.json` | The normal week with steam main pipe 4 out of service for 48 hours |
 
 Each hour is a steady state, and the hours are coupled only by the plant ramp limit. The model has no
 pipe transients and no valves. Every file carries `synthetic: true`, `data_label` and `model_label`;
@@ -26,7 +26,7 @@ show those labels with the results.
 | `baseline` | 1177 to 1344 | None |
 | `cold_snap` | 1177 to 1344 | Loads at 150 percent in hours 49 to 96, building over hours 46 to 48 and fading over hours 97 to 99 |
 | `plant_derate` | 889 to 1056 | Rating 82.5 MW instead of 110 MW in hours 25 to 72 |
-| `pipe_out` | 1177 to 1344 | Pipe 20 out of service in hours 49 to 96 |
+| `pipe_out` | 1177 to 1344 | Pipe 4 out of service in hours 49 to 96 |
 
 `cold_snap` and `plant_derate` use different weeks. `cold_snap` multiplies the demand of the normal winter
 week by a load surge. `plant_derate` keeps the unscaled demand of the week that the weather generator flags

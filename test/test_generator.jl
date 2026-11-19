@@ -60,6 +60,59 @@ function reversed_flow(net, side, heat)
     return max(0.0, -minimum(phi)) / maximum(abs, phi)
 end
 
+# Independent loops of one side: pipes minus junctions plus one, for a connected side.
+independent_loops(net, side) =
+    length(side_pipes(net, side)) - count(j -> j.side == side, net.junctions) + 1
+
+# Counts of drawing conflicts on the steam side: buildings whose footprints overlap, pipes that
+# cross away from a shared junction, and pipes that pass through a footprint other than their own.
+function layout_conflicts(net)
+    J = Dict(j.id => (j.x_m, j.y_m) for j in net.junctions if j.side == "steam")
+    pipes = side_pipes(net, "steam")
+    width, depth = BUILDING_FOOTPRINT_M
+    turn(a, b, c) = sign((b[1] - a[1]) * (c[2] - a[2]) - (b[2] - a[2]) * (c[1] - a[1]))
+    within(a, b, c) = min(a[1], b[1]) <= c[1] <= max(a[1], b[1]) && min(a[2], b[2]) <= c[2] <= max(a[2], b[2])
+    function crosses(a, b, c, d)
+        t1, t2, t3, t4 = turn(a, b, c), turn(a, b, d), turn(c, d, a), turn(c, d, b)
+        (t1 != t2 && t3 != t4) && return true
+        return (t1 == 0 && within(a, b, c)) || (t2 == 0 && within(a, b, d)) ||
+               (t3 == 0 && within(c, d, a)) || (t4 == 0 && within(c, d, b))
+    end
+    crossing = 0
+    for i in eachindex(pipes), k in (i + 1):length(pipes)
+        p, q = pipes[i], pipes[k]
+        isempty(intersect((p.from, p.to), (q.from, q.to))) || continue
+        crossing += crosses(J[p.from], J[p.to], J[q.from], J[q.to])
+    end
+    buildings = [J[l.steam_junction] for l in net.loads]
+    overlapping = 0
+    for a in eachindex(buildings), b in (a + 1):length(buildings)
+        overlapping += abs(buildings[a][1] - buildings[b][1]) < width &&
+                       abs(buildings[a][2] - buildings[b][2]) < depth
+    end
+    # A segment meets an open rectangle when its clipped parameter interval is not empty.
+    function through(c, a, b)
+        lo, hi = 0.0, 1.0
+        for k in 1:2
+            half = (width, depth)[k] / 2
+            d = b[k] - a[k]
+            if d == 0
+                abs(a[k] - c[k]) < half || return false
+            else
+                t1, t2 = minmax((c[k] - half - a[k]) / d, (c[k] + half - a[k]) / d)
+                lo, hi = max(lo, t1), min(hi, t2)
+            end
+        end
+        return lo < hi
+    end
+    inside = 0
+    for l in net.loads, p in pipes
+        l.steam_junction in (p.from, p.to) && continue
+        inside += through(J[l.steam_junction], J[p.from], J[p.to])
+    end
+    return (overlapping_buildings = overlapping, crossing_pipes = crossing, pipes_through_buildings = inside)
+end
+
 @testset "Generator" begin
     net = demo_campus()
 
@@ -103,9 +156,13 @@ end
     end
 
     @testset "Demo campus contents" begin
-        @test 130 <= length(net.junctions) <= 140
+        @test 150 <= length(net.junctions) <= 175
         @test length(net.loads) == 45
-        @test Set(l.type for l in net.loads) == Set(["lab", "housing", "classroom", "critical"])
+        @test Dict(t => count(l -> l.type == t, net.loads) for t in ("lab", "housing", "classroom", "critical")) ==
+              Dict("lab" => 16, "housing" => 16, "classroom" => 9, "critical" => 4)
+        @test 2 <= independent_loops(net, "steam") <= 3
+        @test independent_loops(net, "water") == independent_loops(net, "steam")
+        @test net.plant.rating_W == 110e6 && net.plant.n_boilers == 4
         @test allunique(l.name for l in net.loads)
         @test count(p -> p.is_loop, side_pipes(net, "steam")) > 0
         @test count(p -> p.is_loop, side_pipes(net, "water")) > 0
@@ -129,15 +186,14 @@ end
     end
 
     @testset "Drawing layout" begin
-        width, depth = BUILDING_FOOTPRINT_M
-        buildings = [net.junctions[l.steam_junction] for l in net.loads]
-        overlaps = 0
-        for a in eachindex(buildings), b in (a + 1):length(buildings)
-            dx = abs(buildings[a].x_m - buildings[b].x_m)
-            dy = abs(buildings[a].y_m - buildings[b].y_m)
-            overlaps += (dx < width && dy < depth)
+        for campus in (net, demo_campus(; seed = 2), scaled_campus(40), scaled_campus(200),
+                       scaled_campus(800))
+            @test layout_conflicts(campus) == (overlapping_buildings = 0, crossing_pipes = 0,
+                                               pipes_through_buildings = 0)
         end
-        @test overlaps == 0
+        # The plant sits on the south edge of the campus.
+        ys = [j.y_m for j in net.junctions if j.side == "steam"]
+        @test net.junctions[net.plant.steam_junction].y_m == minimum(ys)
     end
 
     @testset "Connectivity of both sides" begin
@@ -234,7 +290,7 @@ end
     @testset "orient_network" begin
         @test orient_network(net) == net
         loop_pipes = [p for p in net.pipes if p.is_loop]
-        @test length(loop_pipes) == 66
+        @test length(loop_pipes) == 52
         pumps = count(p -> p.max_pump_boost_Pa > 0, net.pipes)
         for out in loop_pipes
             oriented = orient_network(net; out_of_service = [out.id])
