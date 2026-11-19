@@ -7,8 +7,18 @@ const SHED_MIN = 0.01;
 const DEFAULT_TITLE = "How a campus steam network carries a hard week";
 // The scenario shown first, when it is in the build.
 const FIRST_SCENARIO = "cold_snap";
-// Top of the temperature color scale, so that colors compare across scenarios.
-const COLOR_SCALE_TOP_C = 160;
+// Fixed temperature color scale, so that colors compare across scenarios. About nine tenths of the
+// steam temperatures in the four scenarios fall inside this range. Anything outside is drawn in the
+// end color, and the key says so.
+const COLOR_SCALE_C = [105, 125];
+// Marker outline for each building type, drawn around the origin with half-size r.
+const SHAPES = {
+  critical: (r) => `M0 ${-1.3 * r}L${1.3 * r} 0L0 ${1.3 * r}L${-1.3 * r} 0Z`,
+  lab: (r) => `M${-r} ${-r}H${r}V${r}H${-r}Z`,
+  classroom: (r) => `M0 ${-1.2 * r}L${1.2 * r} ${0.95 * r}H${-1.2 * r}Z`,
+  housing: (r) => `M${-1.1 * r} 0a${1.1 * r} ${1.1 * r} 0 1 0 ${2.2 * r} 0a${1.1 * r} ${1.1 * r} 0 1 0 ${-2.2 * r} 0Z`,
+};
+const shapeOf = (type) => SHAPES[type] || SHAPES.lab;
 const TYPE_NAMES = { critical: "Critical", lab: "Labs", classroom: "Classrooms", housing: "Housing" };
 const TYPE_ORDER = ["critical", "lab", "classroom", "housing"];
 
@@ -143,7 +153,7 @@ export async function initHero(network) {
   const panel = $("panel"), transport = $("transport"), scrubber = $("scrubber"), play = $("play");
   map.closest(".stage").classList.add("has-panel");
   $("map-key").hidden = false;
-  buildKey($("map-key"));
+  buildKey($("map-key"), TYPE_ORDER.filter((t) => network.loads.some((l) => l.type === t)));
   const ui = buildPanel(panel, network);
 
   const cache = new Map();
@@ -309,30 +319,46 @@ function buildMap(host, network) {
   const px = (j) => j.x - x0, py = (j) => y1 - j.y;
   const svg = el("svg", {
     viewBox: `0 0 ${vw} ${vh}`, role: "img",
-    "aria-label": "Map of the fictional campus steam network. Pipes are colored by steam temperature and drawn wider for larger flows. Lightly loaded pipes are faded. Buildings show shed load by building type. The status panel and the tables below give the values as text.",
+    "aria-label": "Map of the fictional campus steam network. Pipes are colored by steam temperature, from the hot plant end to the cooler far ends, and drawn wider for larger flows. Lightly loaded pipes are faded. Buildings are marked by type with a shape and a color, sized by design heat, and empty out when their type is short of heat. The status panel and the tables below give the values as text.",
   }, host);
   const notice = el("div", { hidden: "" }, host);
-  const pipeLayer = el("g", {}, svg), markLayer = el("g", {}, svg), bldgLayer = el("g", {}, svg);
+  const defs = el("defs", {}, svg);
+  const pipeLayer = el("g", {}, svg), hitLayer = el("g", {}, svg), markLayer = el("g", {}, svg), bldgLayer = el("g", {}, svg);
+  // Each pipe has its own gradient, so its color runs from the temperature at one end to the other.
   const pipes = new Map(network.pipes.map((p) => {
     const a = network.junctions.get(p.from), b = network.junctions.get(p.to);
-    const node = el("line", { class: "pipe", x1: px(a), y1: py(a), x2: px(b), y2: py(b), "stroke-width": 1.5 }, pipeLayer);
-    return [p.id, { node, from: p.from, to: p.to, mx: (px(a) + px(b)) / 2, my: (py(a) + py(b)) / 2, mark: null }];
+    const ends = { x1: px(a), y1: py(a), x2: px(b), y2: py(b) };
+    const gradient = el("linearGradient", { id: `pipe-heat-${p.id}`, gradientUnits: "userSpaceOnUse", ...ends }, defs);
+    const stops = [el("stop", { offset: 0 }, gradient), el("stop", { offset: 1 }, gradient)];
+    const node = el("line", { class: "pipe", ...ends, "stroke-width": 1.5 }, pipeLayer);
+    el("line", { class: "pipe-hit", ...ends, "data-pipe": p.id }, hitLayer);
+    return [p.id, { node, stops, from: p.from, to: p.to, mx: (px(a) + px(b)) / 2, my: (py(a) + py(b)) / 2, mark: null, info: null }];
   }));
+  // The filled part of a marker is clipped from the top by the share of that type's load not served.
+  const clips = new Map(TYPE_ORDER.map((t) => {
+    const clip = el("clipPath", { id: `served-${t}`, clipPathUnits: "objectBoundingBox" }, defs);
+    return [t, el("rect", { x: 0, y: 0, width: 1, height: 1 }, clip)];
+  }));
+  const heats = network.loads.map((l) => l.design_heat_MW).filter(Number.isFinite);
+  const heatLow = Math.min(...heats), heatSpan = Math.max(1e-9, Math.max(...heats) - heatLow);
   const loads = new Map(network.loads.map((l) => {
     const j = network.junctions.get(l.junction);
-    const g = el("g", { "data-load": l.id }, bldgLayer);
+    const g = el("g", { "data-load": l.id, transform: `translate(${px(j)} ${py(j)})` }, bldgLayer);
+    const type = l.type in SHAPES ? l.type : "lab";
+    const fill = el("path", { class: `bldg-fill t-${type}` }, g);
+    if (clips.has(l.type)) fill.setAttribute("clip-path", `url(#served-${l.type})`);
     return [l.id, {
-      load: l, cx: px(j), cy: py(j),
-      base: el("rect", { class: "bldg" }, g),
-      shed: el("rect", { class: "bldg-shed", height: 0 }, g),
-      ring: el("rect", { class: "bldg-ring", visibility: "hidden" }, g),
+      load: l, fill,
+      // Marker area grows with design heat.
+      scale: 0.75 + 0.75 * Math.sqrt(Number.isFinite(l.design_heat_MW) ? (l.design_heat_MW - heatLow) / heatSpan : 0),
+      outline: el("path", { class: `bldg-outline t-${type}` }, g),
     }];
   }));
   const pj = network.junctions.get(network.plant.junction);
   const plantMark = el("rect", { class: "plant" }, svg);
   const plantText = el("text", { "text-anchor": "start" }, svg, "Plant");
 
-  let unit = 1, size = 10, current = null, facts = null, hourNow = 0, maxFlow = 1, tMax = 100;
+  let unit = 1, size = 10, current = null, facts = null, hourNow = 0, maxFlow = 1;
   const typeInfo = new Map();
 
   function drawOutMarks() {
@@ -351,11 +377,8 @@ function buildMap(host, network) {
     unit = scale > 0 ? 1 / scale : vw / Math.max(240, width);
     size = Math.max(9, Math.min(13, width / 55)) * unit;
     loads.forEach((v) => {
-      for (const r of [v.base, v.ring]) {
-        r.setAttribute("x", v.cx - size / 2); r.setAttribute("y", v.cy - size / 2);
-        r.setAttribute("width", size); r.setAttribute("height", size);
-      }
-      v.shed.setAttribute("x", v.cx - size / 2); v.shed.setAttribute("y", v.cy - size / 2); v.shed.setAttribute("width", size);
+      const d = shapeOf(v.load.type)((size / 2) * v.scale);
+      v.fill.setAttribute("d", d); v.outline.setAttribute("d", d);
     });
     const s = size * 1.7;
     plantMark.setAttribute("x", px(pj) - s / 2); plantMark.setAttribute("y", py(pj) - s / 2);
@@ -368,26 +391,31 @@ function buildMap(host, network) {
 
   const readRamp = () => {
     const styles = getComputedStyle(document.documentElement);
-    return ["--hot-0", "--hot-1"].map((name) => {
+    return ["--hot-0", "--hot-1", "--hot-2", "--hot-3"].map((name) => {
       const h = styles.getPropertyValue(name).trim().slice(1);
       return [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16));
     });
   };
-  let [c0, c1] = readRamp();
+  let ramp = readRamp();
   window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
-    [c0, c1] = readRamp();
+    ramp = readRamp();
     if (current) update(current, facts, hourNow);
   });
-  const tMin = 100;
+  const [tMin, tMax] = COLOR_SCALE_C;
   const color = (t) => {
-    const u = Math.max(0, Math.min(1, (t - tMin) / Math.max(1, tMax - tMin)));
-    return `rgb(${c0.map((c, i) => Math.round(c + (c1[i] - c) * u)).join(" ")})`;
+    const u = Math.max(0, Math.min(1, (t - tMin) / (tMax - tMin))) * (ramp.length - 1);
+    const i = Math.min(ramp.length - 2, Math.floor(u)), a = ramp[i], b = ramp[i + 1];
+    return `rgb(${a.map((c, k) => Math.round(c + (b[k] - c) * (u - i))).join(" ")})`;
   };
 
-  // Mean temperature of the pipe's two ends, leaving out junctions marked as not unique in this hour.
+  // Temperature at the pipe's two ends. An end marked as not unique in this hour takes the other end's value.
   function pipeTemperature(s, p, h) {
-    const values = [p.from, p.to].filter((id) => !s.nodeMarks.get(id)?.[h]).map((id) => s.temperature[h][s.nodeColumn.get(id)]).filter(Number.isFinite);
-    return values.length ? sum(values) / values.length : null;
+    const ends = [p.from, p.to].map((id) => {
+      const t = s.nodeMarks.get(id)?.[h] ? NaN : s.temperature[h][s.nodeColumn.get(id)];
+      return Number.isFinite(t) ? t : null;
+    });
+    if (ends[0] === null && ends[1] === null) return null;
+    return [ends[0] ?? ends[1], ends[1] ?? ends[0]];
   }
 
   function prepare(s) {
@@ -396,14 +424,6 @@ function buildMap(host, network) {
     s.flow.forEach((row, h) => row.forEach((v, i) => {
       if (v !== null && !s.flowMarks.get(s.pipes[i].id)?.[h]) maxFlow = Math.max(maxFlow, Math.abs(v));
     }));
-    // One color scale for every scenario, extended only if a scenario runs hotter than it.
-    let hottest = tMin;
-    s.temperature.forEach((row, h) => s.nodeColumn.forEach((column, id) => {
-      if (!s.nodeMarks.get(id)?.[h] && Number.isFinite(row[column])) hottest = Math.max(hottest, row[column]);
-    }));
-    tMax = Math.max(COLOR_SCALE_TOP_C, Math.ceil(hottest / 10) * 10);
-    const label = $("ramp-max");
-    if (label) label.textContent = `${Math.round(tMax)} C steam`;
   }
 
   function update(s, f, h) {
@@ -419,30 +439,48 @@ function buildMap(host, network) {
       const temperature = out ? null : pipeTemperature(s, p, h);
       const faded = !out && (!s.flowTrusted || !s.temperatureTrusted || s.flowMarks.get(pipe.id)?.[h] || temperature === null);
       p.node.classList.toggle("faded", !!faded);
+      p.info = { id: pipe.id, out, faded: !!faded, flow, temperature };
       if (out || faded) {
         p.node.style.stroke = "";
         p.node.setAttribute("stroke-width", out ? 2 : 1.25);
         return;
       }
-      p.node.style.stroke = color(temperature);
+      p.stops.forEach((stop, k) => stop.setAttribute("stop-color", color(temperature[k])));
+      p.node.style.stroke = `url(#pipe-heat-${pipe.id})`;
       p.node.setAttribute("stroke-width", (1.5 + 6 * Math.sqrt(Math.abs(flow) / maxFlow)).toFixed(1));
     });
-    f.types.forEach((t) => typeInfo.set(t, { mw: f.shedByHour[h][t], frac: Math.min(1, f.shedByHour[h][t] / f.designByType[t]) }));
-    loads.forEach((v) => {
-      const info = typeInfo.get(v.load.type);
-      const shed = info && info.mw >= SHED_MIN;
-      v.shed.setAttribute("height", shed ? Math.max(size * 0.18, size * info.frac) : 0);
-      v.ring.setAttribute("visibility", shed ? "visible" : "hidden");
+    f.types.forEach((t) => {
+      const mw = f.shedByHour[h][t];
+      const info = { mw, frac: Math.min(1, mw / f.designByType[t]) };
+      typeInfo.set(t, info);
+      // A small shortfall still empties a visible slice of the marker.
+      const empty = mw >= SHED_MIN ? Math.max(0.2, info.frac) : 0;
+      const rect = clips.get(t);
+      if (rect) { rect.setAttribute("y", empty); rect.setAttribute("height", 1 - empty); }
     });
+    loads.forEach((v) => v.outline.classList.toggle("short", (typeInfo.get(v.load.type)?.mw ?? 0) >= SHED_MIN));
   }
 
   svg.addEventListener("pointermove", (e) => {
+    const line = e.target.closest?.("[data-pipe]");
+    const pipe = line && pipes.get(+line.dataset.pipe)?.info;
+    if (pipe) {
+      return showTip(e.clientX, e.clientY, (t) => {
+        el("b", {}, t, `Steam pipe ${pipe.id}`);
+        if (pipe.out) return el("div", {}, t, "Out of service this hour");
+        if (pipe.faded) return el("div", {}, t, "Lightly loaded this hour. Its flow and temperature are not unique, so no value is shown.");
+        const [hot, cool] = [...pipe.temperature].sort((a, b) => b - a);
+        el("div", {}, t, hot - cool >= 0.05 ? `Steam cools from ${fixed(hot)} C to ${fixed(cool)} C along it` : `Steam at ${fixed(hot)} C`);
+        el("div", {}, t, `Flow ${fixed(Math.abs(pipe.flow))} kg/s`);
+      });
+    }
     const g = e.target.closest?.("[data-load]");
     if (!g) return hideTip();
     const v = loads.get(+g.dataset.load), info = v && typeInfo.get(v.load.type);
     if (!v || !info) return;
     showTip(e.clientX, e.clientY, (t) => {
       el("b", {}, t, v.load.name);
+      if (Number.isFinite(v.load.design_heat_MW)) el("div", {}, t, `${typeName(v.load.type)}, design heat ${fixed(v.load.design_heat_MW)} MW`);
       el("div", {}, t, info.mw >= SHED_MIN ? `${typeName(v.load.type)} combined: ${fixed(info.mw)} MW shed this hour` : `${typeName(v.load.type)}: no load shed this hour`);
     });
   });
@@ -451,17 +489,26 @@ function buildMap(host, network) {
   return { notice, prepare, update, resize, setVisible: (on) => { svg.style.display = on ? "" : "none"; } };
 }
 
-function buildKey(host) {
+function buildKey(host, types) {
   host.replaceChildren();
-  const a = el("span", {}, host);
-  a.append("100 C");
+  const marker = (parent, type, short) => {
+    const svg = el("svg", { class: "key-mark map", viewBox: "-8 -8 16 16", "aria-hidden": "true" }, parent);
+    const d = shapeOf(type)(5);
+    if (!short) el("path", { class: `bldg-fill t-${type}`, d }, svg);
+    el("path", { class: `bldg-outline t-${type}${short ? " short" : ""}`, d }, svg);
+  };
+  const pipesRow = el("div", { class: "key-row" }, host);
+  const a = el("span", {}, pipesRow);
+  a.append(`Steam temperature: ${COLOR_SCALE_C[0]} C or cooler`);
   el("i", { class: "ramp" }, a);
-  el("span", { id: "ramp-max" }, a);
-  el("span", {}, host, "Wider line: more flow");
-  const f = el("span", {}, host); el("i", { class: "line-key faded" }, f); f.append("Faded: lightly loaded this hour, not a prediction");
-  const b = el("span", {}, host); el("i", { class: "swatch" }, b); b.append("Building type served");
-  const c = el("span", {}, host); el("i", { class: "swatch shed" }, c); c.append("Building type short of heat");
-  const d = el("span", {}, host); el("i", { class: "line-key" }, d); d.append("Pipe out of service");
+  a.append(`${COLOR_SCALE_C[1]} C or hotter`);
+  el("span", {}, pipesRow, "Wider line: more flow");
+  const f = el("span", {}, pipesRow); el("i", { class: "line-key faded" }, f); f.append("Faded: lightly loaded this hour, not a prediction");
+  const d = el("span", {}, pipesRow); el("i", { class: "line-key" }, d); d.append("Pipe out of service");
+  const bldgRow = el("div", { class: "key-row" }, host);
+  types.forEach((t) => { const item = el("span", {}, bldgRow); marker(item, t, false); item.append(typeName(t)); });
+  el("span", {}, bldgRow, "Larger marker: larger design heat");
+  if (types.length) { const e = el("span", {}, bldgRow); marker(e, types[types.length - 1], true); e.append("Emptying marker: that building type is short of heat"); }
 }
 
 function buildPanel(host, network) {
@@ -476,7 +523,7 @@ function buildPanel(host, network) {
   const foot = el("div", { class: "gauge-foot" }, host);
   const dl = el("dl", { class: "readout" }, host);
   const row = (k) => { el("dt", {}, dl, k); return el("dd", {}, dl); };
-  const when = row("Time"), demand = row("Demand"), shed = row("Shed"), losses = row("Pipe loss, week");
+  const when = row("Time"), demand = row("Demand"), shed = row("Shed"), supply = row("Steam leaving plant"), coolest = row("Coolest steam on network"), losses = row("Pipe loss, week");
   const list = el("p", { class: "shed-now" }, host);
   return {
     update(s, f, hour) {
@@ -492,6 +539,11 @@ function buildPanel(host, network) {
       when.textContent = hourLabel(hour);
       demand.textContent = `${fixed(s.demand[hour])} MW`;
       shed.textContent = `${fixed(s.shed[hour] >= SHED_MIN ? s.shed[hour] : 0)} MW`;
+      // Junctions marked as not unique in this hour are left out.
+      const temps = s.temperatureTrusted ? [...s.nodeColumn].filter(([id]) => !s.nodeMarks.get(id)?.[hour]).map(([id, column]) => [id, s.temperature[hour][column]]).filter(([, t]) => Number.isFinite(t)) : [];
+      const atPlant = temps.find(([id]) => id === network.plant.junction);
+      supply.textContent = atPlant ? `${fixed(atPlant[1])} C` : "Not shown";
+      coolest.textContent = temps.length ? `${fixed(Math.min(...temps.map(([, t]) => t)))} C` : "Not shown";
       losses.textContent = `about ${num(s.summary.total_losses_MWh)} MWh`;
       const short = f.types.filter((t) => f.shedByHour[hour][t] >= SHED_MIN).sort((a, b) => f.shedByHour[hour][b] - f.shedByHour[hour][a]);
       list.replaceChildren();

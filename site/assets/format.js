@@ -9,7 +9,7 @@ export const compact = (v) => {
 };
 export const hourLabel = (h) => `Day ${Math.floor(h / 24) + 1}, ${String(h % 24).padStart(2, "0")}:00`;
 
-const SVG_TAGS = new Set(["svg", "g", "path", "line", "rect", "circle", "text"]);
+const SVG_TAGS = new Set(["svg", "g", "path", "line", "rect", "circle", "text", "defs", "linearGradient", "stop", "clipPath"]);
 export function el(tag, attrs = {}, parent = null, text = null) {
   const node = SVG_TAGS.has(tag) ? document.createElementNS("http://www.w3.org/2000/svg", tag) : document.createElement(tag);
   for (const [k, v] of Object.entries(attrs)) if (v !== null && v !== undefined) node.setAttribute(k, v);
