@@ -11,14 +11,20 @@ using JSON
 using MadNLP
 using MadNLPGPU
 
+include("pool.jl")
+
 const CAL_TAG_COUNTS = [5, 10, 15, 25]
 const CAL_MONTHS = [1, 3, 6, 12, 24]
 # Grid points of the site build, in the order they are attempted.
 const CAL_CI_POINTS = [(25, 1), (5, 1), (25, 3), (10, 1), (15, 1), (25, 6)]
-# Wall-clock budget of the whole calibration step in the site build, and the time kept for the GPU
-# attempt and for writing results.
-const CAL_BUDGET_S = 645.0
-const CAL_GPU_RESERVE_S = 55.0
+# Wall-clock budget of the calibration part of the site build, which runs as its own CI job, and the
+# time kept for the GPU attempt, the seasonal check and writing results. Local runs of the whole part took
+# 644 to 656 s with one process and 295 s with a pool of 8, so a normal build finishes every point well
+# inside the budget.
+const CAL_BUDGET_S = 960.0
+const CAL_GPU_RESERVE_S = 120.0
+# Upper limit of the GPU attempt's wall time. The attempt took 71 s in a local run.
+const CAL_GPU_MAX_WALL_S = 180.0
 const CAL_HISTORIAN_HOURS = 17520
 const CAL_MAX_ITER = 500
 
@@ -86,6 +92,16 @@ function _cal_largest_error(error_percent)
     return Dict{String, Any}("max_error_percent" => value, "max_error_group" => group, "max_error_coefficient" => coefficient)
 end
 
+# A solve cut off by `max_wall_time` says nothing about convergence. It is reported as not run, for
+# time, never as "did not converge". The solver status and the time it ran stay in the record.
+_cal_stopped_for_time(result) = result.status == string(MadNLP.MAXIMUM_WALLTIME_EXCEEDED)
+_cal_time_limit_fields(wall_s) = Dict{String, Any}(
+    "run" => false,
+    "converged" => false,
+    "stopped_for_time" => true,
+    "reason" => "Not run: the solve was stopped at the time limit of this build after $(round(wall_s; digits = 1)) s, so no result is reported.",
+)
+
 function _cal_point(hist, net, series, nominal_state, n_tags, months; backend = nothing, solver...)
     hours = months * CampusSteam.HOURS_PER_MONTH
     problem = CalibrationProblem(
@@ -110,7 +126,9 @@ function _cal_point(hist, net, series, nominal_state, n_tags, months; backend = 
         "build_s" => _cal_round(build_s; digits = 2),
         "solve_s" => _cal_round(wall_s; digits = 2),
     )
-    if result.converged
+    if _cal_stopped_for_time(result)
+        merge!(cell, _cal_time_limit_fields(wall_s))
+    elseif result.converged
         cell["estimate"] = Dict("loss" => _cal_round.(result.loss), "friction" => _cal_round.(result.friction))
         cell["error_percent"] = _cal_error_percent(hist, result)
         cell["max_error_percent"] = _cal_round(
@@ -153,22 +171,14 @@ function _cal_gpu_attempt(hist, net, series, nominal_state, n_tags, months, wall
     return outcome
 end
 
-# The same 25-tag, one-month fit in a cold month and in a mild month. A group multiplier is an effective
-# average over pipes that differ from each other, so its estimate moves with the flow pattern.
-function _cal_seasonal_check(hist, net, series, january, wall_limit_s)
-    months = 1
-    hours = months * CampusSteam.HOURS_PER_MONTH
-    offset = 6 * CampusSteam.HOURS_PER_MONTH
-    check = Dict{String, Any}(
-        "tags" => 25, "months" => months, "groups" => hist.groups.names,
-        "true_loss_multiplier" => _cal_round.(hist.truth.group_loss; digits = 4),
-        "true_friction_multiplier" => _cal_round.(hist.truth.group_friction; digits = 4),
-    )
-    if !get(january, "converged", false) || wall_limit_s < 20
-        check["run"] = false
-        check["reason"] = "Skipped: the first-month fit did not converge or the time budget of this build was used up."
-        return check
-    end
+const CAL_SEASON_OFFSET = 6 * CampusSteam.HOURS_PER_MONTH
+
+# The 25-tag, one-month fit of month 7, for the seasonal check. Returns nothing when there is too little
+# time left.
+function _cal_month7_solve(hist, net, series, wall_limit_s)
+    wall_limit_s < 20 && return nothing
+    hours = CampusSteam.HOURS_PER_MONTH
+    offset = CAL_SEASON_OFFSET
     range = (offset + 1):(offset + hours)
     window = HistorianSeries(
         series.tags, series.start + Hour(offset), series.values[range, :], series.status[range, :], 0, 0, 0,
@@ -177,7 +187,25 @@ function _cal_seasonal_check(hist, net, series, january, wall_limit_s)
     # Each hour warm starts from the one before, so the simulation runs from the first hour.
     state = simulate_hours(ForwardSimulator(net), hist.nominal_heat_W[1:last(range), :])[:, range]
     problem = CalibrationProblem(net, window, hist.tags, heat, state)
-    result = solve_calibration(build_calibration_model(problem); max_iter = CAL_MAX_ITER, max_wall_time = wall_limit_s)
+    return solve_calibration(build_calibration_model(problem); max_iter = CAL_MAX_ITER, max_wall_time = wall_limit_s)
+end
+
+# The same 25-tag, one-month fit in a cold month and in a mild month. A group multiplier is an effective
+# average over pipes that differ from each other, so its estimate moves with the flow pattern. `result`
+# is the month-7 solve of `_cal_month7_solve`.
+function _cal_seasonal_check(hist, january, result)
+    months = 1
+    offset = CAL_SEASON_OFFSET
+    check = Dict{String, Any}(
+        "tags" => 25, "months" => months, "groups" => hist.groups.names,
+        "true_loss_multiplier" => _cal_round.(hist.truth.group_loss; digits = 4),
+        "true_friction_multiplier" => _cal_round.(hist.truth.group_friction; digits = 4),
+    )
+    if !get(january, "converged", false) || result === nothing
+        check["run"] = false
+        check["reason"] = "Skipped: the first-month fit did not converge or the time budget of this build was used up."
+        return check
+    end
     check["run"] = true
     check["windows"] = Any[
         merge(Dict{String, Any}(
@@ -190,7 +218,9 @@ function _cal_seasonal_check(hist, net, series, january, wall_limit_s)
             "converged" => result.converged, "solve_s" => _cal_round(result.solve_time_s; digits = 2),
         ),
     ]
-    if result.converged
+    if _cal_stopped_for_time(result)
+        merge!(check["windows"][2], _cal_time_limit_fields(result.solve_time_s))
+    elseif result.converged
         check["windows"][2]["estimate"] = Dict("loss" => _cal_round.(result.loss), "friction" => _cal_round.(result.friction))
         check["windows"][2]["error_percent"] = _cal_error_percent(hist, result)
         merge!(check["windows"][2], _cal_largest_error(check["windows"][2]["error_percent"]))
@@ -302,17 +332,65 @@ function _cal_write_template(path, tags)
     return path
 end
 
+# Inputs shared by every solve of the grid, set once in each process of the pool.
+const CAL_INPUTS = Ref{Any}(nothing)
+_cal_set_inputs!(inputs) = (CAL_INPUTS[] = inputs; nothing)
+
 """
-    run_calibration(outdir; points = CAL_CI_POINTS, budget_s = CAL_BUDGET_S, gpu = true)
+One independent item of the calibration part, in whichever process runs it: a CPU grid point
+`(:point, tags, months)`, the GPU attempt `(:gpu, tags, months)` or the month-7 solve `(:seasonal,)`.
+Wall-clock limits are taken from the deadlines in the inputs at the moment the item starts, so they
+mean the same in every process of the machine.
+"""
+function _cal_item(item)
+    (; hist, net, series, nominal_state, points_deadline, gpu_deadline, seasonal_deadline) = CAL_INPUTS[]
+    kind = first(item)
+    if kind === :point
+        _, n_tags, months = item
+        return _cal_point(hist, net, series, nominal_state, n_tags, months; max_wall_time = points_deadline - time())
+    elseif kind === :gpu
+        _, n_tags, months = item
+        limit = clamp(gpu_deadline - time(), 15.0, CAL_GPU_MAX_WALL_S)
+        return _cal_gpu_attempt(hist, net, series, nominal_state, n_tags, months, limit)
+    else
+        return _cal_month7_solve(hist, net, series, seasonal_deadline - time())
+    end
+end
+
+# Order of the items. One process keeps the order of `points`, so that the first point predicts the time
+# of the others, then the GPU attempt and the seasonal check. A pool starts the longest items first.
+function _cal_items(points, gpu, pooled)
+    items = Any[(:point, n, m) for (n, m) in points]
+    if pooled
+        sort!(items; by = it -> (-it[3], it[2]))
+        gpu && insert!(items, 2, (:gpu, 25, 1))
+        push!(items, (:seasonal,))
+    else
+        gpu && push!(items, (:gpu, 25, 1))
+        push!(items, (:seasonal,))
+    end
+    return items
+end
+
+"""
+    run_calibration(outdir; points = CAL_CI_POINTS, budget_s = CAL_BUDGET_S, gpu = true, workers)
 
 Generate the synthetic historian file, run the calibration grid and write `calibration.json` and
 `tag_template.csv` to `outdir`. A point is skipped, and recorded as not run, when the time left in
-`budget_s` is less than 1.2 times its solve time predicted from the first point.
+`budget_s` is less than 1.2 times its solve time predicted from the first point that finished.
+
+The grid points, the GPU attempt and the month-7 solve of the seasonal check are independent once the
+historian file and the nominal simulation exist. They run on a pool of `workers` processes
+(`scripts/site/pool.jl`), so the part takes about as long as its longest point.
 """
-function run_calibration(outdir; points = CAL_CI_POINTS, budget_s = CAL_BUDGET_S, gpu = true)
+function run_calibration(outdir; points = CAL_CI_POINTS, budget_s = CAL_BUDGET_S, gpu = true,
+                         workers = site_workers(length(points) + 1 + gpu))
     started = time()
     elapsed() = time() - started
     mkpath(outdir)
+    # The workers start while the historian file is generated.
+    pool = @async start_pool(workers, [joinpath(@__DIR__, "calibration.jl")])
+    yield()
     workdir = mktempdir()
     csv = joinpath(workdir, "synthetic_historian.csv")
 
@@ -329,34 +407,62 @@ function run_calibration(outdir; points = CAL_CI_POINTS, budget_s = CAL_BUDGET_S
     nominal_s = @elapsed nominal_state = simulate_hours(ForwardSimulator(net), hist.nominal_heat_W[1:planned_hours, :])
     identifiability_s = @elapsed identifiability = _cal_identifiability(net, hist)
 
-    cells = Dict{Tuple{Int, Int}, Dict{String, Any}}()
-    seconds_per_hour = 0.0
+    pids = fetch(pool)
     reserve = gpu ? CAL_GPU_RESERVE_S : 10.0
-    for (n_tags, months) in points
+    inputs = (;
+        hist, net, series, nominal_state,
+        points_deadline = started + budget_s - reserve,
+        gpu_deadline = started + budget_s - 10.0,
+        seasonal_deadline = started + budget_s - 5.0,
+    )
+    _cal_set_inputs!(inputs)
+    foreach(pid -> remotecall_fetch(_cal_set_inputs!, pid, inputs), pids)
+    println("calibration: $(length(points)) grid points, GPU attempt $(gpu), seasonal check, on $(max(length(pids), 1)) process(es)")
+
+    seconds_per_hour = Ref(0.0)
+    function before(item)
+        first(item) === :point || return nothing
+        _, n_tags, months = item
         hours = months * CampusSteam.HOURS_PER_MONTH
-        left = budget_s - reserve - elapsed()
-        if left < 1.2 * seconds_per_hour * hours || left <= 0
-            cells[(n_tags, months)] = _cal_not_run(n_tags, months, "Skipped: the predicted solve time does not fit the time budget of this build.")
-            continue
+        left = inputs.points_deadline - time()
+        if left < 1.2 * seconds_per_hour[] * hours || left <= 0
+            return _cal_not_run(n_tags, months, "Skipped: the predicted solve time does not fit the time budget of this build.")
         end
-        cell = _cal_point(hist, net, series, nominal_state, n_tags, months; max_wall_time = left)
-        seconds_per_hour == 0.0 && (seconds_per_hour = cell["solve_s"] / hours)
-        cells[(n_tags, months)] = cell
-        println("calibration: $n_tags tags, $months months: $(cell["solver_status"]) in $(cell["solve_s"]) s")
+        return nothing
+    end
+    function after(item, outcome)
+        kind = first(item)
+        if kind === :point && haskey(outcome, "solve_s") && seconds_per_hour[] == 0.0
+            seconds_per_hour[] = outcome["solve_s"] / outcome["hours"]
+        end
+        if kind === :point
+            println("calibration: $(item[2]) tags, $(item[3]) months: ", get(outcome, "solver_status", "not run"),
+                    get(outcome, "run", false) || haskey(outcome, "solve_s") ? " in $(outcome["solve_s"]) s" : "")
+        elseif kind === :gpu
+            println("calibration: GPU attempt: ", get(outcome, "solver_status", get(outcome, "reason", "")))
+        else
+            println("calibration: month-7 solve: ", outcome === nothing ? "not run" : outcome.status)
+        end
         flush(stdout)
     end
+    items = _cal_items(points, gpu, !isempty(pids))
+    outcomes = try
+        pool_map(_cal_item, items, pids; before, after)
+    finally
+        stop_pool(pids)
+    end
+    outcome_of = Dict(zip(items, outcomes))
+
+    cells = Dict{Tuple{Int, Int}, Dict{String, Any}}(
+        (it[2], it[3]) => outcome_of[it] for it in items if first(it) === :point
+    )
     grid = [
         get(() -> _cal_not_run(n, m, "Not part of this build's grid, to stay within its time budget."), cells, (n, m))
         for n in CAL_TAG_COUNTS for m in CAL_MONTHS
     ]
-
-    gpu_outcome = Dict{String, Any}("attempted" => false, "reason" => "Disabled for this run.")
-    if gpu
-        limit = clamp(budget_s - elapsed() - 10.0, 15.0, 90.0)
-        gpu_outcome = _cal_gpu_attempt(hist, net, series, nominal_state, 25, 1, limit)
-    end
+    gpu_outcome = gpu ? outcome_of[(:gpu, 25, 1)] : Dict{String, Any}("attempted" => false, "reason" => "Disabled for this run.")
     january = get(cells, (25, 1), Dict{String, Any}())
-    seasonal = _cal_seasonal_check(hist, net, series, january, budget_s - elapsed() - 5.0)
+    seasonal = _cal_seasonal_check(hist, january, outcome_of[(:seasonal,)])
     println("calibration: seasonal check run = $(seasonal["run"])")
 
     categories = unique(t.category for t in hist.tags)

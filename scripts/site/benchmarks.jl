@@ -27,7 +27,8 @@ const BENCH_PROFILES = Dict(
         size_cases = ["demo", "scaled-200", "scaled-400"],
         horizon_cases = ["horizon-24"],
         repeats = 3, strict_tols = [1.0e-8], ttfs_repeats = 0, ipopt = false, gpu_memory = false,
-        budget_s = 270.0, wall_limit_s = 60.0,
+        # The whole sweep, warm-up included, took 210 s in a local run of the benchmark part alone.
+        budget_s = 600.0, wall_limit_s = 60.0,
     ),
     :local => (
         size_cases = ["demo", "scaled-200", "scaled-300", "scaled-400", "scaled-500", "scaled-600", "scaled-800"],
@@ -629,27 +630,6 @@ const STANDING_NOT_RUN = [
 
 
 """
-The CPU and GPU outcomes that `run_calibration` wrote to `calibration.json` in `outdir`, at 25 tags.
-Calibration is not solved again here, so it adds no runtime to the benchmarks.
-"""
-function calibration_outcome(outdir)
-    path = joinpath(outdir, "calibration.json")
-    isfile(path) || return nothing
-    data = JSON.parsefile(path)
-    keys_kept = ("tags", "months", "hours", "run", "solver_status", "converged", "iterations",
-                 "variables", "constraints", "jacobian_nonzeros", "solve_s", "reason")
-    keep(cell) = Dict{String, Any}(k => cell[k] for k in keys_kept if haskey(cell, k))
-    gpu = data["gpu"]
-    return Dict{String, Any}(
-        "source" => "calibration.json",
-        "network_junctions" => data["network"]["junctions"],
-        "cpu" => [keep(c) for c in data["grid"]["cells"] if c["tags"] == 25 && get(c, "run", false)],
-        "gpu" => merge(keep(gpu), Dict{String, Any}("attempted" => get(gpu, "attempted", false))),
-        "note" => "Read from the calibration step of this build. The site build attempts the GPU at one grid point.",
-    )
-end
-
-"""
     run_benchmarks(outdir; profile = :ci)
 
 Run a benchmark sweep and write `benchmarks.json` and `benchmarks.csv` to `outdir`. Both files hold
@@ -678,16 +658,17 @@ function run_benchmarks(outdir; profile::Symbol = :ci)
     ipopt_failure === nothing || push!(extra, Dict{String, Any}(
         "item" => "Ipopt reference runs", "reason" => "The Ipopt process failed: $ipopt_failure",
     ))
-    calibration = calibration_outcome(outdir)
-    calibration === nothing && push!(extra, Dict{String, Any}(
+    # The site build's merge step replaces this entry with the outcome read from calibration.json
+    # (scripts/site/merge.jl), because calibration runs as a separate part.
+    push!(extra, Dict{String, Any}(
         "item" => "Calibration CPU and GPU outcome",
-        "reason" => "calibration.json was not found next to this file when the benchmarks were written.",
+        "reason" => "Added from calibration.json when the parts of a site build are merged; this file was not merged.",
     ))
     settings.ipopt || push!(extra, Dict{String, Any}(
         "item" => "Ipopt in this sweep", "reason" => "Ipopt runs only in the local sweep; see results/benchmarks.csv.",
     ))
     document = bench_document(profile, env, records, not_run, ttfs, extra)
-    document["calibration"] = calibration
+    document["calibration"] = nothing
     settings.gpu_memory && (document["gpu_memory"] = gpu_memory_table(bench_cases(settings)))
     document["sweep_runtime_s"] = time() - started
     text = JSON.json(json_safe(document), 2)

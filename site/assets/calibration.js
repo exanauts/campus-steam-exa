@@ -43,7 +43,8 @@ function seasonalWindows(check) {
     window: w.label,
     label: Number.isFinite(w.max_error_percent) ? percent(w.max_error_percent) : null,
     where: `${w.max_error_group}, ${w.max_error_coefficient === "loss" ? "heat loss" : "friction"}`,
-    outcome: w.converged === true ? "no error was recorded" : `the solver stopped with status ${w.solver_status}`,
+    outcome: w.run === false ? "it reached the time limit of this build and counts as not run"
+      : w.converged === true ? "no error was recorded" : `the solver stopped with status ${w.solver_status}`,
   });
   return { tags: check.tags, first: describe(windows[0]), second: describe(windows[1]) };
 }

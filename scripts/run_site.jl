@@ -1,11 +1,30 @@
-# Placeholder site build: records how and where this build ran in
-# site/data/build_info.json. Only generic hardware model names are written.
+# Builds one part of the site data, or merges the parts. The site workflow runs the three parts as
+# parallel jobs and then merges them; scripts/run_all.jl runs the same commands one after another.
+#
+#   julia --project=scripts scripts/run_site.jl scenarios     site/data/scenarios/
+#   julia --project=scripts scripts/run_site.jl calibration   site/data/calibration.json, tag_template.csv
+#   julia --project=scripts scripts/run_site.jl benchmarks    site/data/benchmarks.json, benchmarks.csv
+#   julia --project=scripts scripts/run_site.jl merge         site/data/build_info.json
+#
+# Each part also writes site/data/parts/<part>.json with how and where it ran. Only generic hardware
+# model names are written. `merge` combines those records into build_info.json, removes parts/, and
+# copies the calibration outcome into benchmarks.json. scripts/ci/finish_site_data.sh then writes
+# files.json.
 
 using Dates
+using JSON
 using Pkg
 
 const REPO_ROOT = dirname(@__DIR__)
-const OUTPUT_FILE = joinpath(REPO_ROOT, "site", "data", "build_info.json")
+const DATA_DIR = joinpath(REPO_ROOT, "site", "data")
+const PARTS_DIR = joinpath(DATA_DIR, "parts")
+const PARTS = ("scenarios", "calibration", "benchmarks")
+
+const USAGE = "usage: run_site.jl scenarios|calibration|benchmarks|merge"
+length(ARGS) == 1 && (ARGS[1] in PARTS || ARGS[1] == "merge") || error(USAGE)
+const PART = ARGS[1]
+
+utc_now() = Dates.format(now(UTC), dateformat"yyyy-mm-ddTHH:MM:SS") * "Z"
 
 function command_output(cmd::Cmd)
     try
@@ -92,22 +111,38 @@ function assert_public_safe(text)
     return nothing
 end
 
+function write_build_info(info)
+    text = JSON.json(info, 2)
+    assert_public_safe(text)
+    write(joinpath(DATA_DIR, "build_info.json"), text)
+    rm(PARTS_DIR; recursive = true, force = true)
+    println(text)
+end
+
+# Each step below is its own top-level statement, so that functions from an included file can be
+# called by the next one.
+PART == "merge" && include(joinpath(@__DIR__, "site", "merge.jl"))
+PART == "merge" && (write_build_info(merge_site_data(DATA_DIR, PARTS_DIR, PARTS)); exit(0))
+
 # Taken before CUDA is loaded so that this process cannot affect the reading.
 const GPU_SNAPSHOT = selected_gpu_snapshot()
+const STARTED = time()
+const STARTED_AT = utc_now()
 
 using CampusSteam
 using CUDA
 using CUDSS
 using ExaModels
-using JSON
 using MadNLP
 using MadNLPGPU
 
-function build_info()
+function part_info(wall_s)
     functional = CUDA.functional()
     info = Dict{String,Any}(
+        "part" => PART,
         "commit_sha" => commit_sha(),
-        "run_date" => Dates.format(now(UTC), dateformat"yyyy-mm-ddTHH:MM:SS") * "Z",
+        "run_date" => STARTED_AT,
+        "wall_s" => round(wall_s; digits = 1),
         "cpu_model" => cpu_model(),
         "julia_version" => string(VERSION),
         "package_versions" => package_versions(["CUDA", "CUDSS", "ExaModels", "MadNLP", "MadNLPGPU"]),
@@ -119,20 +154,17 @@ function build_info()
     return merge(info, GPU_SNAPSHOT)
 end
 
-function main()
-    info = build_info()
-    text = JSON.json(info, 2)
-    assert_public_safe(text)
-    mkpath(dirname(OUTPUT_FILE))
-    write(OUTPUT_FILE, text)
-    println(text)
-    if haskey(ENV, "GITHUB_ACTIONS") && !info["cuda_functional"]
-        error("CUDA is not functional on the GPU runner")
-    end
-    return nothing
+if haskey(ENV, "GITHUB_ACTIONS") && !CUDA.functional()
+    error("CUDA is not functional on the GPU runner")
 end
 
-main()
-include(joinpath(@__DIR__, "site", "scenarios.jl")); run_scenarios(joinpath(REPO_ROOT, "site", "data", "scenarios"))
-include(joinpath(@__DIR__, "site", "calibration.jl")); run_calibration(dirname(OUTPUT_FILE))
-include(joinpath(@__DIR__, "site", "benchmarks.jl")); run_benchmarks(dirname(OUTPUT_FILE))
+include(joinpath(@__DIR__, "site", "$PART.jl"))
+PART == "scenarios" ? run_scenarios(joinpath(DATA_DIR, "scenarios")) :
+    PART == "calibration" ? run_calibration(DATA_DIR) : run_benchmarks(DATA_DIR)
+
+let text = JSON.json(part_info(time() - STARTED), 2)
+    assert_public_safe(text)
+    mkpath(PARTS_DIR)
+    write(joinpath(PARTS_DIR, "$PART.json"), text)
+    println(text)
+end

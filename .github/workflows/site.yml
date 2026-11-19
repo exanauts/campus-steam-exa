@@ -1,6 +1,6 @@
 name: site
 
-# Builds the site data on the GPU runner and publishes it to the gh-pages branch.
+# Builds the site data on the GPU runners, in three parallel parts, and publishes it to the gh-pages branch.
 #   push to main          -> the public site
 #   pull request          -> a preview under preview/pr-<number>/, removed when the request closes
 # Pull requests build only from branches of this repository, which only members and collaborators
@@ -22,13 +22,37 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # The site data is built in three parts that run at the same time on separate runners of one
+  # machine. Each part uploads its share of site/data/, and `merge` combines them into one artifact.
+  # The benchmark part holds a GPU of its own so that its timings are not disturbed by the other
+  # parts; scenarios (CPU only) and calibration share the other GPU (scripts/ci/select_gpu.sh).
+  # Scenarios and calibration run their independent solves on a pool of worker processes.
   build:
     if: >-
       github.event_name != 'pull_request' ||
       (github.event.action != 'closed' &&
        github.event.pull_request.head.repo.full_name == github.repository)
+    name: build (${{ matrix.part }})
     runs-on: [self-hosted, Linux, X64, gpu, cuda, kkt]
-    timeout-minutes: 90
+    timeout-minutes: 45
+    strategy:
+      matrix:
+        include:
+          # `workers` is the size of the part's pool of solver processes (scripts/site/pool.jl).
+          # The benchmark part stays serial. scripts/ci/cpu_set.sh pins each part to its own cores,
+          # and the two pooled parts also run at a lower CPU priority than the benchmark solves.
+          - part: scenarios
+            gpu_role: shared
+            workers: 4
+            nice: 10
+          - part: calibration
+            gpu_role: shared
+            workers: 8
+            nice: 10
+          - part: benchmarks
+            gpu_role: exclusive
+            workers: 1
+            nice: 0
     defaults:
       run:
         shell: bash
@@ -36,6 +60,8 @@ jobs:
       CI_JULIA_VERSION: "1.13.3"
       # Never scheduled on these GPUs, whatever their memory use.
       GPU_EXCLUDE: "0,1"
+      GPU_PART: ${{ matrix.part }}
+      SITE_WORKERS: ${{ matrix.workers }}
       # A pull request builds its head commit, not the merge commit GitHub prepares.
       BUILD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
     steps:
@@ -48,8 +74,8 @@ jobs:
           git checkout -q --force FETCH_HEAD
           git clean -qffdx
 
-      - name: Select GPU with least memory in use
-        run: scripts/ci/select_gpu.sh
+      - name: Select GPU
+        run: scripts/ci/select_gpu.sh ${{ matrix.gpu_role }}
 
       - name: Install Julia
         run: scripts/ci/setup_julia.sh
@@ -66,12 +92,73 @@ jobs:
           source scripts/ci/env.sh
           julia --color=no --project=scripts -e 'using CUDA; CUDA.versioninfo()' 2>&1 | scrub
 
-      - name: Build site data
+      - name: Build site data (${{ matrix.part }})
         run: |
           source scripts/ci/env.sh
           # The build records this commit in the page footer.
           export GITHUB_SHA="$BUILD_SHA"
-          julia --color=no --project=scripts scripts/run_site.jl 2>&1 | scrub
+          pin=()
+          cpus="$(scripts/ci/cpu_set.sh "$GPU_PART")"
+          if [ -n "$cpus" ]; then
+            echo "Pinned to CPUs $cpus"
+            pin=(taskset -c "$cpus")
+          fi
+          nice -n ${{ matrix.nice }} "${pin[@]}" julia --color=no --project=scripts scripts/run_site.jl "$GPU_PART" 2>&1 | scrub
+
+      - name: Release GPU
+        if: always()
+        run: scripts/ci/select_gpu.sh release
+
+      - name: Upload site data (${{ matrix.part }})
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: site-part-${{ matrix.part }}
+          path: site/data
+          if-no-files-found: error
+          retention-days: 1
+
+  # Combines the three parts, writes build_info.json and files.json, and hands one artifact to deploy.
+  merge:
+    needs: build
+    if: >-
+      github.event_name != 'pull_request' ||
+      (github.event.action != 'closed' &&
+       github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: [self-hosted, Linux, X64, gpu, cuda, kkt]
+    timeout-minutes: 15
+    defaults:
+      run:
+        shell: bash
+    env:
+      CI_JULIA_VERSION: "1.13.3"
+      BUILD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - name: Check out commit
+        run: |
+          git init -q .
+          git fetch -q --depth=1 --no-tags "https://github.com/${GITHUB_REPOSITORY}.git" "$BUILD_SHA"
+          git checkout -q --force FETCH_HEAD
+          git clean -qffdx
+
+      - name: Install Julia
+        run: scripts/ci/setup_julia.sh
+
+      - name: Instantiate Julia project
+        run: |
+          source scripts/ci/env.sh
+          julia --color=no --project=scripts -e 'using Pkg; Pkg.instantiate()' 2>&1 | scrub
+
+      - name: Download site data parts
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: site-part-*
+          path: site/data
+          merge-multiple: true
+
+      - name: Merge site data
+        run: |
+          source scripts/ci/env.sh
+          julia --color=no --project=scripts scripts/run_site.jl merge 2>&1 | scrub
 
       - name: Finish site data
         run: scripts/ci/finish_site_data.sh
@@ -86,7 +173,7 @@ jobs:
 
   # Publishing runs on a GitHub-hosted runner and is the only job that can write to the repository.
   deploy:
-    needs: build
+    needs: merge
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
