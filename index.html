@@ -20,12 +20,13 @@
 <section class="hero wrap" id="hero" aria-labelledby="hero-title">
   <h1 id="hero-title">How a campus steam network carries a hard week</h1>
   <p class="hero-sub" id="hero-sub" hidden></p>
+  <p class="request-note">Further down, this page makes one small, read-only data request: an hourly export of a short list of historian tags. <a href="#ask-title">Go to the request</a></p>
 
   <fieldset class="scenarios" id="scenario-switch">
     <legend>Scenario</legend>
-    <label><input type="radio" name="scenario" value="baseline" checked><span>Baseline</span></label>
+    <label><input type="radio" name="scenario" value="baseline"><span>Baseline</span></label>
     <label><input type="radio" name="scenario" value="cold_snap"><span>Cold snap</span></label>
-    <label><input type="radio" name="scenario" value="plant_derate"><span>Plant derate</span></label>
+    <label><input type="radio" name="scenario" value="plant_derate" checked><span>Boiler out</span></label>
     <label><input type="radio" name="scenario" value="pipe_out"><span>Pipe out</span></label>
   </fieldset>
 
@@ -36,15 +37,19 @@
     </figure>
     <aside class="panel" id="panel" aria-label="Plant status at the selected hour" hidden></aside>
     <div class="transport" id="transport" hidden>
-      <button type="button" id="play" class="play" aria-pressed="false">Play</button>
-      <div class="scrub">
-        <div class="strip" id="strip" aria-hidden="true"></div>
-        <input type="range" id="scrubber" min="0" max="0" value="0" step="1" aria-label="Hour of the week">
-        <div class="strip-days" id="strip-days" aria-hidden="true"></div>
+      <div class="timeline-head">
+        <button type="button" id="play" class="play" aria-pressed="false">Play</button>
+        <div>
+          <p class="timeline-title">The week, hour by hour. Click or drag on the chart to pick an hour.</p>
+          <ul class="legend" id="timeline-legend"></ul>
+        </div>
       </div>
+      <div class="timeline" id="timeline"></div>
+      <input type="range" id="scrubber" min="0" max="0" value="0" step="1" aria-label="Hour of the week">
     </div>
   </div>
 
+  <p class="hero-context" id="hero-context" hidden></p>
   <p class="caption">Playback is precomputed solver output, not live plant data. Example University is fictional and its layout is generated. Only the steam supply side is drawn. <span id="campus-size"></span> Shed load is shown by building type, because the split between buildings of one type is not unique.</p>
   <p class="caption" id="hero-labels" hidden></p>
   <p class="sr-only" id="hero-live" aria-live="polite"></p>
@@ -91,18 +96,6 @@
   </div>
 </section>
 
-<section class="wrap band" id="cpu-gpu" aria-labelledby="gpu-title">
-  <h2 id="gpu-title">CPU versus GPU</h2>
-  <div id="benchmarks"></div>
-  <h3>Where the GPU may pay off later</h3>
-  <p>None of the following has produced a result. The full-year horizon was attempted once per device in a separate run, outside this build, and neither solve finished. The others have not been run, and no speedup is claimed for any of them.</p>
-  <ul class="roadmap">
-    <li><span class="tag">Did not finish</span> A full-year horizon solved as one problem. <a href="https://github.com/exanauts/campus-steam-exa/blob/main/results/logs/benchmarks_year_attempt.txt">Log of the attempt</a></li>
-    <li><span class="tag">Not run</span> Many outage cases solved as one batch.</li>
-    <li><span class="tag">Not run</span> Networks much larger than this campus.</li>
-    <li><span class="tag">Not run</span> GPU linear solver settings tuned to reach full tolerance on long horizons.</li>
-  </ul>
-</section>
 
 <section class="wrap band" id="limits" aria-labelledby="limits-title">
   <h2 id="limits-title">Limits</h2>
@@ -121,6 +114,20 @@
     <li><a href="https://arxiv.org/abs/2404.18868">Hari, Srinivasan, Zlotnik, Sundar, Ewers, "Optimization of District Heating Network Parameters in Steady-State Operation", arXiv 2404.18868</a></li>
     <li><a href="https://github.com/lanl-ansi/ThermalModels.jl">ThermalModels.jl</a>, the reference implementation</li>
     <li><a href="https://github.com/exanauts/campus-steam-exa">campus-steam-exa</a>, the code behind this page</li>
+  </ul>
+</section>
+
+<section class="wrap band" id="cpu-gpu" aria-labelledby="gpu-title">
+  <p class="eyebrow">Background for technical readers</p>
+  <h2 id="gpu-title">CPU versus GPU</h2>
+  <div id="benchmarks"></div>
+  <h3>Where the GPU may pay off later</h3>
+  <p>None of the following has produced a result. The full-year horizon was attempted once per device in a separate run, outside this build, and neither solve finished. The others have not been run, and no speedup is claimed for any of them.</p>
+  <ul class="roadmap">
+    <li><span class="tag">Did not finish</span> A full-year horizon solved as one problem. <a href="https://github.com/exanauts/campus-steam-exa/blob/main/results/logs/benchmarks_year_attempt.txt">Log of the attempt</a></li>
+    <li><span class="tag">Not run</span> Many outage cases solved as one batch.</li>
+    <li><span class="tag">Not run</span> Networks much larger than this campus.</li>
+    <li><span class="tag">Not run</span> GPU linear solver settings tuned to reach full tolerance on long horizons.</li>
   </ul>
 </section>
 </main>

@@ -89,56 +89,34 @@
   "finding": "On synthetic data, one month of 25 hourly tags recovered every estimated steam-side coefficient group to within 5.159%. With 5 tags the largest error was 169.237%.",
   "findings": [
     "All data is simulated. This test uses a separate 40-junction simulated campus, not the 166-junction campus drawn on the map at the top of this page.",
-    "One heat-loss value and one friction value are fitted for each group of pipes (steam mains and steam laterals), not for each pipe. A calculation of what the readings can reveal predicts that 25 tags over 12 months would pin down, to within about 10%, at most 17 independent combinations of the 84 pipe-by-pipe values.",
+    "One heat-loss value and one friction value are fitted for each group of pipes (steam mains and steam laterals), not for each pipe. A calculation of what the readings can reveal predicts that 25 tags over 12 months are not enough to fit a separate value for every pipe to within about 10%.",
     "Heat-loss and friction values for the condensate return pipes are not fitted. They stay at their starting values, and fitting them would need tags on the condensate side.",
     "The simulated pipes in a group are not identical: each pipe's true value varies from the group's value by about 3.0% (one standard deviation). Each fitted value is therefore compared with the average true value of its group, with longer pipes counting for more.",
     "With 25 tags, the largest recovery error in this build was 5.159% with 1 month, 4.447% with 3 months and 2.874% with 6 months of data. The error fell each time more months were used."
   ],
   "gpu": {
     "attempted": true,
-    "build_s": 6.94,
+    "build_s": 6.97,
     "constraints": 164250,
-    "converged": true,
+    "converged": false,
     "device": "NVIDIA H200",
-    "error_percent": {
-      "friction": {
-        "steam laterals": 2.898,
-        "steam mains": 2.064
-      },
-      "loss": {
-        "steam laterals": 5.163,
-        "steam mains": 0.653
-      }
-    },
-    "estimate": {
-      "friction": [
-        1.28273,
-        0.91946,
-        1.0
-      ],
-      "loss": [
-        1.29078,
-        1.09368,
-        1.0
-      ]
-    },
     "hours": 730,
-    "iterations": 19,
+    "iterations": 0,
     "jacobian_nonzeros": 614660,
-    "max_error_percent": 5.163,
     "measurements": 14784,
     "months": 1,
+    "reason": "The solver stopped with status MAXIMUM_WALLTIME_EXCEEDED, so no recovery error is reported.",
     "run": true,
-    "solve_s": 70.6,
-    "solver_status": "SOLVE_SUCCEEDED",
+    "solve_s": 59.42,
+    "solver_status": "MAXIMUM_WALLTIME_EXCEEDED",
     "tags": 25,
     "variables": 187616,
-    "wall_limit_s": 78.3
+    "wall_limit_s": 57.2
   },
   "grid": {
     "cells": [
       {
-        "build_s": 0.23,
+        "build_s": 0.04,
         "constraints": 164250,
         "converged": true,
         "error_percent": {
@@ -170,7 +148,7 @@
         "measurements": 3503,
         "months": 1,
         "run": true,
-        "solve_s": 32.47,
+        "solve_s": 32.99,
         "solver_status": "SOLVE_SUCCEEDED",
         "tags": 5,
         "variables": 187616
@@ -214,7 +192,7 @@
         "months": 1,
         "reason": "The solver stopped with status MAXIMUM_ITERATIONS_EXCEEDED, so no recovery error is reported.",
         "run": true,
-        "solve_s": 161.87,
+        "solve_s": 163.78,
         "solver_status": "MAXIMUM_ITERATIONS_EXCEEDED",
         "tags": 10,
         "variables": 187616
@@ -248,7 +226,7 @@
         "tags": 10
       },
       {
-        "build_s": 0.03,
+        "build_s": 0.04,
         "constraints": 164250,
         "converged": true,
         "error_percent": {
@@ -280,7 +258,7 @@
         "measurements": 9846,
         "months": 1,
         "run": true,
-        "solve_s": 114.29,
+        "solve_s": 121.47,
         "solver_status": "SOLVE_SUCCEEDED",
         "tags": 15,
         "variables": 187616
@@ -314,7 +292,7 @@
         "tags": 15
       },
       {
-        "build_s": 1.61,
+        "build_s": 1.64,
         "constraints": 164250,
         "converged": true,
         "error_percent": {
@@ -346,13 +324,13 @@
         "measurements": 14784,
         "months": 1,
         "run": true,
-        "solve_s": 13.24,
+        "solve_s": 13.28,
         "solver_status": "SOLVE_SUCCEEDED",
         "tags": 25,
         "variables": 187616
       },
       {
-        "build_s": 0.09,
+        "build_s": 0.1,
         "constraints": 492750,
         "converged": true,
         "error_percent": {
@@ -384,7 +362,7 @@
         "measurements": 43928,
         "months": 3,
         "run": true,
-        "solve_s": 29.47,
+        "solve_s": 30.15,
         "solver_status": "SOLVE_SUCCEEDED",
         "tags": 25,
         "variables": 562836
@@ -422,7 +400,7 @@
         "measurements": 88035,
         "months": 6,
         "run": true,
-        "solve_s": 182.88,
+        "solve_s": 193.66,
         "solver_status": "SOLVE_SUCCEEDED",
         "tags": 25,
         "variables": 1125666
@@ -865,11 +843,11 @@
   },
   "timing_s": {
     "budget": 645.0,
-    "generate_historian": 14.2,
+    "generate_historian": 14.4,
     "identifiability": 2.8,
     "nominal_simulation": 2.4,
-    "read_historian": 0.25,
-    "total": 635.3
+    "read_historian": 0.26,
+    "total": 645.0
   },
   "true_coefficients": {
     "estimated": [
