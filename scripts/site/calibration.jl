@@ -217,7 +217,10 @@ function _cal_findings(net, hist, identifiability, seasonal, grid)
     fitted = join(hist.groups.names[hist.groups.estimated], " and ")
     findings = String[
         "All data is simulated. This test uses a separate $(length(net.junctions))-junction simulated campus, not the $(length(demo_campus().junctions))-junction campus drawn on the map at the top of this page.",
-        "One heat-loss value and one friction value are fitted for each group of pipes ($fitted), not for each pipe. A calculation of what the readings can reveal predicts that $(finest["tags"]) tags over 12 months would pin down, to within about 10%, at most $(finest["pipe_directions_resolved_12_months"]) independent combinations of the $(finest["pipe_coefficients"]) pipe-by-pipe values.",
+        "One heat-loss value and one friction value are fitted for each group of pipes ($fitted), not for each pipe. " *
+        (finest["pipe_directions_resolved_12_months"] < finest["pipe_coefficients"] ?
+            "A calculation of what the readings can reveal predicts that $(finest["tags"]) tags over 12 months are not enough to fit a separate value for every pipe to within about 10%." :
+            "A calculation of what the readings can reveal predicts that $(finest["tags"]) tags over 12 months could fit a separate value for every pipe to within about 10%."),
         "Heat-loss and friction values for the condensate return pipes are not fitted. They stay at their starting values, and fitting them would need tags on the condensate side.",
         "The simulated pipes in a group are not identical: each pipe's true value varies from the group's value by about $(100 * CampusSteam.TRUE_PIPE_SPREAD)% (one standard deviation). Each fitted value is therefore compared with the average true value of its group, with longer pipes counting for more.",
     ]

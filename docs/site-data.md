@@ -69,8 +69,14 @@ of the neighboring `ids`.
 When `presented` is `false`, the file has only the identification, `events` and `solver` fields. Show
 the status and no numbers.
 
-Flows are signed: a negative flow runs against the `from -> to` direction in `network.json`. Pipe values
-are `null` in hours when the pipe is out of service. `buildings_shed` lists buildings with at least
+The timeline under the map draws `plant.demand_MW`, `plant.output_MW` and `plant.rating_MW`, shades the
+hours where `plant.shed_MW` is at least 0.01 MW, and marks each entry of `events`. The headline is built
+from `summary.total_shed_MWh`, `summary.critical_shed_MWh`, the shed by building type summed from
+`loads.shed_MW`, the event fields (`kind`, `factor`, `pipe`) and, for `pipe_out`, `reroute`.
+
+Flows are signed: a negative flow runs against the `from -> to` direction in `network.json`. The map draws
+an arrow at the middle of each loaded steam pipe from this sign, and none on faded or out-of-service pipes.
+Pipe values are `null` in hours when the pipe is out of service. `buildings_shed` lists buildings with at least
 0.01 MWh of shed load, each with `load`, `name`, `type`, `shed_MWh` and `peak_shed_MW`. In
 `plant_derate`, `peak_output_MW` occurs outside the boiler outage.
 
@@ -182,6 +188,11 @@ time from a simulated network whose true coefficients are known, and is deleted 
 | `grid` | Object | `tag_counts`, `months`, `cells`, see below |
 | `gpu` | Object | Outcome of the GPU attempt, see below |
 | `timing_s` | Object | `generate_historian`, `read_historian`, `nominal_simulation`, `identifiability`, `total`, `budget` |
+
+The page reads `network.junctions`, `true_coefficients.groups`, `estimated` and `pipe_spread_percent` for
+the limits of the test, `seasonal_check` and the 25-tag `grid.cells` for the reason given next to the
+length of the export, and `findings` for the expandable details. Values and units stay in SI in the file
+(`K`, `Pa`); the page shows temperatures in C and pressures in kPa in the sample rows and the tag list.
 
 **`bad_quality_example`** has `tag`, `unit`, `samples` (each with `time`, `value`, `quality`, `used`),
 `mean_with_bad_sample`, `mean_after_exclusion` and `samples_excluded`.

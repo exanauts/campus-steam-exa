@@ -37,7 +37,8 @@ a { color: var(--link); }
 
 .hero { padding-top: .35rem; padding-bottom: 1.5rem; }
 h1 { font-size: clamp(1.2rem, 1rem + .6vw, 1.45rem); line-height: 1.25; margin: .25rem 0 .2rem; text-wrap: pretty; }
-.hero-sub { margin: 0 0 .4rem; color: var(--ink-2); max-width: 56rem; }
+.hero-sub { margin: 0 0 .25rem; color: var(--ink); max-width: 56rem; }
+.hero-context { margin: .75rem 0 .2rem; font-size: .925rem; max-width: 56rem; }
 h2 { font-size: 1.45rem; line-height: 1.2; margin: 0 0 .6rem; }
 h3 { font-size: 1.12rem; margin: 1.9rem 0 .4rem; }
 h4 { font-size: 1rem; margin: 0 0 .3rem; }
@@ -64,7 +65,7 @@ h4 { font-size: 1rem; margin: 0 0 .3rem; }
 .stage:not(.has-panel) > * { grid-area: auto; }
 .map-card { margin: 0; background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: .4rem; min-width: 0; position: relative; }
 .map { width: 100%; }
-.map svg { display: block; width: 100%; height: auto; max-height: 52vh; touch-action: pan-y; }
+.map svg { display: block; width: 100%; height: auto; max-height: 50vh; touch-action: pan-y; }
 .map .pipe { fill: none; stroke-linecap: round; vector-effect: non-scaling-stroke; }
 .map .pipe.out { stroke: var(--out); stroke-dasharray: 2 6; }
 .map .pipe.faded { stroke: var(--out); opacity: .4; }
@@ -111,15 +112,52 @@ h4 { font-size: 1rem; margin: 0 0 .3rem; }
 .shed-now { margin: .55rem 0 0; padding-top: .45rem; border-top: 1px solid var(--rule); font-size: .85rem; color: var(--ink-2); min-height: 4.2em; }
 .shed-now b { color: var(--ink); font-weight: 600; }
 
-.transport { display: flex; align-items: flex-start; gap: .75rem; min-width: 0; }
-.play { min-width: 4.75rem; min-height: 2.75rem; border: 1px solid var(--ink); background: var(--ink); color: var(--bg); border-radius: 6px; font: inherit; font-weight: 600; cursor: pointer; }
-.scrub { flex: 1; min-width: 0; }
-.strip { height: 42px; padding-inline: 11px; }
-.strip svg { display: block; width: 100%; height: 42px; overflow: visible; }
+.transport { min-width: 0; background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: .6rem .7rem .4rem; }
+.play { min-width: 4.75rem; min-height: 2.75rem; border: 1px solid var(--ink); background: var(--ink); color: var(--bg); border-radius: 6px; font: inherit; font-weight: 600; cursor: pointer; flex: none; }
+.timeline-head { display: flex; align-items: flex-start; gap: .75rem; }
+.timeline-head > div { min-width: 0; }
+.timeline-title { margin: 0 0 .2rem; font-size: .9rem; font-weight: 600; }
+.timeline-head .legend { margin: 0; }
+.timeline { margin-top: .35rem; }
+.timeline svg { display: block; width: 100%; height: auto; overflow: visible; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
+.timeline text { fill: var(--ink-2); font-size: 12px; }
+.timeline .grid { stroke: var(--rule); stroke-width: 1; }
+.timeline .base { stroke: var(--axis); stroke-width: 1; }
+.timeline .tl-tick { font-variant-numeric: tabular-nums; }
+.tl-event { fill: var(--ink); opacity: .06; }
+.tl-event-edge { stroke: var(--ink-3); stroke-width: 1; }
+.timeline .tl-event-label { fill: var(--ink); font-weight: 600; }
+.tl-shed { fill: var(--shed); opacity: .22; }
+.tl-capacity { fill: none; stroke: var(--ink-2); stroke-width: 1.5; }
+.tl-demand, .tl-output { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.tl-demand { stroke: var(--s2); stroke-width: 1.5; }
+.tl-output { stroke-width: 2.5; }
+.tl-output { stroke: var(--s1); }
+.tl-hover { stroke: var(--ink-3); stroke-width: 1; pointer-events: none; }
+.tl-cursor { stroke: var(--ink); stroke-width: 1.5; pointer-events: none; }
+.tl-dot { fill: var(--s1); stroke: var(--surface); stroke-width: 2; pointer-events: none; }
+.tl-hit { fill: transparent; cursor: ew-resize; }
+.legend i.ln-demand, .tip-key.ln-demand { border-color: var(--s2); }
+.legend i.ln-output, .tip-key.ln-output { border-color: var(--s1); }
+.legend i.ln-capacity, .tip-key.ln-capacity { border-color: var(--ink-2); border-top-width: 1.5px; }
+.legend i.sw-shed, .legend i.sw-event { width: 12px; height: 12px; border: 0; border-radius: 2px; }
+.legend i.sw-shed { background: color-mix(in srgb, var(--shed) 30%, var(--surface)); }
+.legend i.sw-event { background: color-mix(in srgb, var(--ink) 9%, var(--surface)); border: 1px solid var(--ink-3); }
+.tip-key { display: inline-block; width: 12px; height: 0; border-top: 2px solid; margin-right: .35rem; vertical-align: middle; }
+.tip-key.sw-shed { height: 8px; border: 0; background: var(--shed); opacity: .5; }
+.tip strong { font-variant-numeric: tabular-nums; }
 #scrubber { display: block; width: 100%; margin: 0; height: 24px; accent-color: var(--ink); cursor: pointer; }
-.strip-days { display: flex; justify-content: space-between; padding-inline: 11px; font-size: .75rem; color: var(--ink-2); white-space: nowrap; }
+.request-note { margin: .1rem 0 .5rem; padding: .4rem .65rem; border-left: 3px solid var(--accent); background: var(--surface); font-size: .925rem; }
+.request-note a { font-weight: 600; white-space: nowrap; }
+.eyebrow { margin: 0 0 .2rem; font-size: .8rem; font-weight: 650; letter-spacing: .04em; text-transform: uppercase; color: var(--ink-2); }
+.map .flow-arrow, .key-mark .flow-arrow { fill: var(--ink); stroke: var(--surface); stroke-linejoin: round; paint-order: stroke; pointer-events: none; }
+.key-mark .flow-arrow { stroke-width: 1.5; }
+.cal-details { max-width: 52rem; margin-top: 1.25rem; }
+.cal-details > summary { font-weight: 600; }
+.why-years { max-width: 46rem; margin: .75rem 0 0; padding: .55rem .75rem; background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; font-size: .925rem; }
+.why-years p { margin: 0 0 .35rem; }
+.why-years p:last-child { margin-bottom: 0; }
 @media (max-width: 30rem) {
-  .strip-days .word { display: none; }
   /* The note under the table names the tag, so the exclusion stays in view on a phone. */
   .sample th:nth-child(2), .sample td:nth-child(2) { display: none; }
   .sample th, .sample td { padding-inline: .3rem; }
@@ -135,7 +173,8 @@ caption { text-align: left; }
 th, td { text-align: right; padding: .3rem .55rem; border-bottom: 1px solid var(--rule); white-space: nowrap; }
 th:first-child, td:first-child { text-align: left; }
 thead th { color: var(--ink-2); font-weight: 600; }
-.sample td, .sample th { text-align: left; }
+.sample td, .sample th, .text-table td, .text-table th { text-align: left; }
+.text-table td { white-space: normal; }
 .sample tr.bad td { color: var(--ink-2); text-decoration: line-through; }
 .sample tr.bad td:last-child { text-decoration: none; color: var(--ink); font-weight: 650; }
 
@@ -201,3 +240,11 @@ thead th { color: var(--ink-2); font-weight: 600; }
   .scenarios input:checked + span { outline: 2px solid Highlight; }
 }
 .map-key .key-lead { font-weight: 600; color: var(--ink); }
+/* On wide screens the key sits beside the map, so the timeline below stays near the first screen. */
+@media (min-width: 64rem) {
+  .map-card { display: grid; grid-template-columns: minmax(0, 1fr) 17.5rem; align-items: center; gap: .5rem; }
+  .map-key { padding: .35rem .5rem; border-left: 1px solid var(--rule); }
+  .map-key .key-row + .key-row { margin-top: .45rem; }
+  .map-key .key-ramp { white-space: nowrap; }
+  .map-key .ramp { width: 52px; }
+}
