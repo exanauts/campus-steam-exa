@@ -1,0 +1,98 @@
+{
+  "label": "All data is synthetic and describes no real campus.",
+  "source_commit": "6fd4ac9",
+  "run_date": "2026-11-18",
+  "device": "NVIDIA H200",
+  "details": "docs/gpu-notes.md",
+  "findings": [
+    {
+      "id": "crossover",
+      "title": "No crossover was observed",
+      "text": "At a matched tolerance of 1e-8 the GPU was slower at all seven single-period network sizes, from 15.9 times the CPU time on the demo campus to 1.69 times at 800 junctions.",
+      "evidence": [
+        "results/benchmarks.csv"
+      ]
+    },
+    {
+      "id": "horizon",
+      "title": "The GPU median was lower at T = 720, with one failed repeat",
+      "text": "At T = 720 the GPU median was 41.8 s against 88.2 s on the CPU, but one of five GPU repeats stopped at the iteration limit. The GPU was slower at T = 24 and T = 168.",
+      "evidence": [
+        "results/benchmarks.csv"
+      ]
+    },
+    {
+      "id": "variability",
+      "title": "GPU iteration counts vary between identical runs",
+      "text": "At T = 720 the GPU took between 127 and 1000 iterations on identical input. The CPU took the same number every time.",
+      "evidence": [
+        "results/benchmarks.csv"
+      ]
+    },
+    {
+      "id": "tolerance",
+      "title": "Default GPU runs often stop at a looser tolerance",
+      "text": "With default settings the GPU often stopped at the acceptable level while the CPU reached 1e-8, so default times are not like for like.",
+      "evidence": [
+        "results/benchmarks.csv"
+      ]
+    },
+    {
+      "id": "regularization",
+      "title": "The GPU regularizes on most iterations",
+      "text": "With default settings the GPU applied inertia regularization on 91% of iterations on the demo campus, against 12% on the CPU. The cause was not isolated.",
+      "evidence": [
+        "results/gpu_diagnostics.csv"
+      ]
+    },
+    {
+      "id": "first_solve",
+      "title": "Time to first solve is longer on the GPU",
+      "text": "A fresh process took 82.8 s on the GPU and 18.4 s on the CPU to finish its first two demo campus solves.",
+      "evidence": [
+        "results/benchmarks_summary.json"
+      ]
+    }
+  ],
+  "not_run": [
+    {
+      "item": "Demo campus at T = 8,760",
+      "status": "Attempted once, neither device finished",
+      "evidence": "results/logs/benchmarks_year_attempt.txt"
+    },
+    {
+      "item": "Single precision",
+      "status": "Not run"
+    },
+    {
+      "item": "Multi-threaded CPU",
+      "status": "Not run"
+    },
+    {
+      "item": "Augmented KKT system on the GPU",
+      "status": "Not run"
+    }
+  ],
+  "roadmap": [
+    {
+      "item": "Year-long horizons",
+      "status": "not run",
+      "needs": "Reliable GPU convergence at T = 8,760, steadier iteration counts, and a factorization that fits in GPU memory."
+    },
+    {
+      "item": "Many-scenario contingency screening",
+      "status": "not run",
+      "needs": "Scenarios that share one sparsity pattern, and convergence of each scenario without manual restarts."
+    },
+    {
+      "item": "Calibration over full historian history",
+      "status": "not run",
+      "needs": "GPU convergence on the longer records the CPU solves, within GPU memory."
+    },
+    {
+      "item": "Embedded learned load models",
+      "status": "not run",
+      "needs": "Models that ExaModels can evaluate on the GPU, and function evaluation becoming a large share of solve time."
+    }
+  ]
+}

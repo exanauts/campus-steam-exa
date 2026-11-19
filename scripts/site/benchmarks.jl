@@ -551,6 +551,12 @@ function records_csv(records)
     return String(take!(io))
 end
 
+# A solve that stops early can return NaN, which JSON cannot represent. It is written as null.
+json_safe(x) = x
+json_safe(x::AbstractFloat) = isfinite(x) ? x : nothing
+json_safe(x::AbstractDict) = Dict{String, Any}(string(k) => json_safe(v) for (k, v) in x)
+json_safe(x::AbstractVector) = Any[json_safe(v) for v in x]
+
 function assert_bench_public_safe(text)
     for value in (BENCH_ROOT, homedir(), gethostname(), get(ENV, "USER", ""))
         length(value) >= 3 && occursin(value, text) &&
@@ -600,6 +606,10 @@ end
 
 const STANDING_NOT_RUN = [
     Dict{String, Any}("item" => "Single precision", "reason" => "The model builders use Float64."),
+    Dict{String, Any}(
+        "item" => "Demo campus at T = 8760",
+        "reason" => "Attempted once locally and neither solver finished; see results/logs/benchmarks_year_attempt.txt.",
+    ),
 ]
 
 
@@ -668,12 +678,12 @@ function run_benchmarks(outdir; profile::Symbol = :ci)
     local_summary = joinpath(BENCH_ROOT, "results", "benchmarks_summary.json")
     if profile === :ci && isfile(local_summary)
         document["local_sweep"] = JSON.parsefile(local_summary)
+        # The local sweep has no calibration step to read; this build's outcome is in `calibration`.
+        filter!(x -> get(x, "item", "") != "Calibration CPU and GPU outcome", document["local_sweep"]["not_run"])
         document["runs"] = document["local_sweep"]["runs"]
         document["notes"] = document["local_sweep"]["notes"]
     end
-    year_summary = joinpath(BENCH_ROOT, "results", "benchmarks_year_summary.json")
-    profile === :ci && isfile(year_summary) && (document["year_attempt"] = JSON.parsefile(year_summary))
-    text = JSON.json(document, 2)
+    text = JSON.json(json_safe(document), 2)
     csv = records_csv(records)
     assert_bench_public_safe(text)
     assert_bench_public_safe(csv)
@@ -693,10 +703,10 @@ if abspath(PROGRAM_FILE) == @__FILE__
     if profile === :local
         cp(joinpath(outdir, "benchmarks.csv"), joinpath(results, "benchmarks.csv"); force = true)
         delete!(document, "records")
-        write(joinpath(results, "benchmarks_summary.json"), JSON.json(document, 2))
+        write(joinpath(results, "benchmarks_summary.json"), JSON.json(json_safe(document), 2))
     else
         cp(joinpath(outdir, "benchmarks.csv"), joinpath(results, "benchmarks_$(profile).csv"); force = true)
         delete!(document, "records")
-        write(joinpath(results, "benchmarks_$(profile)_summary.json"), JSON.json(document, 2))
+        write(joinpath(results, "benchmarks_$(profile)_summary.json"), JSON.json(json_safe(document), 2))
     end
 end

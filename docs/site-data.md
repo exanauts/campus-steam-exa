@@ -246,3 +246,93 @@ this baseline: the same fit at 3 months gives 1.149 there and 1.065 here.
 
 A fill-in tag list with the columns `tag_name`, `category`, `unit`, `description`. The rows are the
 generic names of the curated synthetic tags, to be replaced with a site's own tag names.
+
+## Benchmarks
+
+`scripts/site/benchmarks.jl` defines `run_benchmarks(outdir)`, which writes `benchmarks.json`,
+`benchmarks.csv` and `gpu_notes.json` to `site/data/`. All data is synthetic. The findings are explained in
+[`docs/gpu-notes.md`](gpu-notes.md).
+
+### Sweeps
+
+| Sweep | Network sizes, one period | Periods on the demo campus | Repeats | Strict tolerances | Ipopt | Where |
+|---|---|---|---|---|---|---|
+| CI | Demo campus, 200 and 400 junctions | T = 24 | 3 | 1e-8 | No | `site/data/benchmarks.csv`, rebuilt by every site build |
+| Local | Demo campus, 200, 300, 400, 500, 600 and 800 junctions | T = 24, 168 and 720 | 5 | 1e-6 and 1e-8 | Yes | `results/benchmarks.csv`, committed with its commit and date |
+
+The CI sweep stops starting new solves once 270 s have passed and lists what it skipped in `not_run`. Run the
+local sweep with `julia --project=scripts scripts/site/benchmarks.jl local`. The calibration problem is not
+solved here. Its outcome is read from `calibration.json`, so the calibration step must run first.
+
+### Solvers and modes
+
+| `solver` | Meaning |
+|---|---|
+| `cpu_madnlp_mumps` | MadNLP with MUMPS, one thread |
+| `gpu_madnlp_cudss` | MadNLP with cuDSS on the GPU, synchronous so that linear solver time is reported |
+| `gpu_madnlp_cudss_async` | The same with asynchronous cuDSS, the package default. Linear solver time is not available |
+| `cpu_ipopt_mumps` | Ipopt with MUMPS on the same model, local sweep only |
+
+| `mode` | Meaning |
+|---|---|
+| `default` | Solver defaults at a tolerance of 1e-8, so a solve may stop at the acceptable level |
+| `strict` | Acceptable termination off and a bound relaxation of 1e-8 on every device, so success means the requested tolerance was met |
+
+### `benchmarks.csv`
+
+One row per solve. `results/benchmarks.csv` has the same columns.
+
+| Column | Meaning |
+|---|---|
+| `run_profile`, `commit`, `run_date` | Sweep, source commit and UTC start time |
+| `case`, `family`, `junctions`, `periods` | Benchmark case. `family` is `network_size` or `horizon` |
+| `solver`, `mode`, `tol_requested`, `repeat` | See above |
+| `nvar`, `ncon`, `nnzj`, `nnzh` | Variables, constraints, and Jacobian and Hessian nonzeros |
+| `status`, `iterations` | Solver outcome |
+| `build_s`, `total_s`, `linear_s`, `eval_s`, `other_s` | Model build, solve, linear solver, function evaluation and remaining time, in seconds |
+| `compile_s` | Compile time recorded inside the timed section |
+| `host_load_1min` | One-minute host load average when the run started |
+| `objective` | Objective at the returned point, in the model's scaled units |
+| `primal_residual`, `dual_residual`, `complementarity_residual`, `kkt_residual` | Residuals recomputed on the unscaled model by one function for every solver |
+| `objective_rel`, `plant_output_rel`, `steam_pressure_rel`, `steam_temperature_rel`, `steam_flow_rel` | Agreement with the CPU reference solution, as the largest relative difference |
+| `nonunique_water_pressure_rel`, `nonunique_return_temperature_rel`, `nonunique_light_flow_rel` | The same for quantities that are not unique at the optimum, so these do not measure accuracy. See `docs/validation-notes.md` |
+| `gpu_other_processes` | Other compute processes seen on the GPU during the run |
+| `error` | First line of the error when a run failed |
+
+`steam_flow_rel` covers steam pipes that carry at least 1% of the plant flow. Lighter pipes on either side are
+counted in `nonunique_light_flow_rel`.
+
+### `benchmarks.json`
+
+| Key | Type | Meaning |
+|---|---|---|
+| `label` | String | Statement that the data is synthetic |
+| `profile`, `sweep`, `sweep_runtime_s` | String, Object, Number | The sweep that produced this file and its runtime |
+| `environment` | Object | Commit, date, device, driver, Julia and package versions, CPU model and thread counts |
+| `solver_settings`, `agreement_note` | Object, String | Settings of each solver and how agreement is measured |
+| `size_label`, `runs`, `notes` | String, Array, String | Points drawn by the site, see below |
+| `summary` | Array | Median, minimum and maximum per case, solver, mode and tolerance |
+| `like_for_like` | Array | CPU and GPU at the same strict tolerance, see below |
+| `crossover` | Object | `network_size`, `horizon` and `tolerance`. A case name, or `null` when no crossover was observed |
+| `calibration` | Object or null | CPU and GPU outcomes at 25 tags, read from `calibration.json` |
+| `time_to_first_solve`, `gpu_memory` | Array | Fresh-process measurements. Local sweep only |
+| `not_run` | Array | Each entry has `item` or a case, and `reason` |
+| `records` | Array | The rows of `benchmarks.csv` |
+| `local_sweep` | Object | The committed local summary, `results/benchmarks_summary.json` |
+
+**`runs`** come from the local sweep when its summary is committed, at the tightest strict tolerance. Each has
+`size` (variables), `case`, `device`, `solve_s`, `solve_s_min`, `solve_s_max`, `iterations`, `solved_repeats`,
+`repeats` and `status`. The status is `solved` only if every repeat met the tolerance and, on the GPU, the KKT
+residual was at most twice the CPU's. Otherwise it is `partial`.
+
+**`like_for_like`** entries have `case`, `family`, `junctions`, `periods`, `nvar`, `tol_requested`, `repeats`,
+`cpu_statuses`, `gpu_statuses`, `cpu_solved_repeats`, `gpu_solved_repeats`, `both_solved_every_repeat`,
+`cpu_total_s`, `gpu_total_s`, `cpu_iterations`, `gpu_iterations`, `cpu_kkt_residual`, `gpu_kkt_residual`,
+`gpu_max_objective_rel`, `gpu_over_cpu_time`, `gpu_slowest_over_cpu_median`, `gpu_over_cpu_kkt_residual` and
+`achieved_tolerance_matched`. Times and iterations cover the repeats that solved.
+
+### `gpu_notes.json`
+
+A copy of `results/gpu_notes.json`. It has `label`, `source_commit`, `run_date`, `device`, `details`, `findings`
+(each with `id`, `title`, `text`, `evidence`), `not_run` (each with `item`, `status`, and `evidence` where a log
+exists) and `roadmap` (each with `item`, `status`, which is always `not run`, and `needs`).

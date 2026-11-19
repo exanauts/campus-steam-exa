@@ -1,0 +1,7 @@
+# Optional T = 8760 attempt at commit 6fd4ac9, demo campus, synthetic data. One solve per device,
+# tolerance 1e-8 with acceptable termination off, limits of 1800 s and 1000 iterations.
+# Columns: case, solver, mode, tolerance, repeat, status, iterations, total seconds.
+# Neither solve finished. The run then stopped while writing its summary, because the unfinished
+# solves returned NaN values, so these two lines are the complete record of the attempt.
+horizon-8760  cpu_madnlp_mumps  strict  1.0e-8  1  MAXIMUM_WALLTIME_EXCEEDED  101  1807.6866691112518
+horizon-8760  gpu_madnlp_cudss  strict  1.0e-8  1  MAXIMUM_ITERATIONS_EXCEEDED  1000  780.450893163681
