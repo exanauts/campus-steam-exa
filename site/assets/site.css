@@ -200,3 +200,4 @@ thead th { color: var(--ink-2); font-weight: 600; }
   .meter .fill { background: Highlight; }
   .scenarios input:checked + span { outline: 2px solid Highlight; }
 }
+.map-key .key-lead { font-weight: 600; color: var(--ink); }
