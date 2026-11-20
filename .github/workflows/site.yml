@@ -59,6 +59,8 @@ jobs:
         shell: bash
     env:
       CI_JULIA_VERSION: "1.13.3"
+      # The runner account's personal git settings must not change how the build fetches code.
+      GIT_CONFIG_GLOBAL: /dev/null
       # Never scheduled on these GPUs, whatever their memory use.
       GPU_EXCLUDE: "0,1"
       GPU_PART: ${{ matrix.part }}
@@ -132,6 +134,8 @@ jobs:
         shell: bash
     env:
       CI_JULIA_VERSION: "1.13.3"
+      # The runner account's personal git settings must not change how the build fetches code.
+      GIT_CONFIG_GLOBAL: /dev/null
       BUILD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
     steps:
       - name: Check out commit
