@@ -40,6 +40,8 @@ const TEXT = {
   findingsTitle: "Notes from the build",
   notRun: "Not run",
   notConverged: "Did not converge",
+  noPoint: (list, one) => `No point is drawn for ${list} tags: the fit${one ? " was" : "s were"} run in this build and the solver did not converge, so no error is reported.`,
+  pointNotRun: (list) => `The fit with ${list} tags was not run in this build.`,
   noChart: " The calibration study has not produced a converged result in this build.",
   tagList: (n) => `The ${n} tags used in this test`,
   noFigures: "Export size figures are not available in this build.",
@@ -85,6 +87,10 @@ export function normalizeCalibration(raw) {
     .filter((c) => c.months === CHART_MONTHS && c.converged === true && Number.isFinite(c.tags) && Number.isFinite(c.max_error_percent))
     .map((c) => ({ tags: c.tags, error: c.max_error_percent, label: percent(c.max_error_percent) }))
     .sort((a, b) => a.tags - b.tags);
+  // Tag counts of the chart that have no point, split by whether the fit ran.
+  const gaps = cells.filter((c) => c.months === CHART_MONTHS && Number.isFinite(c.tags) && !points.some((p) => p.tags === c.tags)).sort((a, b) => a.tags - b.tags);
+  const failed = gaps.filter((c) => c.run === true).map((c) => String(c.tags));
+  const skipped = gaps.filter((c) => c.run !== true).map((c) => String(c.tags));
   const months = cells.filter((c) => c.tags === TABLE_TAGS && Number.isFinite(c.months))
     .sort((a, b) => a.months - b.months)
     .map((c) => {
@@ -94,7 +100,7 @@ export function normalizeCalibration(raw) {
   const truth = raw.true_coefficients;
   const groups = Array.isArray(truth?.groups) && Array.isArray(truth?.estimated) && truth.groups.length === truth.estimated.length ? truth.groups : null;
   return {
-    points, months, seasonal: seasonalWindows(raw.seasonal_check),
+    points, months, failed, skipped, seasonal: seasonalWindows(raw.seasonal_check),
     fittedGroups: groups ? groups.filter((_, i) => truth.estimated[i] === true) : [],
     fixedGroups: groups ? groups.filter((_, i) => truth.estimated[i] !== true) : [],
     spread: truth?.pipe_spread_percent, junctions: raw.network?.junctions,
@@ -125,6 +131,8 @@ export function renderCalibration(host, cal) {
     labelEnds: (p) => percent(p.y), yFormat: (v) => `${+v.toPrecision(3)}`,
     series: [{ name: "Largest recovery error (%)", color: "var(--s1)", points: cal.points.map((p) => ({ x: p.tags, y: p.error })) }],
   });
+  if (cal.failed.length) el("p", { class: "note" }, host, TEXT.noPoint(joinList(cal.failed), cal.failed.length === 1));
+  if (cal.skipped.length) el("p", { class: "note" }, host, TEXT.pointNotRun(joinList(cal.skipped)));
   if (cal.seasonal) el("p", { class: "lead season" }, host, cal.seasonal.second.label ? TEXT.seasonCompared(cal.seasonal) : TEXT.seasonMissing(cal.seasonal));
 
   el("h4", { class: "limits-title" }, host, TEXT.limitsTitle);
