@@ -43,6 +43,10 @@ Things to change:
 - **A week of hours:** `generate_profiles(net)` gives hourly demand for a synthetic year, and
   `solve_multiperiod_oriented` solves a run of hours. `scripts/site/scenario_cases.jl` defines the four
   scenarios on the site and is the best starting point for a new one.
+- **Network edits:** `add_building`, `add_pipe_pair`, `resize_pipe`, `scale_heat_loss` and `add_boiler`
+  (in `src/expansion.jl`) return an edited, oriented copy of a network; `generate_profiles` then gives a
+  new building its own hourly demand. `scripts/site/expansion_cases.jl` defines the new-building study
+  on the site.
 - **GPU:** pass `backend = CUDABackend()` after `using CUDA, MadNLPGPU`, from the `scripts` environment.
 
 Always check `solution.converged` before reading results.
@@ -62,9 +66,12 @@ Always check `solution.converged` before reading results.
 
 - `src/network.jl`, `src/generator/`: network types and the synthetic campus and load generator.
 - `src/model/`: the optimization model, pipe orientation, and the multi-period model.
+- `src/expansion.jl`: network edits for capacity-planning studies. Kept apart from the generator and the
+  core model, which the validation hash covers.
 - `src/historian.jl`, `src/calibration.jl`: historian-style CSV ingest and pipe coefficient fitting.
 - `ext/CampusSteamGPUExt.jl`: GPU support.
-- `scripts/site/`: scenarios, calibration and benchmarks that write `site/data/`, `merge.jl`, which
+- `scripts/site/`: scenarios, the new-building study, calibration and benchmarks that write
+  `site/data/`, `merge.jl`, which
   combines them, and `pool.jl`, the worker pool for independent solves. `scripts/run_site.jl` runs one
   part or the merge.
 - `site/`: the static page. `site/data/` is generated and not committed.

@@ -61,6 +61,20 @@
   <p class="prose">The plant makes steam that travels through underground supply pipes to the buildings, gives up its heat there, and returns as water. Along the way friction lowers the pressure and the ground cools the steam, so what leaves the plant is not what arrives. For every hour of the week, the model solves for the flows, pressures and temperatures that satisfy this physics across the whole network at once. The optimizer minimizes the heat the plant must supply and the load left unserved, with the most important buildings penalized most when they are shed, while holding the plant to its rating and its hour-to-hour ramp limit. Each scenario is the same model solved again with the weather, the plant capacity or the pipe network changed.</p>
 </section>
 
+<section class="wrap band" id="expansion" aria-labelledby="expansion-title">
+  <h2 id="expansion-title">Adding a building</h2>
+  <p class="prose">Can today's plant and pipes carry one more building in the coldest week, and what do the upgrade options change? This study solves the same plant twice over that week: once with today's network and once with one new building. It then solves four upgraded versions of tomorrow's network the same way.</p>
+  <div id="expansion-body"></div>
+  <h3>Limits of this study</h3>
+  <ul class="limits">
+    <li><strong>Constructed case.</strong> All data is synthetic, and the new building's size and place were chosen by hand to show the method.</li>
+    <li><strong>No cost data.</strong> The options are compared by physical outcome only. This page does not say which option is cheapest.</li>
+    <li><strong>Networks chosen by hand.</strong> Each option is a network drawn by hand and then solved. The solver does not size pipes or choose upgrades.</li>
+    <li><strong>Same model as above.</strong> Steady-state hours linked by the plant ramp limit, with no pipe transients and no valves.</li>
+  </ul>
+  <p class="prose">With heat-loss and friction values fitted to a real plant's records, the same study would describe that plant's network. <a href="#ask-title">See the data request</a>.</p>
+</section>
+
 <section class="wrap band" id="data-buys" aria-labelledby="data-title">
   <h2 id="data-title">What the data buys</h2>
   <div id="calibration"></div>

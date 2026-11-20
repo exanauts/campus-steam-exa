@@ -392,6 +392,25 @@ physical_residuals(model, sol)   # residual of each family in SI units, computed
 energy_audit(sol)                # plant output, delivered heat, pipe losses and closure
 ```
 
+Network edits for capacity-planning studies (`src/expansion.jl`) each return a new network, oriented
+along its design flow and validated. Existing ids do not change, and new pieces follow the generator's
+sizing rules without its random spread:
+
+```julia
+net2, ids = add_building(net; tap = 37, x_m = 600.0, y_m = 780.3, type = "lab", design_heat_W = 3e6)
+net3, tie = add_pipe_pair(net2, 16, 37; diameter_m = 0.3)     # steam main and its return
+net4 = resize_pipe(net2, [17, 38]; diameter_m = 0.45)        # return mains follow at 0.4 times
+net5 = scale_heat_loss(net2, [1, 2, 3], 0.5)                 # better insulation
+net6 = add_boiler(net2)                                     # one more boiler of the same size
+generate_profiles(net2)                                     # the new building gets its own demand
+```
+
+The model limits a pipe only through the steam pressure bounds (34.5 kPa up to the supply pressure). It
+has no velocity limit, so a pipe far above its design velocity carries the flow without any undelivered
+heat. On the demo campus the steam pressure has a large margin: in trial solves of the peak hour, a lab
+of 30 MW at the end of a 0.25 m branch, with the plant rating raised, still left the lowest steam
+pressure above 500 kPa. A new building therefore meets the plant rating first.
+
 For multi-period problems use `build_multiperiod_model`, described above. Custom models can assemble
 their own `ExaCore` from the pieces:
 
