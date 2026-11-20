@@ -1,7 +1,7 @@
 {
   "label": "Synthetic data. Excerpt of calibration.json from one CI site build.",
-  "source_run": "GitHub Actions site workflow run 44422988980",
-  "source_commit": "933d057",
+  "source_run": "GitHub Actions site workflow run 44576986084",
+  "source_commit": "2ec4de5",
   "network_junctions": 40,
   "cpu_25_tags": [
     {
@@ -11,10 +11,10 @@
       "run": true,
       "solver_status": "SOLVE_SUCCEEDED",
       "converged": true,
-      "iterations": 29,
-      "variables": 203676,
-      "constraints": 175930,
-      "jacobian_nonzeros": 683280
+      "iterations": 21,
+      "variables": 187616,
+      "constraints": 164250,
+      "jacobian_nonzeros": 614660
     },
     {
       "tags": 25,
@@ -23,10 +23,10 @@
       "run": true,
       "solver_status": "SOLVE_SUCCEEDED",
       "converged": true,
-      "iterations": 36,
-      "variables": 611016,
-      "constraints": 527790,
-      "jacobian_nonzeros": 2049840
+      "iterations": 24,
+      "variables": 562836,
+      "constraints": 492750,
+      "jacobian_nonzeros": 1843980
     },
     {
       "tags": 25,
@@ -35,10 +35,10 @@
       "run": true,
       "solver_status": "SOLVE_SUCCEEDED",
       "converged": true,
-      "iterations": 82,
-      "variables": 1222026,
-      "constraints": 1055580,
-      "jacobian_nonzeros": 4099680
+      "iterations": 59,
+      "variables": 1125666,
+      "constraints": 985500,
+      "jacobian_nonzeros": 3687960
     }
   ],
   "gpu_attempt": {
@@ -48,10 +48,10 @@
     "run": true,
     "solver_status": "SOLVE_SUCCEEDED",
     "converged": true,
-    "iterations": 25,
-    "variables": 203676,
-    "constraints": 175930,
-    "jacobian_nonzeros": 683280
+    "iterations": 19,
+    "variables": 187616,
+    "constraints": 164250,
+    "jacobian_nonzeros": 614660
   },
   "note": "The site build attempts the GPU at 25 tags and 1 month only. Solve times are left out because the GPU attempt is the first GPU solve of its process and includes compilation."
 }

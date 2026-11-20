@@ -1,40 +1,40 @@
-# Exploration on commit cfa873a: GPU default bound relaxation (tied to tol) against the CPU at strict tolerances. Synthetic data.
-T=24 cpu default               SOLVE_SUCCEEDED              it=  58 tot=   1.594 lin=   1.340 eval=  0.066 pr=1.2e-13 du=3.2e-14 obj=3.00099896e+03
-T=24 gpu default+rich          SOLVED_TO_ACCEPTABLE_LEVEL   it= 261 tot=  13.377 lin=   4.909 eval=  0.226 pr=1.0e-07 du=1.5e-09 obj=3.00099808e+03
-T=24 gpu async                 SOLVED_TO_ACCEPTABLE_LEVEL   it= 376 tot=   5.335 lin=     NaN eval=  1.484 pr=9.4e-08 du=1.5e-09 obj=3.00099808e+03
-T=24 cpu strict 0.0001         SOLVE_SUCCEEDED              it=  43 tot=   1.220 lin=   1.008 eval=  0.104 pr=6.5e-07 du=6.9e-07 obj=3.00302143e+03
-T=24 gpu strict 0.0001         SOLVE_SUCCEEDED              it=  41 tot=   0.499 lin=   0.089 eval=  0.017 pr=3.5e-06 du=1.7e-08 obj=2.83622176e+03
-T=24 cpu strict 1.0e-5         SOLVE_SUCCEEDED              it=  45 tot=   1.224 lin=   1.050 eval=  0.059 pr=2.2e-09 du=2.0e-11 obj=3.00145989e+03
-T=24 gpu strict 1.0e-5         SOLVE_SUCCEEDED              it=  45 tot=   0.466 lin=   0.099 eval=  0.017 pr=3.8e-11 du=1.9e-11 obj=2.98479450e+03
-T=24 cpu strict 1.0e-6         SOLVE_SUCCEEDED              it=  52 tot=   1.698 lin=   1.162 eval=  0.331 pr=2.1e-09 du=2.4e-12 obj=3.00102660e+03
-T=24 gpu strict 1.0e-6         SOLVE_SUCCEEDED              it=  48 tot=   0.393 lin=   0.145 eval=  0.028 pr=2.1e-08 du=1.7e-11 obj=2.99937487e+03
-T=24 cpu strict 1.0e-7         SOLVE_SUCCEEDED              it=  55 tot=   2.306 lin=   2.019 eval=  0.073 pr=1.6e-10 du=9.8e-14 obj=3.00100189e+03
-T=24 gpu strict 1.0e-7         SOLVE_SUCCEEDED              it= 423 tot=   3.321 lin=   2.175 eval=  0.248 pr=4.5e-08 du=1.4e-10 obj=3.00085171e+03
-T=24 cpu strict 1.0e-8         SOLVE_SUCCEEDED              it=  58 tot=   1.528 lin=   1.293 eval=  0.064 pr=1.2e-13 du=3.2e-14 obj=3.00099896e+03
-T=24 gpu strict 1.0e-8         SOLVE_SUCCEEDED              it= 187 tot=   2.580 lin=   1.654 eval=  0.440 pr=9.8e-09 du=1.5e-09 obj=3.00099808e+03
-T=168 cpu default              SOLVE_SUCCEEDED              it=  64 tot=  14.816 lin=  12.551 eval=  0.806 pr=2.1e-12 du=3.2e-14 obj=2.10069906e+04
-T=168 gpu default+rich         SOLVED_TO_ACCEPTABLE_LEVEL   it= 204 tot=   5.532 lin=   4.109 eval=  0.134 pr=1.3e-07 du=1.6e-09 obj=2.10069845e+04
-T=168 gpu async                SOLVED_TO_ACCEPTABLE_LEVEL   it= 274 tot=   7.304 lin=     NaN eval=  0.241 pr=1.8e-08 du=3.3e-09 obj=2.10069908e+04
-T=168 cpu strict 0.0001        SOLVE_SUCCEEDED              it=  49 tot=  10.664 lin=   8.757 eval=  0.657 pr=6.7e-07 du=7.8e-07 obj=2.10211493e+04
-T=168 gpu strict 0.0001        SOLVE_SUCCEEDED              it=  43 tot=   1.113 lin=   0.225 eval=  0.033 pr=3.1e-06 du=1.7e-08 obj=1.98535606e+04
-T=168 cpu strict 1.0e-5        SOLVE_SUCCEEDED              it=  51 tot=  10.828 lin=   8.926 eval=  0.399 pr=4.1e-07 du=7.6e-11 obj=2.10102188e+04
-T=168 gpu strict 1.0e-5        SOLVE_SUCCEEDED              it=  49 tot=   1.130 lin=   0.267 eval=  0.036 pr=3.4e-11 du=1.9e-11 obj=2.08935611e+04
-T=168 cpu strict 1.0e-6        SOLVE_SUCCEEDED              it=  59 tot=  11.987 lin=   9.926 eval=  0.464 pr=4.3e-09 du=4.0e-12 obj=2.10071838e+04
-T=168 gpu strict 1.0e-6        SOLVE_SUCCEEDED              it=  49 tot=   1.212 lin=   0.335 eval=  0.027 pr=9.9e-07 du=1.2e-09 obj=2.09956217e+04
-T=168 cpu strict 1.0e-7        SOLVE_SUCCEEDED              it=  61 tot=  12.825 lin=  10.340 eval=  0.800 pr=5.6e-08 du=3.9e-13 obj=2.10070111e+04
-T=168 gpu strict 1.0e-7        SOLVE_SUCCEEDED              it= 146 tot=   4.203 lin=   2.608 eval=  0.126 pr=3.6e-08 du=3.9e-10 obj=2.10059598e+04
-T=168 cpu strict 1.0e-8        SOLVE_SUCCEEDED              it=  64 tot=  14.609 lin=  11.924 eval=  0.876 pr=2.1e-12 du=3.2e-14 obj=2.10069906e+04
-T=168 gpu strict 1.0e-8        SOLVE_SUCCEEDED              it= 733 tot=  21.763 lin=  18.604 eval=  0.647 pr=6.4e-09 du=1.5e-09 obj=2.10069844e+04
-T=720 cpu default              SOLVE_SUCCEEDED              it=  76 tot=  87.480 lin=  75.675 eval=  3.317 pr=1.4e-09 du=9.1e-14 obj=9.00299807e+04
-T=720 gpu default+rich         SOLVED_TO_ACCEPTABLE_LEVEL   it= 202 tot=  16.289 lin=  11.238 eval=  0.316 pr=7.7e-08 du=1.0e-09 obj=9.00299537e+04
-T=720 gpu async                SOLVE_SUCCEEDED              it= 129 tot=  11.587 lin=     NaN eval=  0.079 pr=5.4e-09 du=1.3e-09 obj=9.00299537e+04
-T=720 cpu strict 0.0001        SOLVE_SUCCEEDED              it=  52 tot=  67.535 lin=  57.737 eval=  2.534 pr=6.9e-07 du=9.1e-07 obj=9.00908119e+04
-T=720 gpu strict 0.0001        SOLVE_SUCCEEDED              it=  48 tot=   4.455 lin=   0.757 eval=  0.058 pr=6.1e-05 du=5.1e-08 obj=8.50868160e+04
-T=720 cpu strict 1.0e-5        SOLVE_SUCCEEDED              it=  54 tot=  60.831 lin=  52.335 eval=  2.003 pr=2.6e-09 du=2.1e-11 obj=9.00439310e+04
-T=720 gpu strict 1.0e-5        SOLVE_SUCCEEDED              it=  87 tot=   5.837 lin=   1.877 eval=  0.122 pr=4.0e-11 du=1.9e-11 obj=8.95439698e+04
-T=720 cpu strict 1.0e-6        SOLVE_SUCCEEDED              it=  62 tot=  59.551 lin=  49.783 eval=  2.582 pr=2.5e-09 du=2.8e-12 obj=9.00308229e+04
-T=720 gpu strict 1.0e-6        SOLVE_SUCCEEDED              it=  82 tot=   5.817 lin=   1.907 eval=  0.105 pr=6.9e-07 du=1.0e-11 obj=8.99812710e+04
-T=720 cpu strict 1.0e-7        SOLVE_SUCCEEDED              it=  65 tot=  67.249 lin=  56.437 eval=  2.866 pr=1.7e-10 du=9.8e-14 obj=9.00300676e+04
-T=720 gpu strict 1.0e-7        SOLVE_SUCCEEDED              it= 102 tot=  10.288 lin=   5.715 eval=  0.108 pr=1.7e-08 du=1.0e-09 obj=9.00255624e+04
-T=720 cpu strict 1.0e-8        SOLVE_SUCCEEDED              it=  76 tot=  85.426 lin=  71.817 eval=  3.775 pr=1.4e-09 du=9.1e-14 obj=9.00299807e+04
-T=720 gpu strict 1.0e-8        SOLVE_SUCCEEDED              it= 622 tot=  50.139 lin=  43.149 eval=  0.709 pr=8.8e-09 du=1.8e-09 obj=9.00299542e+04
+# Exploration at commit 2ec4de5 (trunk-and-branch layout), 2026-11-20: GPU default bound relaxation (tied to tol) against the CPU at strict tolerances. Single runs on a shared host; the times are not benchmarks. Synthetic data.
+T=24 cpu default               SOLVE_SUCCEEDED              it=  86 tot=   6.328 lin=   5.369 eval=  0.253 pr=1.5e-11 du=3.2e-14 obj=3.00096920e+03
+T=24 gpu default+rich          SOLVED_TO_ACCEPTABLE_LEVEL   it= 104 tot=   2.631 lin=   2.110 eval=  0.073 pr=1.4e-07 du=2.6e-10 obj=3.00096850e+03
+T=24 gpu async                 SOLVE_SUCCEEDED              it=  70 tot=   1.641 lin=     NaN eval=  0.039 pr=7.7e-09 du=2.3e-10 obj=3.00096918e+03
+T=24 cpu strict 0.0001         SOLVE_SUCCEEDED              it=  75 tot=   6.070 lin=   5.138 eval=  0.379 pr=5.5e-06 du=2.1e-07 obj=3.00304257e+03
+T=24 gpu strict 0.0001         SOLVE_SUCCEEDED              it=  53 tot=   0.497 lin=   0.128 eval=  0.032 pr=3.2e-06 du=7.9e-09 obj=2.83621739e+03
+T=24 cpu strict 1.0e-5         SOLVE_SUCCEEDED              it=  76 tot=   5.222 lin=   4.283 eval=  0.136 pr=2.0e-10 du=2.0e-11 obj=3.00145622e+03
+T=24 gpu strict 1.0e-5         SOLVE_SUCCEEDED              it=  41 tot=   0.438 lin=   0.085 eval=  0.019 pr=8.2e-12 du=1.8e-11 obj=2.98479083e+03
+T=24 cpu strict 1.0e-6         SOLVE_SUCCEEDED              it=  81 tot=   3.787 lin=   3.369 eval=  0.123 pr=2.8e-09 du=1.2e-11 obj=3.00101532e+03
+T=24 gpu strict 1.0e-6         SOLVE_SUCCEEDED              it=  42 tot=   0.672 lin=   0.135 eval=  0.031 pr=1.3e-08 du=1.8e-11 obj=2.99936358e+03
+T=24 cpu strict 1.0e-7         SOLVE_SUCCEEDED              it=  85 tot=   5.130 lin=   3.250 eval=  0.116 pr=3.6e-12 du=1.6e-13 obj=3.00097112e+03
+T=24 gpu strict 1.0e-7         SOLVE_SUCCEEDED              it= 139 tot=  10.458 lin=   0.924 eval=  0.103 pr=8.6e-12 du=1.6e-09 obj=3.00082094e+03
+T=24 cpu strict 1.0e-8         SOLVE_SUCCEEDED              it=  86 tot=   6.437 lin=   5.452 eval=  0.129 pr=1.5e-11 du=3.2e-14 obj=3.00096920e+03
+T=24 gpu strict 1.0e-8         SOLVE_SUCCEEDED              it=  73 tot=   1.400 lin=   0.524 eval=  0.364 pr=8.1e-10 du=6.0e-11 obj=3.00096850e+03
+T=168 cpu default              SOLVE_SUCCEEDED              it= 151 tot=  84.184 lin=  75.129 eval=  2.160 pr=3.6e-10 du=2.3e-13 obj=2.10067815e+04
+T=168 gpu default+rich         SOLVE_SUCCEEDED              it=  68 tot=   2.666 lin=   1.160 eval=  0.057 pr=3.5e-09 du=1.8e-10 obj=2.10067813e+04
+T=168 gpu async                SOLVE_SUCCEEDED              it=  73 tot=   2.823 lin=     NaN eval=  0.043 pr=6.5e-09 du=7.5e-11 obj=2.10067766e+04
+T=168 cpu strict 0.0001        SOLVE_SUCCEEDED              it= 139 tot=  76.903 lin=  68.863 eval=  2.096 pr=1.4e-07 du=7.4e-07 obj=2.10210908e+04
+T=168 gpu strict 0.0001        SOLVE_SUCCEEDED              it=  54 tot=   2.137 lin=   0.379 eval=  0.052 pr=2.8e-06 du=7.8e-09 obj=1.98535289e+04
+T=168 cpu strict 1.0e-5        SOLVE_SUCCEEDED              it= 141 tot=  56.499 lin=  50.567 eval=  1.736 pr=1.7e-10 du=2.0e-11 obj=2.10101921e+04
+T=168 gpu strict 1.0e-5        SOLVE_SUCCEEDED              it=  40 tot=   0.999 lin=   0.208 eval=  0.024 pr=3.1e-11 du=1.8e-11 obj=2.08935343e+04
+T=168 cpu strict 1.0e-6        SOLVE_SUCCEEDED              it= 147 tot=  49.024 lin=  43.737 eval=  1.274 pr=6.4e-09 du=5.3e-11 obj=2.10071054e+04
+T=168 gpu strict 1.0e-6        SOLVE_SUCCEEDED              it=  41 tot=   1.037 lin=   0.223 eval=  0.027 pr=1.5e-08 du=1.9e-11 obj=2.09955433e+04
+T=168 cpu strict 1.0e-7        SOLVE_SUCCEEDED              it= 150 tot=  63.912 lin=  57.075 eval=  1.664 pr=1.2e-10 du=1.6e-12 obj=2.10067949e+04
+T=168 gpu strict 1.0e-7        SOLVE_SUCCEEDED              it=  75 tot=   2.757 lin=   1.306 eval=  0.060 pr=3.1e-09 du=5.2e-09 obj=2.10057436e+04
+T=168 cpu strict 1.0e-8        SOLVE_SUCCEEDED              it= 151 tot=  65.783 lin=  58.102 eval=  2.228 pr=3.6e-10 du=2.3e-13 obj=2.10067815e+04
+T=168 gpu strict 1.0e-8        SOLVE_SUCCEEDED              it= 237 tot=   6.160 lin=   4.049 eval=  0.265 pr=7.5e-09 du=3.6e-10 obj=2.10067766e+04
+T=720 cpu default              SOLVE_SUCCEEDED              it= 216 tot= 418.726 lin= 380.956 eval=  9.410 pr=5.5e-10 du=6.7e-13 obj=9.00291564e+04
+T=720 gpu default+rich         SOLVE_SUCCEEDED              it= 101 tot=   8.946 lin=   4.650 eval=  0.126 pr=3.6e-09 du=2.0e-10 obj=9.00291344e+04
+T=720 gpu async                SOLVE_SUCCEEDED              it= 189 tot=  13.293 lin=     NaN eval=  0.141 pr=7.5e-09 du=2.6e-10 obj=9.00291344e+04
+T=720 cpu strict 0.0001        SOLVE_SUCCEEDED              it= 203 tot= 380.388 lin= 346.495 eval=  8.384 pr=1.5e-07 du=8.9e-07 obj=9.00905844e+04
+T=720 gpu strict 0.0001        SOLVE_SUCCEEDED              it=  67 tot=   4.935 lin=   1.174 eval=  0.105 pr=2.3e-06 du=7.2e-09 obj=8.50867416e+04
+T=720 cpu strict 1.0e-5        SOLVE_SUCCEEDED              it= 205 tot= 371.174 lin= 336.637 eval=  8.195 pr=4.6e-09 du=2.0e-11 obj=9.00438311e+04
+T=720 gpu strict 1.0e-5        SOLVE_SUCCEEDED              it=  48 tot=   4.402 lin=   0.801 eval=  0.063 pr=8.5e-12 du=1.8e-11 obj=8.95438698e+04
+T=720 cpu strict 1.0e-6        SOLVE_SUCCEEDED              it= 211 tot= 332.323 lin= 296.782 eval=  8.836 pr=2.1e-08 du=1.9e-10 obj=9.00306154e+04
+T=720 gpu strict 1.0e-6        SOLVE_SUCCEEDED              it=  54 tot=   4.715 lin=   1.064 eval=  0.067 pr=1.8e-08 du=1.0e-10 obj=8.99810634e+04
+T=720 cpu strict 1.0e-7        SOLVE_SUCCEEDED              it= 215 tot= 322.275 lin= 286.915 eval=  8.816 pr=6.8e-10 du=3.4e-12 obj=9.00292150e+04
+T=720 gpu strict 1.0e-7        SOLVE_SUCCEEDED              it=  53 tot=   7.228 lin=   2.360 eval=  0.066 pr=1.6e-08 du=1.7e-10 obj=9.00247097e+04
+T=720 cpu strict 1.0e-8        SOLVE_SUCCEEDED              it= 216 tot= 324.973 lin= 289.703 eval=  8.787 pr=5.5e-10 du=6.7e-13 obj=9.00291564e+04
+T=720 gpu strict 1.0e-8        SOLVE_SUCCEEDED              it=  88 tot=  10.615 lin=   3.232 eval=  0.121 pr=4.2e-09 du=5.3e-10 obj=9.00291559e+04

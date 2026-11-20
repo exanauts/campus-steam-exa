@@ -171,9 +171,10 @@ CPU with one thread. Solve times exclude the first run, which includes compilati
 | Scaled constraint violation | 6.5e-13 |
 | Energy closure (W) | 1.5e-7 |
 
-The plant output is 80.35 MW, with 0.27 MW lost in pipes, no excess heat and no shed load. GPU
-results in [`docs/gpu-notes.md`](gpu-notes.md) were measured on the earlier street-grid layout of
-this campus and have not been repeated.
+The plant output is 80.35 MW, with 0.27 MW lost in pipes, no excess heat and no shed load. The CPU
+and GPU benchmark sweep in [`docs/gpu-notes.md`](gpu-notes.md) was measured on the earlier
+street-grid layout of this campus and has not been repeated. The solver diagnostics and the
+calibration outcomes in the same notes are from the current layout.
 
 ## Verification against the reference code
 
@@ -330,12 +331,14 @@ search is a heuristic.
 
 ### Measurements
 
-**Superseded by [`docs/gpu-notes.md`](gpu-notes.md).** This table is an earlier measurement, kept for the record.
-Use the GPU notes for the current CPU and GPU comparison.
+**Superseded, and from an earlier network layout.** This table is an earlier measurement, kept for the
+record. It was made at generator commit `a1e75b6`, on the street-grid layout of the demo campus, before
+the generator changed to the current trunk-and-branch layout, so its sizes and times do not describe the
+current demo campus. No script at the current commit reproduces it. The multi-period CPU and GPU
+comparison in [`docs/gpu-notes.md`](gpu-notes.md) is also from the earlier layout.
 
-Demo campus, first T hours of the synthetic profiles, default ramp limit, no outage. Generator commit
-`a1e75b6`. Times exclude compilation. The tolerance is 1e-8 with a limit of 1000 iterations. The CPU
-runs use MadNLP's default MUMPS solver. The GPU runs use one NVIDIA H200 with cuDSS and
+Demo campus, first T hours of the synthetic profiles, default ramp limit, no outage. Times exclude
+compilation. The tolerance is 1e-8 with a limit of 1000 iterations. The CPU runs use MadNLP's default MUMPS solver. The GPU runs use one NVIDIA H200 with cuDSS and
 `richardson_max_iter = 30, richardson_tol = 1e-12`. The violation is the unscaled maximum constraint
 violation, and closure is the largest hourly energy balance error.
 
@@ -349,8 +352,9 @@ violation, and closure is the largest hourly energy balance error.
 | 720 | 725,760 | 625,679 | 2,156,398 | GPU | `SOLVED_TO_ACCEPTABLE_LEVEL` | 149 | 0.250 | 12.980 | 7.6e-8 | 5.9e-3 |
 
 The GPU runs at T = 168 and T = 720 stopped at MadNLP's acceptable level and did not reach 1e-8.
-T = 8,760 was attempted once per device and neither solve finished, as recorded in
-[`docs/gpu-notes.md`](gpu-notes.md) and the [log](../results/logs/benchmarks_year_attempt.txt).
+T = 8,760 was attempted once per device on the earlier layout, at commit `6fd4ac9`, and neither solve
+finished, as recorded in [`docs/gpu-notes.md`](gpu-notes.md) and the
+[log](../results/logs/benchmarks_year_attempt.txt). It was not run on the current layout.
 
 ### Multi-period API
 
