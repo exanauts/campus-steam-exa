@@ -3,6 +3,7 @@ import { el, missing, compact } from "./format.js";
 import { lineChart } from "./charts.js";
 import { initHero } from "./hero.js";
 import { normalizeCalibration, renderCalibration, renderAsk, renderSample } from "./calibration.js";
+import { renderExpansion } from "./expansion.js";
 
 const $ = (id) => document.getElementById(id);
 const REPO = "https://github.com/exanauts/campus-steam-exa";
@@ -141,8 +142,9 @@ function renderBenchmarks(bench) {
 async function main() {
   await loadManifest();
   renderTemplate();
-  const [info, calRaw, benchRaw, networkRaw] = await Promise.all([
+  const [info, calRaw, benchRaw, networkRaw, expansionRaw] = await Promise.all([
     loadJSON("build_info.json"), loadJSON("calibration.json"), loadJSON("benchmarks.json"), loadJSON(`${SCENARIO_DIR}network.json`),
+    loadJSON("expansion.json"),
   ]);
   renderFooter(info);
   renderCampusSize(networkRaw);
@@ -152,6 +154,7 @@ async function main() {
   await guarded(null, "sample", () => renderSample($("sample-body"), $("sample-note"), cal));
   await guarded($("benchmarks"), "The measurements could not be drawn.", () => renderBenchmarks(normalizeBenchmarks(benchRaw)));
   await guarded($("map"), "The campus playback could not be drawn.", () => initHero(normalizeNetwork(networkRaw)));
+  await guarded($("expansion-body"), "The new-building study could not be drawn.", () => renderExpansion($("expansion-body"), expansionRaw, normalizeNetwork(networkRaw)));
 }
 
 main();

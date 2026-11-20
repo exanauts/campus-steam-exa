@@ -97,7 +97,7 @@
   ],
   "gpu": {
     "attempted": true,
-    "build_s": 11.9,
+    "build_s": 14.61,
     "constraints": 164250,
     "converged": true,
     "device": "NVIDIA H200",
@@ -130,7 +130,7 @@
     "measurements": 14784,
     "months": 1,
     "run": true,
-    "solve_s": 70.12,
+    "solve_s": 87.4,
     "solver_status": "SOLVE_SUCCEEDED",
     "tags": 25,
     "variables": 187616,
@@ -139,7 +139,7 @@
   "grid": {
     "cells": [
       {
-        "build_s": 11.22,
+        "build_s": 5.4,
         "constraints": 164250,
         "converged": true,
         "error_percent": {
@@ -171,7 +171,7 @@
         "measurements": 3503,
         "months": 1,
         "run": true,
-        "solve_s": 62.67,
+        "solve_s": 40.26,
         "solver_status": "SOLVE_SUCCEEDED",
         "tags": 5,
         "variables": 187616
@@ -205,7 +205,7 @@
         "tags": 5
       },
       {
-        "build_s": 5.4,
+        "build_s": 5.37,
         "constraints": 164250,
         "converged": false,
         "hours": 730,
@@ -215,7 +215,7 @@
         "months": 1,
         "reason": "The solver stopped with status MAXIMUM_ITERATIONS_EXCEEDED, so no recovery error is reported.",
         "run": true,
-        "solve_s": 190.13,
+        "solve_s": 187.56,
         "solver_status": "MAXIMUM_ITERATIONS_EXCEEDED",
         "tags": 10,
         "variables": 187616
@@ -249,7 +249,7 @@
         "tags": 10
       },
       {
-        "build_s": 5.38,
+        "build_s": 5.41,
         "constraints": 164250,
         "converged": true,
         "error_percent": {
@@ -281,7 +281,7 @@
         "measurements": 9846,
         "months": 1,
         "run": true,
-        "solve_s": 138.37,
+        "solve_s": 137.68,
         "solver_status": "SOLVE_SUCCEEDED",
         "tags": 15,
         "variables": 187616
@@ -315,7 +315,7 @@
         "tags": 15
       },
       {
-        "build_s": 9.2,
+        "build_s": 5.44,
         "constraints": 164250,
         "converged": true,
         "error_percent": {
@@ -347,13 +347,13 @@
         "measurements": 14784,
         "months": 1,
         "run": true,
-        "solve_s": 25.66,
+        "solve_s": 14.92,
         "solver_status": "SOLVE_SUCCEEDED",
         "tags": 25,
         "variables": 187616
       },
       {
-        "build_s": 8.12,
+        "build_s": 5.53,
         "constraints": 492750,
         "converged": true,
         "error_percent": {
@@ -385,13 +385,13 @@
         "measurements": 43928,
         "months": 3,
         "run": true,
-        "solve_s": 63.79,
+        "solve_s": 39.86,
         "solver_status": "SOLVE_SUCCEEDED",
         "tags": 25,
         "variables": 562836
       },
       {
-        "build_s": 9.28,
+        "build_s": 5.9,
         "constraints": 985500,
         "converged": true,
         "error_percent": {
@@ -423,7 +423,7 @@
         "measurements": 88035,
         "months": 6,
         "run": true,
-        "solve_s": 219.81,
+        "solve_s": 203.43,
         "solver_status": "SOLVE_SUCCEEDED",
         "tags": 25,
         "variables": 1125666
@@ -691,7 +691,7 @@
         "max_error_coefficient": "loss",
         "max_error_group": "steam laterals",
         "max_error_percent": 5.159,
-        "solve_s": 25.66,
+        "solve_s": 14.92,
         "solver_status": "SOLVE_SUCCEEDED"
       },
       {
@@ -723,7 +723,7 @@
         "max_error_coefficient": "friction",
         "max_error_group": "steam laterals",
         "max_error_percent": 12.57,
-        "solve_s": 17.88,
+        "solve_s": 18.0,
         "solver_status": "SOLVE_SUCCEEDED"
       }
     ]
@@ -931,11 +931,11 @@
   },
   "timing_s": {
     "budget": 960.0,
-    "generate_historian": 17.8,
-    "identifiability": 3.2,
-    "nominal_simulation": 3.0,
-    "read_historian": 0.3,
-    "total": 303.1
+    "generate_historian": 17.7,
+    "identifiability": 3.0,
+    "nominal_simulation": 2.5,
+    "read_historian": 0.27,
+    "total": 282.3
   },
   "true_coefficients": {
     "estimated": [
