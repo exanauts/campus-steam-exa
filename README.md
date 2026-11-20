@@ -59,12 +59,18 @@ The site build ran on the following hardware, as recorded in the deployed
   new-building study adds one large building to the demo campus and compares four upgrade options over
   the coldest week; the case was constructed by hand to show the method, and no costs are compared. The
   network edits it uses are in [`src/expansion.jl`](src/expansion.jl).
-- **CPU versus GPU, local sweep, earlier layout. No GPU crossover was measured.** The committed sweep was
-  run at commit `6fd4ac9`, before the campus generator changed from a street grid to the current
-  trunk-and-branch layout, and it has not yet been repeated on the current layout. Crossover here means
-  the GPU is faster at one size and at every larger size, with every repeat solved and residuals matched.
-  At a matched tolerance, the GPU's median time was lower only at T = 720, where one of its five repeats
-  stopped at the iteration limit, so that case is not a dependable speedup. See
+- **CPU versus GPU, local sweep. The GPU was faster on every multi-period horizon run and slower on
+  every single-period network.** The sweep was run at commit `1b2130c` on the current layout. Here the
+  GPU counts as faster at a size when its median time is lower, every repeat solved on both devices,
+  and its KKT residual is at most twice the CPU's; crossover means it is faster at one size and every
+  larger one. At a matched tolerance of 1e-8, all five repeats solved on both devices in every case. On
+  the demo campus the GPU's median was 0.19 times the CPU's at T = 24, 0.07 times at T = 168 and 0.02
+  times at T = 720 (9.47 s against 426.0 s), so it crossed over at or below T = 24; shorter horizons
+  were not run. At T = 24 and 168 two of the five GPU repeats were much slower than the rest, so a single
+  solve there is not dependably faster. On single-period networks from 166 to 800 junctions the GPU was
+  slower at every size, from 1.34 to 7.88 times the CPU time, so there was no crossover in network
+  size. The machine was shared and busy during the sweep (1-minute load average 17 to 102 on 192
+  logical CPUs), so all timings were taken on a loaded host. See
   [`docs/gpu-notes.md`](docs/gpu-notes.md) and [`results/benchmarks.csv`](results/benchmarks.csv).
 
 ## Limits
@@ -84,8 +90,8 @@ See [`docs/model-notes.md`](docs/model-notes.md) and [`docs/gpu-notes.md`](docs/
 
 ### Not run
 
-- The local benchmark sweep on the current network layout. A run was started and stopped before it
-  finished, so the committed sweep is still the one from the earlier layout.
+- Horizons between 1 and 24 hours in the benchmark sweep, so the GPU crossover in the number of periods
+  is located only as "at or below T = 24".
 - A full-year horizon did not finish: T = 8,760 was attempted once per device on the earlier layout and
   neither solve completed ([log](results/logs/benchmarks_year_attempt.txt)). It was not run on the
   current layout.

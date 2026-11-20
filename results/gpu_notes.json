@@ -1,46 +1,48 @@
 {
   "label": "All data is synthetic and describes no real campus.",
-  "source_commit": "6fd4ac9 (benchmark sweep), 2ec4de5 (diagnostics and calibration)",
-  "run_date": "2026-11-18 (benchmark sweep), 2026-11-20 (diagnostics)",
+  "source_commit": "1b2130c (benchmark sweep), 2ec4de5 (diagnostics and calibration)",
+  "run_date": "2026-11-20 (benchmark sweep and diagnostics)",
   "device": "NVIDIA H200",
   "details": "docs/gpu-notes.md",
-  "layout_note": "The campus generator changed from a street grid to a trunk-and-branch layout after the benchmark sweep. Findings marked 'earlier layout' come from the sweep at commit 6fd4ac9 and have not been repeated on the current layout. A repeat of the sweep was started and stopped before it finished.",
+  "layout_note": "All findings are from the current trunk-and-branch layout. Only the T = 8,760 attempt is from the earlier street-grid layout (commit 6fd4ac9).",
+  "host_load_note": "The machine was shared and busy during the benchmark sweep: the 1-minute load average ranged from 17 to 102 (median 55) on 192 logical CPUs. All timings were taken on a loaded host.",
   "findings": [
     {
       "id": "crossover",
-      "title": "No crossover was observed",
-      "text": "At a matched tolerance of 1e-8 the GPU was slower at all seven single-period network sizes, from 15.9 times the CPU time on the demo campus to 1.69 times at 800 junctions.",
+      "title": "The GPU crossed over in the number of periods, not in network size",
+      "text": "At a matched tolerance of 1e-8, with every repeat solved on both devices and residuals matched, the GPU was faster at T = 24, 168 and 720 on the demo campus, so it crossed over at or below T = 24; horizons between 1 and 24 hours were not run. It was slower at all seven single-period network sizes, from 1.34 to 7.88 times the CPU time.",
       "evidence": [
-        "results/benchmarks.csv"
+        "results/benchmarks.csv",
+        "results/benchmarks_summary.json"
       ],
-      "layout": "earlier street-grid layout, commit 6fd4ac9"
+      "layout": "current trunk-and-branch layout, commit 1b2130c"
     },
     {
       "id": "horizon",
-      "title": "The GPU median was lower at T = 720, with one failed repeat",
-      "text": "At T = 720 the GPU median was 41.8 s against 88.2 s on the CPU, but one of five GPU repeats stopped at the iteration limit. The GPU was slower at T = 24 and T = 168.",
+      "title": "At T = 720 every GPU repeat was faster than every CPU repeat",
+      "text": "At T = 720 the GPU median was 9.47 s against 426.0 s on the CPU, with all five repeats solved on both devices. At T = 24 (1.13 s against 5.82 s) and T = 168 (3.59 s against 52.8 s) the GPU median was lower, but two of five GPU repeats at each horizon were much slower than the rest.",
       "evidence": [
         "results/benchmarks.csv"
       ],
-      "layout": "earlier street-grid layout, commit 6fd4ac9"
+      "layout": "current trunk-and-branch layout, commit 1b2130c"
     },
     {
       "id": "variability",
       "title": "GPU iteration counts vary between identical runs",
-      "text": "At T = 720 the GPU took between 127 and 1000 iterations on identical input. The CPU took the same number every time.",
+      "text": "At T = 720 the GPU took between 88 and 307 iterations on identical input, and every repeat solved. The CPU took the same number every time.",
       "evidence": [
         "results/benchmarks.csv"
       ],
-      "layout": "earlier street-grid layout, commit 6fd4ac9"
+      "layout": "current trunk-and-branch layout, commit 1b2130c"
     },
     {
       "id": "tolerance",
-      "title": "Default GPU runs often stop at a looser tolerance",
-      "text": "With default settings the GPU often stopped at the acceptable level while the CPU reached 1e-8, so default times are not like for like.",
+      "title": "Default GPU runs reached the requested tolerance",
+      "text": "With default settings every synchronous GPU repeat reached 1e-8. With asynchronous cuDSS one repeat at T = 168 stopped at the acceptable level.",
       "evidence": [
         "results/benchmarks.csv"
       ],
-      "layout": "earlier street-grid layout, commit 6fd4ac9"
+      "layout": "current trunk-and-branch layout, commit 1b2130c"
     },
     {
       "id": "regularization",
@@ -52,19 +54,28 @@
       "layout": "current trunk-and-branch layout, commit 2ec4de5"
     },
     {
-      "id": "first_solve",
-      "title": "Time to first solve is longer on the GPU",
-      "text": "A fresh process took 82.8 s on the GPU and 18.4 s on the CPU to finish its first two demo campus solves.",
+      "id": "memory",
+      "title": "T = 720 used about 36 GiB of GPU memory",
+      "text": "Peak GPU memory of one solve in a fresh process was 788 MiB on the demo campus, 2,852 MiB at T = 24, 11,926 MiB at T = 168 and 36,824 MiB at T = 720.",
       "evidence": [
         "results/benchmarks_summary.json"
       ],
-      "layout": "earlier street-grid layout, commit 6fd4ac9"
+      "layout": "current trunk-and-branch layout, commit 1b2130c"
+    },
+    {
+      "id": "first_solve",
+      "title": "Time to first solve is longer on the GPU",
+      "text": "A fresh process took 93.9 s on the GPU and 20.1 s on the CPU to finish its first two demo campus solves (medians of three runs).",
+      "evidence": [
+        "results/benchmarks_summary.json"
+      ],
+      "layout": "current trunk-and-branch layout, commit 1b2130c"
     }
   ],
   "not_run": [
     {
-      "item": "Benchmark sweep on the current layout",
-      "status": "Started and stopped before it finished; not run to completion"
+      "item": "Horizons between 1 and 24 hours",
+      "status": "Not run; the crossover in the number of periods is located only as at or below T = 24"
     },
     {
       "item": "Demo campus at T = 8,760",
@@ -82,13 +93,17 @@
     {
       "item": "Augmented KKT system on the GPU",
       "status": "Not run"
+    },
+    {
+      "item": "Asynchronous cuDSS in the strict runs",
+      "status": "Not run"
     }
   ],
   "roadmap": [
     {
       "item": "Year-long horizons",
       "status": "not run",
-      "needs": "Reliable GPU convergence at T = 8,760, steadier iteration counts than at T = 720 on the earlier layout, and a factorization that fits in GPU memory."
+      "needs": "Reliable GPU convergence at T = 8,760, steadier iteration counts than the 88 to 307 seen at T = 720, and a factorization that fits in GPU memory; T = 720 already used about 36 GiB."
     },
     {
       "item": "Many-scenario contingency screening",

@@ -172,9 +172,8 @@ CPU with one thread. Solve times exclude the first run, which includes compilati
 | Energy closure (W) | 1.5e-7 |
 
 The plant output is 80.35 MW, with 0.27 MW lost in pipes, no excess heat and no shed load. The CPU
-and GPU benchmark sweep in [`docs/gpu-notes.md`](gpu-notes.md) was measured on the earlier
-street-grid layout of this campus and has not been repeated. The solver diagnostics and the
-calibration outcomes in the same notes are from the current layout.
+and GPU benchmark sweep, the solver diagnostics and the calibration outcomes in
+[`docs/gpu-notes.md`](gpu-notes.md) are from the current layout of this campus.
 
 ## Verification against the reference code
 
@@ -331,27 +330,30 @@ search is a heuristic.
 
 ### Measurements
 
-**Superseded, and from an earlier network layout.** This table is an earlier measurement, kept for the
-record. It was made at generator commit `a1e75b6`, on the street-grid layout of the demo campus, before
-the generator changed to the current trunk-and-branch layout, so its sizes and times do not describe the
-current demo campus. No script at the current commit reproduces it. The multi-period CPU and GPU
-comparison in [`docs/gpu-notes.md`](gpu-notes.md) is also from the earlier layout.
+From the local benchmark sweep at commit `1b2130c`, on the current layout:
+[`results/benchmarks.csv`](../results/benchmarks.csv), written by
+`julia --project=scripts scripts/site/benchmarks.jl local`. Demo campus, first T hours of the synthetic
+profiles, default ramp limit, no outage. Times exclude compilation. The tolerance is 1e-8 with
+acceptable termination off, a bound relaxation of 1e-8 on both devices, and a limit of 1000 iterations.
+The CPU runs use MadNLP with MUMPS on one thread. The GPU runs use one NVIDIA H200 with cuDSS and
+`richardson_max_iter = 30, richardson_tol = 1e-12`. Each row is five repeats: iterations and times are
+medians with the range in brackets, and the primal residual is the largest unscaled constraint or
+bound violation over the repeats. The sweep does not record the hourly energy closure, so the closure column
+of the earlier table is not repeated. The host was shared with other users' jobs during the sweep, so
+the times are from a loaded host; see [`docs/gpu-notes.md`](gpu-notes.md).
 
-Demo campus, first T hours of the synthetic profiles, default ramp limit, no outage. Times exclude
-compilation. The tolerance is 1e-8 with a limit of 1000 iterations. The CPU runs use MadNLP's default MUMPS solver. The GPU runs use one NVIDIA H200 with cuDSS and
-`richardson_max_iter = 30, richardson_tol = 1e-12`. The violation is the unscaled maximum constraint
-violation, and closure is the largest hourly energy balance error.
+| T | Variables | Constraints | Jacobian nonzeros | Device | Repeats solved | Iterations | Build (s) | Solve (s) | Primal residual |
+|---|---|---|---|---|---|---|---|---|---|
+| 24 | 26,688 | 23,351 | 76,054 | CPU | 5 of 5 | 86 (86 to 86) | 0.012 | 5.82 (3.43 to 5.88) | 1.0e-08 |
+| 24 | 26,688 | 23,351 | 76,054 | GPU | 5 of 5 | 76 (68 to 136) | 0.043 | 1.13 (0.811 to 44.9) | 9.1e-08 |
+| 168 | 186,816 | 163,463 | 532,390 | CPU | 5 of 5 | 151 (151 to 151) | 0.024 | 52.8 (52.7 to 67.2) | 1.0e-08 |
+| 168 | 186,816 | 163,463 | 532,390 | GPU | 5 of 5 | 87 (70 to 147) | 0.068 | 3.59 (2.47 to 70.2) | 9.1e-08 |
+| 720 | 800,640 | 700,559 | 2,281,678 | CPU | 5 of 5 | 216 (216 to 216) | 0.196 | 426.0 (399.4 to 486.3) | 1.0e-08 |
+| 720 | 800,640 | 700,559 | 2,281,678 | GPU | 5 of 5 | 89 (88 to 307) | 0.210 | 9.47 (7.21 to 24.3) | 9.1e-08 |
 
-| T | Variables | Constraints | Jacobian nonzeros | Device | Status | Iterations | Build (s) | Solve (s) | Violation | Closure (W) |
-|---|---|---|---|---|---|---|---|---|---|---|
-| 24 | 24,192 | 20,855 | 71,878 | CPU | `SOLVE_SUCCEEDED` | 58 | 0.003 | 1.530 | 1.2e-13 | 2.5e-8 |
-| 24 | 24,192 | 20,855 | 71,878 | GPU | `SOLVE_SUCCEEDED` | 94 | 0.040 | 3.736 | 9.2e-9 | 1.9e-3 |
-| 168 | 169,344 | 145,991 | 503,158 | CPU | `SOLVE_SUCCEEDED` | 64 | 0.023 | 13.995 | 2.1e-12 | 3.1e-7 |
-| 168 | 169,344 | 145,991 | 503,158 | GPU | `SOLVED_TO_ACCEPTABLE_LEVEL` | 374 | 0.090 | 19.038 | 7.4e-8 | 1.3e-2 |
-| 720 | 725,760 | 625,679 | 2,156,398 | CPU | `SOLVE_SUCCEEDED` | 76 | 0.107 | 87.946 | 1.4e-9 | 2.0e-4 |
-| 720 | 725,760 | 625,679 | 2,156,398 | GPU | `SOLVED_TO_ACCEPTABLE_LEVEL` | 149 | 0.250 | 12.980 | 7.6e-8 | 5.9e-3 |
-
-The GPU runs at T = 168 and T = 720 stopped at MadNLP's acceptable level and did not reach 1e-8.
+Every repeat reached 1e-8 on both devices. The GPU's median solve time was lower at all three horizons.
+At T = 24 and T = 168 two of its five repeats were much slower than the other three, so the medians do
+not mean every GPU solve was faster; at T = 720 every GPU repeat was faster than every CPU repeat.
 T = 8,760 was attempted once per device on the earlier layout, at commit `6fd4ac9`, and neither solve
 finished, as recorded in [`docs/gpu-notes.md`](gpu-notes.md) and the
 [log](../results/logs/benchmarks_year_attempt.txt). It was not run on the current layout.
