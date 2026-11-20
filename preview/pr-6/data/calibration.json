@@ -1,0 +1,963 @@
+{
+  "ask": {
+    "rows": 430487,
+    "size_label": "19.7 MiB",
+    "tag_count": 25,
+    "years": 2.0
+  },
+  "bad_quality_example": {
+    "mean_after_exclusion": 438.027,
+    "mean_with_bad_sample": 478.585,
+    "samples": [
+      {
+        "quality": "Good",
+        "time": "2024-01-01 21:00:00",
+        "used": true,
+        "value": 437.5065
+      },
+      {
+        "quality": "Good",
+        "time": "2024-01-01 22:00:00",
+        "used": true,
+        "value": 437.6309
+      },
+      {
+        "quality": "Bad",
+        "time": "2024-01-01 23:00:00",
+        "used": false,
+        "value": 640.8172
+      },
+      {
+        "quality": "Good",
+        "time": "2024-01-02 00:00:00",
+        "used": true,
+        "value": 437.7451
+      },
+      {
+        "quality": "Good",
+        "time": "2024-01-02 01:00:00",
+        "used": true,
+        "value": 439.2253
+      }
+    ],
+    "samples_excluded": 1,
+    "tag": "FAR-1.STM.TEMP",
+    "unit": "K"
+  },
+  "chart": {
+    "series": [
+      {
+        "name": "1 month of data",
+        "x": [
+          5,
+          15,
+          25
+        ],
+        "y": [
+          169.237,
+          7.024,
+          5.159
+        ]
+      },
+      {
+        "name": "3 months of data",
+        "x": [
+          25
+        ],
+        "y": [
+          4.447
+        ]
+      },
+      {
+        "name": "6 months of data",
+        "x": [
+          25
+        ],
+        "y": [
+          2.874
+        ]
+      }
+    ],
+    "subtitle": "Simulated data. The largest error, in percent, among the fitted steam-side heat-loss and friction values.",
+    "title": "Coefficient recovery error against number of tags",
+    "x_label": "Tags used",
+    "x_scale": "linear",
+    "y_label": "Largest recovery error (%)",
+    "y_scale": "log"
+  },
+  "data_note": "All data is synthetic: historian-style CSV generated at build time from a simulated network whose true coefficients are known.",
+  "finding": "On synthetic data, one month of 25 hourly tags recovered every estimated steam-side coefficient group to within 5.159%. With 5 tags the largest error was 169.237%.",
+  "findings": [
+    "All data is simulated. This test uses a separate 40-junction simulated campus, not the 166-junction campus drawn on the map at the top of this page.",
+    "One heat-loss value and one friction value are fitted for each group of pipes (steam mains and steam laterals), not for each pipe. A calculation of what the readings can reveal predicts that 25 tags over 12 months are not enough to fit a separate value for every pipe to within about 10%.",
+    "Heat-loss and friction values for the condensate return pipes are not fitted. They stay at their starting values, and fitting them would need tags on the condensate side.",
+    "The simulated pipes in a group are not identical: each pipe's true value varies from the group's value by about 3.0% (one standard deviation). Each fitted value is therefore compared with the average true value of its group, with longer pipes counting for more.",
+    "With 25 tags, the largest recovery error in this build was 5.159% with 1 month, 4.447% with 3 months and 2.874% with 6 months of data. The error fell each time more months were used.",
+    "The friction value of the steam mains was estimated at 1.283 from month 1 and 1.3 from month 7. Its true group average is 1.257."
+  ],
+  "gpu": {
+    "attempted": true,
+    "build_s": 18.67,
+    "constraints": 164250,
+    "converged": true,
+    "device": "NVIDIA H200",
+    "error_percent": {
+      "friction": {
+        "steam laterals": 2.898,
+        "steam mains": 2.064
+      },
+      "loss": {
+        "steam laterals": 5.163,
+        "steam mains": 0.653
+      }
+    },
+    "estimate": {
+      "friction": [
+        1.28273,
+        0.91946,
+        1.0
+      ],
+      "loss": [
+        1.29078,
+        1.09368,
+        1.0
+      ]
+    },
+    "hours": 730,
+    "iterations": 19,
+    "jacobian_nonzeros": 614660,
+    "max_error_percent": 5.163,
+    "measurements": 14784,
+    "months": 1,
+    "run": true,
+    "solve_s": 67.18,
+    "solver_status": "SOLVE_SUCCEEDED",
+    "tags": 25,
+    "variables": 187616,
+    "wall_limit_s": 180.0
+  },
+  "grid": {
+    "cells": [
+      {
+        "build_s": 7.67,
+        "constraints": 164250,
+        "converged": true,
+        "error_percent": {
+          "friction": {
+            "steam laterals": 169.237,
+            "steam mains": 84.086
+          },
+          "loss": {
+            "steam laterals": 82.657,
+            "steam mains": 10.89
+          }
+        },
+        "estimate": {
+          "friction": [
+            0.2,
+            2.40582,
+            1.0
+          ],
+          "loss": [
+            1.44076,
+            0.20001,
+            1.0
+          ]
+        },
+        "hours": 730,
+        "iterations": 97,
+        "jacobian_nonzeros": 614660,
+        "max_error_percent": 169.237,
+        "measurements": 3503,
+        "months": 1,
+        "run": true,
+        "solve_s": 39.55,
+        "solver_status": "SOLVE_SUCCEEDED",
+        "tags": 5,
+        "variables": 187616
+      },
+      {
+        "hours": 2190,
+        "months": 3,
+        "reason": "Not part of this build's grid, to stay within its time budget.",
+        "run": false,
+        "tags": 5
+      },
+      {
+        "hours": 4380,
+        "months": 6,
+        "reason": "Not part of this build's grid, to stay within its time budget.",
+        "run": false,
+        "tags": 5
+      },
+      {
+        "hours": 8760,
+        "months": 12,
+        "reason": "Not part of this build's grid, to stay within its time budget.",
+        "run": false,
+        "tags": 5
+      },
+      {
+        "hours": 17520,
+        "months": 24,
+        "reason": "Not part of this build's grid, to stay within its time budget.",
+        "run": false,
+        "tags": 5
+      },
+      {
+        "build_s": 8.66,
+        "constraints": 164250,
+        "converged": false,
+        "hours": 730,
+        "iterations": 500,
+        "jacobian_nonzeros": 614660,
+        "measurements": 7027,
+        "months": 1,
+        "reason": "The solver stopped with status MAXIMUM_ITERATIONS_EXCEEDED, so no recovery error is reported.",
+        "run": true,
+        "solve_s": 186.27,
+        "solver_status": "MAXIMUM_ITERATIONS_EXCEEDED",
+        "tags": 10,
+        "variables": 187616
+      },
+      {
+        "hours": 2190,
+        "months": 3,
+        "reason": "Not part of this build's grid, to stay within its time budget.",
+        "run": false,
+        "tags": 10
+      },
+      {
+        "hours": 4380,
+        "months": 6,
+        "reason": "Not part of this build's grid, to stay within its time budget.",
+        "run": false,
+        "tags": 10
+      },
+      {
+        "hours": 8760,
+        "months": 12,
+        "reason": "Not part of this build's grid, to stay within its time budget.",
+        "run": false,
+        "tags": 10
+      },
+      {
+        "hours": 17520,
+        "months": 24,
+        "reason": "Not part of this build's grid, to stay within its time budget.",
+        "run": false,
+        "tags": 10
+      },
+      {
+        "build_s": 5.52,
+        "constraints": 164250,
+        "converged": true,
+        "error_percent": {
+          "friction": {
+            "steam laterals": 7.024,
+            "steam mains": 0.116
+          },
+          "loss": {
+            "steam laterals": 2.12,
+            "steam mains": 0.968
+          }
+        },
+        "estimate": {
+          "friction": [
+            1.25824,
+            0.83081,
+            1.0
+          ],
+          "loss": [
+            1.31184,
+            1.17767,
+            1.0
+          ]
+        },
+        "hours": 730,
+        "iterations": 364,
+        "jacobian_nonzeros": 614660,
+        "max_error_percent": 7.024,
+        "measurements": 9846,
+        "months": 1,
+        "run": true,
+        "solve_s": 138.49,
+        "solver_status": "SOLVE_SUCCEEDED",
+        "tags": 15,
+        "variables": 187616
+      },
+      {
+        "hours": 2190,
+        "months": 3,
+        "reason": "Not part of this build's grid, to stay within its time budget.",
+        "run": false,
+        "tags": 15
+      },
+      {
+        "hours": 4380,
+        "months": 6,
+        "reason": "Not part of this build's grid, to stay within its time budget.",
+        "run": false,
+        "tags": 15
+      },
+      {
+        "hours": 8760,
+        "months": 12,
+        "reason": "Not part of this build's grid, to stay within its time budget.",
+        "run": false,
+        "tags": 15
+      },
+      {
+        "hours": 17520,
+        "months": 24,
+        "reason": "Not part of this build's grid, to stay within its time budget.",
+        "run": false,
+        "tags": 15
+      },
+      {
+        "build_s": 8.5,
+        "constraints": 164250,
+        "converged": true,
+        "error_percent": {
+          "friction": {
+            "steam laterals": 2.882,
+            "steam mains": 2.062
+          },
+          "loss": {
+            "steam laterals": 5.159,
+            "steam mains": 0.649
+          }
+        },
+        "estimate": {
+          "friction": [
+            1.2827,
+            0.91932,
+            1.0
+          ],
+          "loss": [
+            1.29084,
+            1.09372,
+            1.0
+          ]
+        },
+        "hours": 730,
+        "iterations": 21,
+        "jacobian_nonzeros": 614660,
+        "max_error_percent": 5.159,
+        "measurements": 14784,
+        "months": 1,
+        "run": true,
+        "solve_s": 15.16,
+        "solver_status": "SOLVE_SUCCEEDED",
+        "tags": 25,
+        "variables": 187616
+      },
+      {
+        "build_s": 5.7,
+        "constraints": 492750,
+        "converged": true,
+        "error_percent": {
+          "friction": {
+            "steam laterals": 1.897,
+            "steam mains": 1.573
+          },
+          "loss": {
+            "steam laterals": 4.447,
+            "steam mains": 0.702
+          }
+        },
+        "estimate": {
+          "friction": [
+            1.27655,
+            0.91052,
+            1.0
+          ],
+          "loss": [
+            1.29015,
+            1.10194,
+            1.0
+          ]
+        },
+        "hours": 2190,
+        "iterations": 24,
+        "jacobian_nonzeros": 1843980,
+        "max_error_percent": 4.447,
+        "measurements": 43928,
+        "months": 3,
+        "run": true,
+        "solve_s": 39.91,
+        "solver_status": "SOLVE_SUCCEEDED",
+        "tags": 25,
+        "variables": 562836
+      },
+      {
+        "build_s": 7.27,
+        "constraints": 985500,
+        "converged": true,
+        "error_percent": {
+          "friction": {
+            "steam laterals": 2.874,
+            "steam mains": 2.034
+          },
+          "loss": {
+            "steam laterals": 0.655,
+            "steam mains": 0.797
+          }
+        },
+        "estimate": {
+          "friction": [
+            1.28234,
+            0.86789,
+            1.0
+          ],
+          "loss": [
+            1.28891,
+            1.14567,
+            1.0
+          ]
+        },
+        "hours": 4380,
+        "iterations": 59,
+        "jacobian_nonzeros": 3687960,
+        "max_error_percent": 2.874,
+        "measurements": 88035,
+        "months": 6,
+        "run": true,
+        "solve_s": 206.86,
+        "solver_status": "SOLVE_SUCCEEDED",
+        "tags": 25,
+        "variables": 1125666
+      },
+      {
+        "hours": 8760,
+        "months": 12,
+        "reason": "Not part of this build's grid, to stay within its time budget.",
+        "run": false,
+        "tags": 25
+      },
+      {
+        "hours": 17520,
+        "months": 24,
+        "reason": "Not part of this build's grid, to stay within its time budget.",
+        "run": false,
+        "tags": 25
+      }
+    ],
+    "months": [
+      1,
+      3,
+      6,
+      12,
+      24
+    ],
+    "tag_counts": [
+      5,
+      10,
+      15,
+      25
+    ]
+  },
+  "historian": {
+    "absent": 7513,
+    "excluded_bad": 8828,
+    "excluded_blank": 0,
+    "excluded_uncertain": 2254,
+    "file_bytes": 20610447,
+    "format": [
+      "DateTime",
+      "TagName",
+      "Value",
+      "Quality"
+    ],
+    "good": 419405,
+    "good_percent": 95.75,
+    "hours": 17520,
+    "rows": 430487,
+    "tag_hours": 438000,
+    "tags": 25
+  },
+  "identifiability": [
+    {
+      "pipe_coefficients": 84,
+      "pipe_directions_resolved_12_months": 4,
+      "predicted_std_12_months": {
+        "friction": {
+          "condensate return": 1.0,
+          "steam laterals": 0.1063,
+          "steam mains": 0.0427
+        },
+        "loss": {
+          "condensate return": 1.0,
+          "steam laterals": 0.1455,
+          "steam mains": 0.0143
+        }
+      },
+      "predicted_std_1_month": {
+        "friction": {
+          "condensate return": 1.0,
+          "steam laterals": 0.3427,
+          "steam mains": 0.1377
+        },
+        "loss": {
+          "condensate return": 1.0,
+          "steam laterals": 0.4522,
+          "steam mains": 0.0443
+        }
+      },
+      "sample_hours": 24,
+      "tags": 5
+    },
+    {
+      "pipe_coefficients": 84,
+      "pipe_directions_resolved_12_months": 8,
+      "predicted_std_12_months": {
+        "friction": {
+          "condensate return": 1.0,
+          "steam laterals": 0.0077,
+          "steam mains": 0.0031
+        },
+        "loss": {
+          "condensate return": 1.0,
+          "steam laterals": 0.0014,
+          "steam mains": 0.0007
+        }
+      },
+      "predicted_std_1_month": {
+        "friction": {
+          "condensate return": 1.0,
+          "steam laterals": 0.0267,
+          "steam mains": 0.0106
+        },
+        "loss": {
+          "condensate return": 1.0,
+          "steam laterals": 0.0047,
+          "steam mains": 0.0023
+        }
+      },
+      "sample_hours": 24,
+      "tags": 10
+    },
+    {
+      "pipe_coefficients": 84,
+      "pipe_directions_resolved_12_months": 11,
+      "predicted_std_12_months": {
+        "friction": {
+          "condensate return": 1.0,
+          "steam laterals": 0.0059,
+          "steam mains": 0.0026
+        },
+        "loss": {
+          "condensate return": 1.0,
+          "steam laterals": 0.0012,
+          "steam mains": 0.0005
+        }
+      },
+      "predicted_std_1_month": {
+        "friction": {
+          "condensate return": 1.0,
+          "steam laterals": 0.0205,
+          "steam mains": 0.009
+        },
+        "loss": {
+          "condensate return": 1.0,
+          "steam laterals": 0.0041,
+          "steam mains": 0.0016
+        }
+      },
+      "sample_hours": 24,
+      "tags": 15
+    },
+    {
+      "pipe_coefficients": 84,
+      "pipe_directions_resolved_12_months": 17,
+      "predicted_std_12_months": {
+        "friction": {
+          "condensate return": 1.0,
+          "steam laterals": 0.0027,
+          "steam mains": 0.0025
+        },
+        "loss": {
+          "condensate return": 1.0,
+          "steam laterals": 0.0008,
+          "steam mains": 0.0003
+        }
+      },
+      "predicted_std_1_month": {
+        "friction": {
+          "condensate return": 1.0,
+          "steam laterals": 0.0094,
+          "steam mains": 0.0085
+        },
+        "loss": {
+          "condensate return": 1.0,
+          "steam laterals": 0.0028,
+          "steam mains": 0.0011
+        }
+      },
+      "sample_hours": 24,
+      "tags": 25
+    }
+  ],
+  "network": {
+    "description": "Synthetic 40-junction campus from the repository's generator.",
+    "junctions": 40,
+    "loads": 9,
+    "pipes": 42
+  },
+  "network_used": {
+    "generator_call": "scaled_campus(40)",
+    "is_demo_campus": false,
+    "name": "Synthetic 40-junction campus",
+    "note": "The calibration study does not use the 166-junction demo campus."
+  },
+  "sample_rows": [
+    {
+      "DateTime": "2024-01-01 21:00:00",
+      "Quality": "Good",
+      "TagName": "FAR-1.STM.TEMP",
+      "Value": 437.5065
+    },
+    {
+      "DateTime": "2024-01-01 22:00:00",
+      "Quality": "Good",
+      "TagName": "FAR-1.STM.TEMP",
+      "Value": 437.6309
+    },
+    {
+      "DateTime": "2024-01-01 23:00:00",
+      "Quality": "Bad",
+      "TagName": "FAR-1.STM.TEMP",
+      "Value": 640.8172
+    },
+    {
+      "DateTime": "2024-01-02 00:00:00",
+      "Quality": "Good",
+      "TagName": "FAR-1.STM.TEMP",
+      "Value": 437.7451
+    },
+    {
+      "DateTime": "2024-01-02 01:00:00",
+      "Quality": "Good",
+      "TagName": "FAR-1.STM.TEMP",
+      "Value": 439.2253
+    }
+  ],
+  "seasonal_check": {
+    "groups": [
+      "steam mains",
+      "steam laterals",
+      "condensate return"
+    ],
+    "months": 1,
+    "run": true,
+    "tags": 25,
+    "true_friction_multiplier": [
+      1.2568,
+      0.8936,
+      1.21
+    ],
+    "true_loss_multiplier": [
+      1.2993,
+      1.1532,
+      0.8482
+    ],
+    "windows": [
+      {
+        "converged": true,
+        "error_percent": {
+          "friction": {
+            "steam laterals": 2.882,
+            "steam mains": 2.062
+          },
+          "loss": {
+            "steam laterals": 5.159,
+            "steam mains": 0.649
+          }
+        },
+        "estimate": {
+          "friction": [
+            1.2827,
+            0.91932,
+            1.0
+          ],
+          "loss": [
+            1.29084,
+            1.09372,
+            1.0
+          ]
+        },
+        "first_hour": 1,
+        "label": "month 1",
+        "max_error_coefficient": "loss",
+        "max_error_group": "steam laterals",
+        "max_error_percent": 5.159,
+        "solve_s": 15.16,
+        "solver_status": "SOLVE_SUCCEEDED"
+      },
+      {
+        "converged": true,
+        "error_percent": {
+          "friction": {
+            "steam laterals": 12.57,
+            "steam mains": 3.446
+          },
+          "loss": {
+            "steam laterals": 3.673,
+            "steam mains": 0.419
+          }
+        },
+        "estimate": {
+          "friction": [
+            1.30009,
+            0.78125,
+            1.0
+          ],
+          "loss": [
+            1.29382,
+            1.19558,
+            1.0
+          ]
+        },
+        "first_hour": 4381,
+        "label": "month 7",
+        "max_error_coefficient": "friction",
+        "max_error_group": "steam laterals",
+        "max_error_percent": 12.57,
+        "solve_s": 17.46,
+        "solver_status": "SOLVE_SUCCEEDED"
+      }
+    ]
+  },
+  "synthetic": true,
+  "tag_sets": {
+    "10": [
+      "PLANT.STM.FLOW",
+      "PLANT.STM.TEMP",
+      "PLANT.STM.PRES",
+      "FAR-1.STM.TEMP",
+      "FAR-1.STM.PRES",
+      "MAIN-1.STM.FLOW",
+      "MAIN-2.STM.FLOW",
+      "MID-1.STM.TEMP",
+      "MID-1.STM.PRES",
+      "FAR-2.STM.TEMP"
+    ],
+    "15": [
+      "PLANT.STM.FLOW",
+      "PLANT.STM.TEMP",
+      "PLANT.STM.PRES",
+      "FAR-1.STM.TEMP",
+      "FAR-1.STM.PRES",
+      "MAIN-1.STM.FLOW",
+      "MAIN-2.STM.FLOW",
+      "MID-1.STM.TEMP",
+      "MID-1.STM.PRES",
+      "FAR-2.STM.TEMP",
+      "FAR-2.STM.PRES",
+      "MAIN-3.STM.FLOW",
+      "MID-2.STM.TEMP",
+      "MID-2.STM.PRES",
+      "BLR-1.RUN"
+    ],
+    "25": [
+      "PLANT.STM.FLOW",
+      "PLANT.STM.TEMP",
+      "PLANT.STM.PRES",
+      "FAR-1.STM.TEMP",
+      "FAR-1.STM.PRES",
+      "MAIN-1.STM.FLOW",
+      "MAIN-2.STM.FLOW",
+      "MID-1.STM.TEMP",
+      "MID-1.STM.PRES",
+      "FAR-2.STM.TEMP",
+      "FAR-2.STM.PRES",
+      "MAIN-3.STM.FLOW",
+      "MID-2.STM.TEMP",
+      "MID-2.STM.PRES",
+      "BLR-1.RUN",
+      "BLR-2.RUN",
+      "BLR-3.RUN",
+      "BLR-4.RUN",
+      "MAIN-4.STM.FLOW",
+      "BLDG-1.STM.FLOW",
+      "BLDG-2.STM.FLOW",
+      "FAR-3.STM.TEMP",
+      "FAR-3.STM.PRES",
+      "FAR-4.STM.TEMP",
+      "FAR-4.STM.PRES"
+    ],
+    "5": [
+      "PLANT.STM.FLOW",
+      "PLANT.STM.TEMP",
+      "PLANT.STM.PRES",
+      "FAR-1.STM.TEMP",
+      "FAR-1.STM.PRES"
+    ]
+  },
+  "tags_by_category": {
+    "flow": [
+      {
+        "description": "Total steam flow leaving the plant",
+        "name": "PLANT.STM.FLOW",
+        "unit": "kg/s"
+      },
+      {
+        "description": "Steam flow in the most heavily loaded main",
+        "name": "MAIN-1.STM.FLOW",
+        "unit": "kg/s"
+      },
+      {
+        "description": "Steam flow in the second most heavily loaded main",
+        "name": "MAIN-2.STM.FLOW",
+        "unit": "kg/s"
+      },
+      {
+        "description": "Steam flow in the third most heavily loaded main",
+        "name": "MAIN-3.STM.FLOW",
+        "unit": "kg/s"
+      },
+      {
+        "description": "Steam flow in the fourth most heavily loaded main",
+        "name": "MAIN-4.STM.FLOW",
+        "unit": "kg/s"
+      },
+      {
+        "description": "Steam flow into the largest building",
+        "name": "BLDG-1.STM.FLOW",
+        "unit": "kg/s"
+      },
+      {
+        "description": "Steam flow into the second largest building",
+        "name": "BLDG-2.STM.FLOW",
+        "unit": "kg/s"
+      }
+    ],
+    "pressure": [
+      {
+        "description": "Steam pressure at the plant header",
+        "name": "PLANT.STM.PRES",
+        "unit": "Pa"
+      },
+      {
+        "description": "Steam pressure at the building farthest from the plant",
+        "name": "FAR-1.STM.PRES",
+        "unit": "Pa"
+      },
+      {
+        "description": "Steam pressure where the lateral to the farthest building branches off",
+        "name": "MID-1.STM.PRES",
+        "unit": "Pa"
+      },
+      {
+        "description": "Steam pressure at the second farthest building",
+        "name": "FAR-2.STM.PRES",
+        "unit": "Pa"
+      },
+      {
+        "description": "Steam pressure at the next branch-off point toward the far buildings",
+        "name": "MID-2.STM.PRES",
+        "unit": "Pa"
+      },
+      {
+        "description": "Steam pressure at the third farthest building",
+        "name": "FAR-3.STM.PRES",
+        "unit": "Pa"
+      },
+      {
+        "description": "Steam pressure at the fourth farthest building",
+        "name": "FAR-4.STM.PRES",
+        "unit": "Pa"
+      }
+    ],
+    "run state": [
+      {
+        "description": "Boiler 1 running",
+        "name": "BLR-1.RUN",
+        "unit": "0/1"
+      },
+      {
+        "description": "Boiler 2 running",
+        "name": "BLR-2.RUN",
+        "unit": "0/1"
+      },
+      {
+        "description": "Boiler 3 running",
+        "name": "BLR-3.RUN",
+        "unit": "0/1"
+      },
+      {
+        "description": "Boiler 4 running",
+        "name": "BLR-4.RUN",
+        "unit": "0/1"
+      }
+    ],
+    "temperature": [
+      {
+        "description": "Steam temperature at the plant header",
+        "name": "PLANT.STM.TEMP",
+        "unit": "K"
+      },
+      {
+        "description": "Steam temperature at the building farthest from the plant",
+        "name": "FAR-1.STM.TEMP",
+        "unit": "K"
+      },
+      {
+        "description": "Steam temperature where the lateral to the farthest building branches off",
+        "name": "MID-1.STM.TEMP",
+        "unit": "K"
+      },
+      {
+        "description": "Steam temperature at the second farthest building",
+        "name": "FAR-2.STM.TEMP",
+        "unit": "K"
+      },
+      {
+        "description": "Steam temperature at the next branch-off point toward the far buildings",
+        "name": "MID-2.STM.TEMP",
+        "unit": "K"
+      },
+      {
+        "description": "Steam temperature at the third farthest building",
+        "name": "FAR-3.STM.TEMP",
+        "unit": "K"
+      },
+      {
+        "description": "Steam temperature at the fourth farthest building",
+        "name": "FAR-4.STM.TEMP",
+        "unit": "K"
+      }
+    ]
+  },
+  "timing_s": {
+    "budget": 960.0,
+    "generate_historian": 17.8,
+    "identifiability": 2.9,
+    "nominal_simulation": 2.5,
+    "read_historian": 0.28,
+    "total": 290.5
+  },
+  "true_coefficients": {
+    "estimated": [
+      true,
+      true,
+      false
+    ],
+    "friction_multiplier": [
+      1.2568,
+      0.8936,
+      1.21
+    ],
+    "groups": [
+      "steam mains",
+      "steam laterals",
+      "condensate return"
+    ],
+    "loss_multiplier": [
+      1.2993,
+      1.1532,
+      0.8482
+    ],
+    "pipe_spread_percent": 3.0
+  }
+}
