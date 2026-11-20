@@ -41,9 +41,10 @@ jobs:
           # `workers` is the size of the part's pool of solver processes (scripts/site/pool.jl).
           # The benchmark part stays serial. scripts/ci/cpu_set.sh pins each part to its own cores,
           # and the two pooled parts also run at a lower CPU priority than the benchmark solves.
+          # Scenarios: 13 solves (the scenarios and the new-building study).
           - part: scenarios
             gpu_role: shared
-            workers: 4
+            workers: 6
             nice: 10
           - part: calibration
             gpu_role: shared

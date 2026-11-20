@@ -11,7 +11,7 @@ commands one after another.
 
 | Part | Command | Writes to `site/data/` | Workers in CI | Time budget | Local wall time |
 |---|---|---|---|---|---|
-| Scenarios | `scripts/run_site.jl scenarios` | `scenarios/` | 4 | None (runs to completion) | 5.5 min (11.4 min serial) |
+| Scenarios | `scripts/run_site.jl scenarios` | `scenarios/`, `expansion.json` | 6 | None (runs to completion) | 5.5 min (11.4 min serial), measured before the new-building study was added |
 | Calibration | `scripts/run_site.jl calibration` | `calibration.json`, `tag_template.csv` | 8 | `CAL_BUDGET_S`, 960 s | 5.9 min (11.4 min serial) |
 | Benchmarks | `scripts/run_site.jl benchmarks` | `benchmarks.json`, `benchmarks.csv` | Serial | `budget_s` of the CI profile, 600 s | 4.1 min |
 | Merge | `scripts/run_site.jl merge`, then `scripts/ci/finish_site_data.sh` | `build_info.json`, `files.json` | Serial | None | 2 s |
@@ -23,9 +23,11 @@ was skipped. The serial times are from the same layout without worker pools.
 
 **Worker pools.** The scenario and calibration parts consist of independent solves, which run on a pool
 of worker processes (`scripts/site/pool.jl`, built on `Distributed`): each idle worker takes the next
-solve, longest first, and the results are collected in a fixed order. The scenario part has seven solves
-(the four scenarios, the uniform-weight comparison and the two stress cases) and writes its files after
-they all finish. The calibration part generates the historian file and the nominal simulation once, then
+solve, longest first, and the results are collected in a fixed order. The scenario part has thirteen solves
+(the four scenarios, the uniform-weight comparison, the two stress cases and the six cases of the
+new-building study) and writes its files after they all finish. The study added six week-long solves of
+about the length of the baseline, so the scenario pool went from 4 to 6 workers to keep the part's wall
+time near that of its longest solve. The calibration part generates the historian file and the nominal simulation once, then
 runs the grid points of `CAL_CI_POINTS`, the GPU attempt and the month-7 solve of the seasonal check on
 the pool, so it takes about as long as its longest point. The output files do not depend on the worker
 count: apart from the timing fields, a pooled build wrote the same scenario and calibration files as a
@@ -34,7 +36,7 @@ and 8, and with 1 the solves run in the part's own process, one after another. T
 packages precompiled before the part starts. The benchmark part never uses a pool.
 
 **CPUs.** All runners share one machine, so `scripts/ci/cpu_set.sh` pins each part to its own physical
-cores with `taskset`: 2 for the benchmark process, 5 for the scenario pool and 9 for the calibration
+cores with `taskset`: 2 for the benchmark process, 7 for the scenario pool and 9 for the calibration
 pool. The timed benchmark solves then never share a core with the other parts' workers. Other processes
 on the machine are not restricted, and every benchmark solve records the host load in `host_load_1min`.
 
@@ -205,6 +207,78 @@ With one boiler out, no critical load is shed under either weighting, so that ca
 weights protecting critical load. There the weights decide whether labs are shed. The `deeper_derate`
 stress case is the one that shows critical load being protected. Show it as a stress case, separate from
 the four scenarios.
+
+## New building study
+
+`scripts/site/expansion_cases.jl` defines a capacity-planning study, and the scenario part of the build
+solves it on the same worker pool and writes `expansion.json`. All data is synthetic. The question is
+whether today's plant and pipes can carry one more building in the coldest week, and what upgrade options
+change.
+
+Every case is solved over the cold-snap week of the synthetic year (hours 889 to 1056, the week flagged
+`is_cold_snap`, the same week as `plant_derate`) with every boiler in service, by `solve_multiperiod`
+at the scenarios' tolerance. Unlike the scenarios, the pipe directions of each hour come from the
+hydraulic flow at that hour's demand (`orient_for_demand`, recorded in `orientation`). The edited
+networks were not drawn by the generator, which keeps every loop's direction fixed over a year: with
+the design-load directions, the cross-tie case pinned a pipe of the lab-district ring at its minimum
+flow in light hours and forced about 6 MWh of excess heat. The network edits come from
+`src/expansion.jl`.
+
+| Case | Network |
+|---|---|
+| `today` | The demo campus |
+| `tomorrow` | The demo campus plus one 22 MW lab (`Lab 17`) east of junction 37, the corner of the north-east lab branch, on a lateral sized by the generator's rules |
+| `larger_main` | Tomorrow, with the branch main toward the new building (steam pipes 17 and 38, the pipes on its route from the plant that are not in a loop) enlarged from 0.30 m to 0.45 m, and their return mains to 0.18 m |
+| `cross_tie` | Tomorrow, with a new 0.30 m steam main and its 0.12 m return from junction 16 on the lab-district ring to junction 37, which closes a loop around the branch |
+| `insulation` | Tomorrow, with the heat-loss coefficient of the steam trunk halved: the feeders and every steam main of at least 0.40 m |
+| `extra_boiler` | Tomorrow, with a fifth boiler of the same size: rating 137.5 MW instead of 110 MW |
+
+The new building's size and place were chosen by hand so that today's network delivers all heat and
+tomorrow's falls short. In trial solves of the peak hour, labs of 4, 7 and 10 MW at four branch ends
+were all served, and labs of 15 to 30 MW at two far branch ends, with the plant rating raised to 300 MW,
+were also served with the lowest steam pressure still above 500 kPa against a 34.5 kPa minimum. So in this
+network the plant, not a pipe, is what a new building runs into first. Over the week at junction 37, an
+18 MW lab was served in full and a 22 MW lab was not; 26 MW left 66 MWh undelivered. The page states this as a constructed case. It does not give
+costs, and the solver does not size pipes: each option is a network chosen by hand and solved.
+
+### `expansion.json`
+
+| Field | Contents |
+|---|---|
+| `schema_version`, `study`, `question` | Identification |
+| `data_label`, `model_label`, `synthetic`, `constructed` | Labels to show with the results |
+| `hours`, `first_hour_of_synthetic_year`, `week`, `tolerance` | The solved week and the solver tolerance |
+| `shed_report_min_MWh`, `flow_not_unique_below_kg_s` | Thresholds, as in the scenarios |
+| `cases` | One entry per case, in display order |
+| `limit` | What limits tomorrow's network: `kind`, `statement`, `plant_at_rating_in_every_shed_hour`, `pressure_margin_kPa` |
+
+Each entry of `cases` has `case`, `label`, `description`, `status`, `converged`, `iterations`,
+`solve_time_s`, `orientation`, `orientation_patterns` (distinct direction patterns over the week),
+`plant_rating_MW` and `changes`. A case that did not converge at the tolerance has only
+these fields, and the page shows it as "did not converge". A converged case also has:
+
+| Field | Contents |
+|---|---|
+| `shed_by_type_MWh` | Undelivered heat over the week by building type |
+| `summary` | `total_demand_MWh`, `total_delivered_MWh`, `total_shed_MWh`, `total_losses_MWh` (both sides, indicative), `steam_losses_MWh`, `total_excess_MWh`, `peak_demand_MW`, `peak_output_MW`, `hours`, `hours_with_shed` (hours with at least 0.01 MW undelivered), `hours_at_rating` (plant within 0.01 MW of its rating), `shed_hours_at_rating` |
+| `steam_checks` | `lowest_loaded_pressure_kPa`, the lowest steam pressure at a junction whose steam pipes all carry at least 0.5 kg/s, over the hours with undelivered heat (`hours_checked`), against `pressure_min_kPa`; `max_velocity_on_route_m_s` and `fastest_pipe_on_route`, the highest steam velocity on the route from the plant to the new building's tap (`route_to_new_building`), against the `design_velocity_m_s` the generator sizes pipes for |
+| `new_building` | The new building's `demand_MWh` and `peak_demand_MW`, in every case but `today` |
+
+`changes` lists what differs from today's network, steam side only, with ids that the map can draw:
+`new_building` (`load`, `name`, `type`, `design_heat_MW`, `tap`, `steam_junction` with `id`, `x_m`, `y_m`,
+and the steam `lateral`), `added_pipes` (`id`, `from`, `to`, `diameter_m`, `length_m`), `resized_pipes`
+(`id`, `from`, `to`, `diameter_before_m`, `diameter_after_m`), `insulated_pipes` (ids) with
+`insulation_factor`, and `plant_rating_MW` with `n_boilers`. Existing junction, pipe and load ids are the
+same as in `network.json`. New ids follow on from the last existing id.
+
+**How the limit is stated.** `limit` uses only quantities that are unique at the optimum or trusted on the
+steam side: the plant output against its rating in each hour with undelivered heat, and the steam pressure
+at loaded junctions. When the plant runs at its rating in every such hour and that pressure stays more than
+50 kPa above its minimum, the kind is `plant_capacity`. Undelivered heat in an hour below the rating would
+make it `network`. Water-side pressures, return temperatures, flows in lightly loaded pipes and the split
+of undelivered heat between buildings of one type are not used. The steam velocity is reported because
+the model has no velocity limit: a velocity far above the design value is a reason to look at a pipe that
+the optimization itself cannot give.
 
 ## Calibration
 

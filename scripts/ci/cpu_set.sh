@@ -16,8 +16,8 @@ part="${1:?usage: cpu_set.sh benchmarks|scenarios|calibration}"
 # (SITE_WORKERS in the workflow) plus one for the coordinating process.
 case "$part" in
     benchmarks) offset=0; count=2 ;;
-    scenarios) offset=2; count=5 ;;
-    calibration) offset=7; count=9 ;;
+    scenarios) offset=2; count=7 ;;
+    calibration) offset=9; count=9 ;;
     *) echo "unknown part $part" >&2; exit 1 ;;
 esac
 needed=32
