@@ -4,23 +4,25 @@ These notes record how the demo behaves on one GPU today. All networks, demand p
 data are synthetic and describe no real campus. Every number below comes from a run in this repository,
 and each section names the file that holds it.
 
-The demo stays at one plant and campus size. The GPU did not need to win here, and at most sizes it did
-not.
+The demo stays at one plant and campus size. The GPU did not need to win here, and at most sizes of the
+committed sweep it did not.
 
 **Two network layouts appear in these notes.** The campus generator was later changed from a street grid
 to a trunk-and-branch layout, and the demo campus went from 132 to 166 junctions. The sections below
 are marked as follows.
 
 - **Repeated on the current layout, at commit `2ec4de5`:** "KKT behavior and regularization",
-  "Variable scaling", "Bound relaxation on the GPU" and "Calibration problem".
+  "Variable scaling", "Bound relaxation on the GPU" and "Calibration problem". "GPU iteration counts
+  vary between runs" uses both layouts and says which is which.
 - **Still from the earlier street-grid layout, at commit `6fd4ac9`:** the benchmark sweep and
   everything taken from it, that is the run setup, the like-for-like comparison, default settings,
   where the time goes, the Ipopt reference, agreement with the CPU, GPU memory, time to first solve,
   and the T = 8,760 attempt. The scaled campuses (200 to 800 junctions) also come from the generator,
   so they changed too. A repeat of the sweep on the current layout was started and stopped before it
   finished, because at the pace it ran it would not have fit in the time set aside for it. Its partial
-  output was not committed and is not used here, so the current layout has no sweep result yet. Treat the numbers in these sections as a record of the
-  earlier layout, not as a description of the current one.
+  output was not committed and is not used here, so the current layout has no sweep result yet. Treat
+  the numbers in these sections as a record of the earlier layout, not as a description of the current
+  one.
 
 ## How the runs were made (earlier layout)
 
@@ -203,11 +205,12 @@ runs, so their solve times are not used in these notes.
 
 ## Bound relaxation on the GPU
 
-MadNLP's GPU default ties the bound relaxation to the requested tolerance. At loose tolerances the GPU
-therefore solves a visibly different problem. In an exploration at commit `cfa873a`, at T = 24 and a tolerance of 1e-4 the GPU objective was
-2836.22, against 3003.02 on the CPU ([log](../results/logs/relaxation_tied_to_tol.txt)). With the relaxation
-held at 1e-8 the GPU objective was 3003.02 ([log](../results/logs/relaxation_pinned.txt)). The strict
-runs above hold it at 1e-8 on both devices.
+Current layout. MadNLP's GPU default ties the bound relaxation to the requested tolerance. At loose
+tolerances the GPU therefore solves a visibly different problem. In an exploration at commit `2ec4de5`,
+at T = 24 and a tolerance of 1e-4 the GPU objective was 2836.22, against 3003.04 on the CPU
+([log](../results/logs/relaxation_tied_to_tol.txt)). With the relaxation held at 1e-8 the GPU objective
+was 3003.01 ([log](../results/logs/relaxation_pinned.txt)). The strict runs in these notes hold it at
+1e-8 on both devices. The conclusion is the same as on the earlier layout.
 
 ## Variable scaling
 
