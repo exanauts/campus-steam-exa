@@ -1,9 +1,10 @@
 {
   "label": "All data is synthetic and describes no real campus.",
-  "source_commit": "6fd4ac9",
-  "run_date": "2026-11-18",
+  "source_commit": "6fd4ac9 (benchmark sweep), 2ec4de5 (diagnostics and calibration)",
+  "run_date": "2026-11-18 (benchmark sweep), 2026-11-20 (diagnostics)",
   "device": "NVIDIA H200",
   "details": "docs/gpu-notes.md",
+  "layout_note": "The campus generator changed from a street grid to a trunk-and-branch layout after the benchmark sweep. Findings marked 'earlier layout' come from the sweep at commit 6fd4ac9 and have not been repeated on the current layout. A repeat of the sweep was started and stopped before it finished.",
   "findings": [
     {
       "id": "crossover",
@@ -11,7 +12,8 @@
       "text": "At a matched tolerance of 1e-8 the GPU was slower at all seven single-period network sizes, from 15.9 times the CPU time on the demo campus to 1.69 times at 800 junctions.",
       "evidence": [
         "results/benchmarks.csv"
-      ]
+      ],
+      "layout": "earlier street-grid layout, commit 6fd4ac9"
     },
     {
       "id": "horizon",
@@ -19,7 +21,8 @@
       "text": "At T = 720 the GPU median was 41.8 s against 88.2 s on the CPU, but one of five GPU repeats stopped at the iteration limit. The GPU was slower at T = 24 and T = 168.",
       "evidence": [
         "results/benchmarks.csv"
-      ]
+      ],
+      "layout": "earlier street-grid layout, commit 6fd4ac9"
     },
     {
       "id": "variability",
@@ -27,7 +30,8 @@
       "text": "At T = 720 the GPU took between 127 and 1000 iterations on identical input. The CPU took the same number every time.",
       "evidence": [
         "results/benchmarks.csv"
-      ]
+      ],
+      "layout": "earlier street-grid layout, commit 6fd4ac9"
     },
     {
       "id": "tolerance",
@@ -35,15 +39,17 @@
       "text": "With default settings the GPU often stopped at the acceptable level while the CPU reached 1e-8, so default times are not like for like.",
       "evidence": [
         "results/benchmarks.csv"
-      ]
+      ],
+      "layout": "earlier street-grid layout, commit 6fd4ac9"
     },
     {
       "id": "regularization",
       "title": "The GPU regularizes on most iterations",
-      "text": "With default settings the GPU applied inertia regularization on 91% of iterations on the demo campus, against 12% on the CPU. The cause was not isolated.",
+      "text": "With default settings the GPU applied inertia regularization on 88% of iterations on the demo campus, against 52% on the CPU. At T = 24 the figures were 94% and 67%. The cause was not isolated.",
       "evidence": [
         "results/gpu_diagnostics.csv"
-      ]
+      ],
+      "layout": "current trunk-and-branch layout, commit 2ec4de5"
     },
     {
       "id": "first_solve",
@@ -51,13 +57,18 @@
       "text": "A fresh process took 82.8 s on the GPU and 18.4 s on the CPU to finish its first two demo campus solves.",
       "evidence": [
         "results/benchmarks_summary.json"
-      ]
+      ],
+      "layout": "earlier street-grid layout, commit 6fd4ac9"
     }
   ],
   "not_run": [
     {
+      "item": "Benchmark sweep on the current layout",
+      "status": "Started and stopped before it finished; not run to completion"
+    },
+    {
       "item": "Demo campus at T = 8,760",
-      "status": "Attempted once, neither device finished",
+      "status": "Attempted once on the earlier layout (commit 6fd4ac9), neither device finished; not run on the current layout",
       "evidence": "results/logs/benchmarks_year_attempt.txt"
     },
     {
@@ -77,7 +88,7 @@
     {
       "item": "Year-long horizons",
       "status": "not run",
-      "needs": "Reliable GPU convergence at T = 8,760, steadier iteration counts, and a factorization that fits in GPU memory."
+      "needs": "Reliable GPU convergence at T = 8,760, steadier iteration counts than at T = 720 on the earlier layout, and a factorization that fits in GPU memory."
     },
     {
       "item": "Many-scenario contingency screening",

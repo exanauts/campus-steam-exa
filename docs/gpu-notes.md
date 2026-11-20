@@ -4,10 +4,27 @@ These notes record how the demo behaves on one GPU today. All networks, demand p
 data are synthetic and describe no real campus. Every number below comes from a run in this repository,
 and each section names the file that holds it.
 
-The demo stays at one plant and campus size. The GPU did not need to win here, and at most sizes it did
-not.
+The demo stays at one plant and campus size. The GPU did not need to win here, and at most sizes of the
+committed sweep it did not.
 
-## How the runs were made
+**Two network layouts appear in these notes.** The campus generator was later changed from a street grid
+to a trunk-and-branch layout, and the demo campus went from 132 to 166 junctions. The sections below
+are marked as follows.
+
+- **Repeated on the current layout, at commit `2ec4de5`:** "KKT behavior and regularization",
+  "Variable scaling", "Bound relaxation on the GPU" and "Calibration problem". "GPU iteration counts
+  vary between runs" uses both layouts and says which is which.
+- **Still from the earlier street-grid layout, at commit `6fd4ac9`:** the benchmark sweep and
+  everything taken from it, that is the run setup, the like-for-like comparison, default settings,
+  where the time goes, the Ipopt reference, agreement with the CPU, GPU memory, time to first solve,
+  and the T = 8,760 attempt. The scaled campuses (200 to 800 junctions) also come from the generator,
+  so they changed too. A repeat of the sweep on the current layout was started and stopped before it
+  finished, because at the pace it ran it would not have fit in the time set aside for it. Its partial
+  output was not committed and is not used here, so the current layout has no sweep result yet. Treat
+  the numbers in these sections as a record of the earlier layout, not as a description of the current
+  one.
+
+## How the runs were made (earlier layout)
 
 | Item | Value |
 |---|---|
@@ -26,7 +43,7 @@ Times are medians, with the minimum and maximum over the repeats in brackets. A 
 only if MadNLP reports `SOLVE_SUCCEEDED`. The KKT residual is recomputed from the returned point on the
 unscaled model with one function for all solvers, and the table shows the largest value over the repeats.
 
-## Like-for-like comparison
+## Like-for-like comparison (earlier layout)
 
 Both devices were asked for a tolerance of 1e-8 with MadNLP's acceptable termination switched off, and
 with the same bound relaxation of 1e-8. Medians use the repeats that solved. Residuals count as matched
@@ -61,7 +78,7 @@ The tolerance of 1e-6 is in the results file but is not used for a comparison. A
 the GPU's KKT residual at that setting was about seven times the CPU's, so those runs are not like for
 like.
 
-## Default settings
+## Default settings (earlier layout)
 
 These runs use each solver's defaults at a requested tolerance of 1e-8, so acceptable termination is
 on. They are the known unequal comparison: the GPU often stops at `SOLVED_TO_ACCEPTABLE_LEVEL` while the
@@ -80,7 +97,7 @@ CPU reaches 1e-8. The achieved residual is shown beside each time.
 | Demo campus, T = 168 | `SOLVE_SUCCEEDED` | 13.9 (13.8 to 20.2) | 2.5e-07 | 1 of 5 | 4 of 5 | 6.16 (2.25 to 9.25) | 3.1e-07 |
 | Demo campus, T = 720 | `SOLVE_SUCCEEDED` | 88.1 (88.1 to 88.4) | 2.5e-07 | 1 of 5 | 4 of 5 | 25.7 (12.2 to 66.3) | 3.4e-07 |
 
-## Where the time goes
+## Where the time goes (earlier layout)
 
 Strict runs at 1e-8, as medians over all five repeats, including the T = 720 repeat that stopped at the
 iteration limit. "Other" is the rest of the solve, including building the condensed KKT system, which
@@ -97,7 +114,7 @@ MadNLP does not count as linear solver time.
 | Demo campus, T = 720 | CPU | 88.2 | 76.4 | 3.27 | 8.51 | 76 (76 to 76) |
 | Demo campus, T = 720 | GPU | 69.5 | 59.0 | 1.01 | 9.50 | 888 (127 to 1000) |
 
-## Ipopt reference
+## Ipopt reference (earlier layout)
 
 Ipopt runs on the CPU with default settings and a tolerance of 1e-8.
 
@@ -114,7 +131,7 @@ Ipopt runs on the CPU with default settings and a tolerance of 1e-8.
 | Demo campus, T = 168 | 20.5 (20.5 to 20.7) | 72 | 13.9 (13.8 to 20.2) | 64 |
 | Demo campus, T = 720 | 190.0 (185.5 to 201.6) | 115 | 88.1 (88.1 to 88.4) | 76 |
 
-## Agreement with the CPU
+## Agreement with the CPU (earlier layout)
 
 The largest difference over all ten cases and all solved or unsolved GPU repeats at 1e-8:
 
@@ -138,60 +155,81 @@ of tens of percent are expected between correct solutions, so they do not measur
 
 ## GPU iteration counts vary between runs
 
-The CPU took the same number of iterations in every repeat. The GPU did not. At T = 720 and 1e-8 it took
-between 127 and 1000 iterations on identical input. In an earlier exploration, one GPU repeat at T = 24 and a
-tolerance of 1e-6 ended with `INFEASIBLE_PROBLEM_DETECTED`, while the two other repeats solved
-([log](../results/logs/relaxation_pinned.txt)). The problem is feasible.
+The CPU took the same number of iterations in every repeat. The GPU did not. In the sweep on the earlier
+layout, at T = 720 and 1e-8, it took between 127 and 1000 iterations on identical input. On the current
+layout the diagnostics above show the same pattern on a smaller scale: at T = 24 with gradient scaling off
+the GPU took 41 to 155 iterations, while the CPU took 46 every time.
+
+In an exploration on the current layout with the bound relaxation held at 1e-8, one of three GPU repeats
+at T = 24 and a tolerance of 1e-7 ended with `INFEASIBLE_PROBLEM_DETECTED`, while the two other repeats
+solved ([log](../results/logs/relaxation_pinned.txt)). The problem is feasible.
 
 ## KKT behavior and regularization
 
-From [`results/gpu_diagnostics.csv`](../results/gpu_diagnostics.csv), produced by
-[`scripts/site/gpu_diagnostics.jl`](../scripts/site/gpu_diagnostics.jl), with three repeats per row. Restoration
-iterations are the sum over the three repeats.
+Current layout. From [`results/gpu_diagnostics.csv`](../results/gpu_diagnostics.csv), produced by
+[`scripts/site/gpu_diagnostics.jl`](../scripts/site/gpu_diagnostics.jl) at commit `2ec4de5` on
+2026-11-20, with three repeats per row after one untimed warm-up solve. All runs ask for a tolerance of
+1e-8 with acceptable termination off and a bound relaxation of 1e-8. The regularization share is the
+number of iterations with inertia regularization divided by all iterations, over the three repeats.
+Restoration iterations are the sum over the three repeats. The machine, GPU model and package versions
+are those listed for the earlier sweep above. The host was shared with other users' jobs during these
+runs, so their solve times are not used in these notes.
 
 | Case | Variant | Device | Repeats solved | Iterations | Iterations with inertia regularization | Restoration iterations (sum over repeats) | Mean refinement steps | Largest refinement steps |
 |---|---|---|---|---|---|---|---|---|
-| Demo campus (132 junctions) | Default | CPU | 3 of 3 | 51 to 51 | 12% | 0 | 1.1 | 2 |
-| Demo campus (132 junctions) | Default | GPU | 3 of 3 | 85 to 190 | 91% | 13 | 8.9 | 30 |
-| Demo campus (132 junctions) | Solver gradient scaling off | CPU | 3 of 3 | 46 to 46 | 4% | 0 | 1.1 | 2 |
-| Demo campus (132 junctions) | Solver gradient scaling off | GPU | 3 of 3 | 72 to 107 | 78% | 0 | 12.4 | 30 |
-| Demo campus (132 junctions) | SI units, no fixed references | CPU | 3 of 3 | 63 to 63 | 10% | 0 | 1.1 | 2 |
-| Demo campus (132 junctions) | SI units, no fixed references | GPU | 3 of 3 | 83 to 161 | 100% | 0 | 11.4 | 30 |
-| Demo campus, T = 24 | Default | CPU | 3 of 3 | 58 to 58 | 19% | 0 | 1.2 | 2 |
-| Demo campus, T = 24 | Default | GPU | 3 of 3 | 330 to 395 | 98% | 42 | 11.6 | 30 |
-| Demo campus, T = 24 | Solver gradient scaling off | CPU | 3 of 3 | 59 to 59 | 5% | 0 | 1.2 | 2 |
-| Demo campus, T = 24 | Solver gradient scaling off | GPU | 1 of 3 | 412 to 1000 | 87% | 373 | 13.3 | 30 |
-| Demo campus, T = 24 | SI units, no fixed references | CPU | 0 of 3 | 132 to 132 | 28% | 81 | 1.5 | 10 |
-| Demo campus, T = 24 | SI units, no fixed references | GPU | 0 of 3 | 1000 to 1000 | 100% | 6 | 16.8 | 30 |
+| Demo campus (166 junctions) | Default | CPU | 3 of 3 | 52 to 52 | 52% | 0 | 1.0 | 1 |
+| Demo campus (166 junctions) | Default | GPU | 3 of 3 | 39 to 47 | 88% | 0 | 8.5 | 30 |
+| Demo campus (166 junctions) | Solver gradient scaling off | CPU | 3 of 3 | 57 to 57 | 9% | 0 | 1.1 | 2 |
+| Demo campus (166 junctions) | Solver gradient scaling off | GPU | 3 of 3 | 70 to 100 | 77% | 0 | 11.7 | 30 |
+| Demo campus (166 junctions) | SI units, no fixed references | CPU | 3 of 3 | 78 to 78 | 13% | 0 | 1.0 | 2 |
+| Demo campus (166 junctions) | SI units, no fixed references | GPU | 3 of 3 | 124 to 413 | 100% | 0 | 13.0 | 30 |
+| Demo campus, T = 24 | Default | CPU | 3 of 3 | 86 to 86 | 67% | 0 | 1.0 | 2 |
+| Demo campus, T = 24 | Default | GPU | 3 of 3 | 75 to 80 | 94% | 0 | 6.2 | 30 |
+| Demo campus, T = 24 | Solver gradient scaling off | CPU | 3 of 3 | 46 to 46 | 11% | 0 | 1.1 | 2 |
+| Demo campus, T = 24 | Solver gradient scaling off | GPU | 3 of 3 | 41 to 155 | 81% | 21 | 9.3 | 30 |
+| Demo campus, T = 24 | SI units, no fixed references | CPU | 3 of 3 | 786 to 786 | 90% | 18 | 1.0 | 2 |
+| Demo campus, T = 24 | SI units, no fixed references | GPU | 1 of 3 | 741 to 1000 | 78% | 2 | 18.7 | 30 |
 
-- With default settings the GPU applied inertia regularization on 91% of iterations on the demo campus and
-  98% at T = 24. The CPU applied it on 12% and 19%.
-- The GPU needed many more iterative refinement steps and reached the limit of 30 that these runs set.
-  The CPU never used more than 2 with default settings.
-- The cause was not isolated. The two devices differ in KKT form (condensed on the GPU, augmented on the
-  CPU) as well as in the linear solver, and these runs do not separate those effects.
+- With default settings the GPU applied inertia regularization on 88% of iterations on the demo campus and
+  94% at T = 24. The CPU applied it on 52% and 67%. On the earlier layout the CPU figures were 12% and
+  19%, so the CPU now regularizes much more often than it did, while the GPU still regularizes on
+  almost every iteration.
+- The GPU needed many more iterative refinement steps than the CPU and reached the limit of 30 that
+  these runs set in every configuration. The CPU never used more than 2.
+- With default settings the GPU took about as many iterations as the CPU here (39 to 47 against 52 on
+  the demo campus, 75 to 80 against 86 at T = 24), and no repeat entered restoration. On the earlier
+  layout the GPU took 85 to 190 and 330 to 395 iterations and entered restoration in both cases.
+- The cause of the frequent regularization was not isolated. The two devices differ in KKT form
+  (condensed on the GPU, augmented on the CPU) as well as in the linear solver, and these runs do not
+  separate those effects.
 
 ## Bound relaxation on the GPU
 
-MadNLP's GPU default ties the bound relaxation to the requested tolerance. At loose tolerances the GPU
-therefore solves a visibly different problem. In an exploration at commit `cfa873a`, at T = 24 and a tolerance of 1e-4 the GPU objective was
-2836.22, against 3003.02 on the CPU ([log](../results/logs/relaxation_tied_to_tol.txt)). With the relaxation
-held at 1e-8 the GPU objective was 3003.02 ([log](../results/logs/relaxation_pinned.txt)). The strict
-runs above hold it at 1e-8 on both devices.
+Current layout. MadNLP's GPU default ties the bound relaxation to the requested tolerance. At loose
+tolerances the GPU therefore solves a visibly different problem. In an exploration at commit `2ec4de5`,
+at T = 24 and a tolerance of 1e-4 the GPU objective was 2836.22, against 3003.04 on the CPU
+([log](../results/logs/relaxation_tied_to_tol.txt)). With the relaxation held at 1e-8 the GPU objective
+was 3003.01 ([log](../results/logs/relaxation_pinned.txt)). The strict runs in these notes hold it at
+1e-8 on both devices. The conclusion is the same as on the earlier layout.
 
 ## Variable scaling
 
-The table above also shows two scaling changes.
+Current layout. The table above also shows two scaling changes.
 
-- **Solver gradient scaling off.** The CPU still solved all repeats. On the GPU at T = 24, two of three
-  repeats stopped at the iteration limit.
-- **SI units, without the model's fixed references.** The demo campus still solved on both devices. At
-  T = 24 the CPU reported `INFEASIBLE_PROBLEM_DETECTED` in all three repeats, and the GPU stopped at the
-  iteration limit in all three.
+- **Solver gradient scaling off.** Both devices solved every repeat. On the GPU at T = 24 one repeat took
+  155 iterations, and the three repeats spent 21 iterations in restoration between them. On the earlier
+  layout two of three GPU repeats at T = 24 stopped at the iteration limit.
+- **SI units, without the model's fixed references.** The demo campus solved on both devices, but the
+  GPU's KKT residual on the unscaled model was 0.014 to 7.1 against 0.0025 on the CPU, so its reported
+  success does not mean the same accuracy. At T = 24 the CPU solved all three repeats but needed 786
+  iterations, against 86 with the fixed references. The GPU solved one of three repeats, in 741
+  iterations, and the other two stopped at the 1000-iteration limit.
 
-Without the fixed references in `SteamModelOptions`, the T = 24 problem did not solve on either device.
+The fixed references in `SteamModelOptions` matter. Without them the T = 24 problem took about nine
+times as many iterations on the CPU and mostly failed on the GPU. On the earlier layout it did not
+solve on either device.
 
-## GPU memory
+## GPU memory (earlier layout)
 
 Peak memory of one solve in a fresh process, as reported by `nvidia-smi`, sampled every 200 ms. It includes
 everything the process holds on the GPU.
@@ -214,7 +252,7 @@ be extrapolated to other sizes. The sampler also counted one other process on th
 memory runs. The likely source is the parent sweep process, which holds its own GPU context. The per-process
 reading above excludes it.
 
-## Time to first solve
+## Time to first solve (earlier layout)
 
 Demo campus, fresh process, median of three runs, with packages already precompiled.
 
@@ -225,40 +263,46 @@ Demo campus, fresh process, median of three runs, with packages already precompi
 
 ## Calibration problem
 
-The calibration problem runs on a synthetic 40-junction campus. Outcomes are read from the CI site build, in
-[`results/calibration_ci_excerpt.json`](../results/calibration_ci_excerpt.json), and the benchmark step does
-not solve it again. These notes make no claim about accuracy against months of data.
+Current layout. The calibration problem runs on a synthetic 40-junction campus (`scaled_campus(40)`,
+42 pipes, 9 loads). Outcomes are read from the CI site build of commit `2ec4de5` (site workflow run
+44576986084), in [`results/calibration_ci_excerpt.json`](../results/calibration_ci_excerpt.json), and
+the benchmark step does not solve it again. These notes make no claim about accuracy against months of
+data.
 
 | 25 tags | Variables | CPU | GPU |
 |---|---|---|---|
-| 1 month | 203,676 | `SOLVE_SUCCEEDED`, 29 iterations | `SOLVE_SUCCEEDED`, 25 iterations |
-| 3 months | 611,016 | `SOLVE_SUCCEEDED`, 36 iterations | Not run in any recorded build |
-| 6 months | 1,222,026 | `SOLVE_SUCCEEDED`, 82 iterations | Not attempted |
+| 1 month | 187,616 | `SOLVE_SUCCEEDED`, 21 iterations | `SOLVE_SUCCEEDED`, 19 iterations |
+| 3 months | 562,836 | `SOLVE_SUCCEEDED`, 24 iterations | Not run in any recorded build |
+| 6 months | 1,125,666 | `SOLVE_SUCCEEDED`, 59 iterations | Not run in any recorded build |
 
 The site build attempts the GPU only at 25 tags and 1 month.
 
 ## What was not run
 
+- **The benchmark sweep on the current layout** has not been completed. A run was started and stopped
+  before it finished; see the top of these notes.
 - **Calibration on the GPU at 25 tags and 3 months** has not been run in any recorded build.
-- **T = 8,760 did not finish.** One attempt per device, with limits of 1800 s and 1000 iterations. The CPU
-  stopped at the time limit after 101 iterations, and the GPU stopped at the iteration limit after 780 s
+- **T = 8,760 did not finish on the earlier layout and was not run on the current one.** One attempt per
+  device at commit `6fd4ac9`, with limits of 1800 s and 1000 iterations. The CPU stopped at the time limit
+  after 101 iterations, and the GPU stopped at the iteration limit after 780 s
   ([log](../results/logs/benchmarks_year_attempt.txt)).
 - **Single precision** was not tested, because the model builders use `Float64`.
 - **A multi-threaded CPU** was not tested. The CPU times use one thread.
 - **The augmented KKT system on the GPU** was not tested.
 - **Asynchronous cuDSS in the strict runs** was not tested. The strict GPU runs use synchronous cuDSS so that
-  MadNLP reports linear solver time. In the default-settings runs the asynchronous mode, which is the package
-  default, had the lower median in 9 of 10 cases, so the strict GPU times may be somewhat pessimistic.
+  MadNLP reports linear solver time. In the default-settings runs on the earlier layout the asynchronous
+  mode, which is the package default, had the lower median in 9 of 10 cases, so the strict GPU times may
+  be somewhat pessimistic.
 
 ## Where the GPU may pay off later
 
 Nothing in this section has produced a result, and no speedup is projected. Year-long horizons were attempted
-once and did not finish. The other items have not been run. Each item states what would need to be
+once, on the earlier layout, and did not finish. The other items have not been run. Each item states what would need to be
 true for it to pay off.
 
 | Opportunity | Status | What would need to be true |
 |---|---|---|
-| Year-long horizons | Did not finish | The one attempt at T = 8,760 did not finish on either device. The GPU must converge reliably at that size. Iteration counts must stop varying as widely as they do at T = 720, and the factorization must fit in GPU memory |
+| Year-long horizons | Did not finish | The one attempt at T = 8,760, on the earlier layout, did not finish on either device. The GPU must converge reliably at that size. Iteration counts must stop varying as widely as they did at T = 720 on the earlier layout, and the factorization must fit in GPU memory |
 | Many-scenario contingency screening | Not run | Scenarios must share one sparsity pattern so that one symbolic analysis and batched factorization can be reused, and each scenario must converge without manual restarts |
 | Calibration over full historian history | Not run | The GPU must solve the longer records that the CPU solves, and the problem must fit in GPU memory. The 3-month case has not been run on the GPU in any recorded build |
 | Embedded learned load models | Not run | The learned model must be expressed in forms ExaModels can evaluate on the GPU, and function evaluation must become a large share of solve time. Today it is a small share |

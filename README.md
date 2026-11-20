@@ -59,11 +59,13 @@ The site build ran on the following hardware, as recorded in the deployed
   new-building study adds one large building to the demo campus and compares four upgrade options over
   the coldest week; the case was constructed by hand to show the method, and no costs are compared. The
   network edits it uses are in [`src/expansion.jl`](src/expansion.jl).
-- **CPU versus GPU, local sweep. No GPU crossover was measured.** Crossover here means the GPU is faster at one size
-  and at every larger size, with every repeat solved and residuals matched. At a matched tolerance, the
-  GPU's median time was lower only at T = 720, where one of its five repeats stopped at the iteration
-  limit, so that case is not a dependable speedup. See [`docs/gpu-notes.md`](docs/gpu-notes.md) and
-  [`results/benchmarks.csv`](results/benchmarks.csv).
+- **CPU versus GPU, local sweep, earlier layout. No GPU crossover was measured.** The committed sweep was
+  run at commit `6fd4ac9`, before the campus generator changed from a street grid to the current
+  trunk-and-branch layout, and it has not yet been repeated on the current layout. Crossover here means
+  the GPU is faster at one size and at every larger size, with every repeat solved and residuals matched.
+  At a matched tolerance, the GPU's median time was lower only at T = 720, where one of its five repeats
+  stopped at the iteration limit, so that case is not a dependable speedup. See
+  [`docs/gpu-notes.md`](docs/gpu-notes.md) and [`results/benchmarks.csv`](results/benchmarks.csv).
 
 ## Limits
 
@@ -82,8 +84,11 @@ See [`docs/model-notes.md`](docs/model-notes.md) and [`docs/gpu-notes.md`](docs/
 
 ### Not run
 
-- A full-year horizon did not finish: T = 8,760 was attempted once per device and neither solve
-  completed ([log](results/logs/benchmarks_year_attempt.txt)).
+- The local benchmark sweep on the current network layout. A run was started and stopped before it
+  finished, so the committed sweep is still the one from the earlier layout.
+- A full-year horizon did not finish: T = 8,760 was attempted once per device on the earlier layout and
+  neither solve completed ([log](results/logs/benchmarks_year_attempt.txt)). It was not run on the
+  current layout.
 - Calibration on the GPU with longer records. The site build attempts the GPU only at 25 tags and
   1 month, so the 3-month and 6-month cases were not run on the GPU in any recorded build.
 - Single precision, a multi-threaded CPU, the augmented KKT system on the GPU, and asynchronous cuDSS in
