@@ -1,0 +1,54 @@
+{
+  "commit_sha": "6f9ffe3f4d867cf70875ef35f2fe583073956bfb",
+  "cpu_model": "INTEL(R) XEON(R) PLATINUM 8568Y+",
+  "cuda_device": "NVIDIA H200",
+  "cuda_functional": true,
+  "cuda_runtime_version": "13.4.0",
+  "driver_version": "580.178.04",
+  "environment_from_part": "benchmarks",
+  "gpu_extension_loaded": true,
+  "gpu_model": "NVIDIA H200",
+  "julia_version": "1.13.3",
+  "other_compute_processes_at_start": 0,
+  "other_processes_on_gpu_at_start": false,
+  "package_versions": {
+    "CUDA": "6.5.1",
+    "CUDSS": "1.0.0",
+    "ExaModels": "0.15.0",
+    "MadNLP": "0.11.0",
+    "MadNLPGPU": "0.11.1"
+  },
+  "parts": {
+    "benchmarks": {
+      "cuda_device": "NVIDIA H200",
+      "other_compute_processes_at_start": 0,
+      "other_processes_on_gpu_at_start": false,
+      "run_date": "2026-11-20T22:41:09Z",
+      "selected_gpu_index": 3,
+      "selected_gpu_memory_used_mib_at_start": 5,
+      "wall_s": 259.3
+    },
+    "calibration": {
+      "cuda_device": "NVIDIA H200",
+      "other_compute_processes_at_start": 0,
+      "other_processes_on_gpu_at_start": false,
+      "run_date": "2026-11-20T22:41:09Z",
+      "selected_gpu_index": 2,
+      "selected_gpu_memory_used_mib_at_start": 5,
+      "wall_s": 315.2
+    },
+    "scenarios": {
+      "cuda_device": "NVIDIA H200",
+      "other_compute_processes_at_start": 0,
+      "other_processes_on_gpu_at_start": false,
+      "run_date": "2026-11-20T22:41:10Z",
+      "selected_gpu_index": 2,
+      "selected_gpu_memory_used_mib_at_start": 5,
+      "wall_s": 319.7
+    }
+  },
+  "parts_missing": [],
+  "run_date": "2026-11-20T22:41:09Z",
+  "selected_gpu_index": 3,
+  "selected_gpu_memory_used_mib_at_start": 5
+}

@@ -1,0 +1,26 @@
+tag_name,category,unit,description
+PLANT.STM.FLOW,flow,kg/s,Total steam flow leaving the plant
+PLANT.STM.TEMP,temperature,K,Steam temperature at the plant header
+PLANT.STM.PRES,pressure,Pa,Steam pressure at the plant header
+FAR-1.STM.TEMP,temperature,K,Steam temperature at the building farthest from the plant
+FAR-1.STM.PRES,pressure,Pa,Steam pressure at the building farthest from the plant
+MAIN-1.STM.FLOW,flow,kg/s,Steam flow in the most heavily loaded main
+MAIN-2.STM.FLOW,flow,kg/s,Steam flow in the second most heavily loaded main
+MID-1.STM.TEMP,temperature,K,Steam temperature where the lateral to the farthest building branches off
+MID-1.STM.PRES,pressure,Pa,Steam pressure where the lateral to the farthest building branches off
+FAR-2.STM.TEMP,temperature,K,Steam temperature at the second farthest building
+FAR-2.STM.PRES,pressure,Pa,Steam pressure at the second farthest building
+MAIN-3.STM.FLOW,flow,kg/s,Steam flow in the third most heavily loaded main
+MID-2.STM.TEMP,temperature,K,Steam temperature at the next branch-off point toward the far buildings
+MID-2.STM.PRES,pressure,Pa,Steam pressure at the next branch-off point toward the far buildings
+BLR-1.RUN,run state,0/1,Boiler 1 running
+BLR-2.RUN,run state,0/1,Boiler 2 running
+BLR-3.RUN,run state,0/1,Boiler 3 running
+BLR-4.RUN,run state,0/1,Boiler 4 running
+MAIN-4.STM.FLOW,flow,kg/s,Steam flow in the fourth most heavily loaded main
+BLDG-1.STM.FLOW,flow,kg/s,Steam flow into the largest building
+BLDG-2.STM.FLOW,flow,kg/s,Steam flow into the second largest building
+FAR-3.STM.TEMP,temperature,K,Steam temperature at the third farthest building
+FAR-3.STM.PRES,pressure,Pa,Steam pressure at the third farthest building
+FAR-4.STM.TEMP,temperature,K,Steam temperature at the fourth farthest building
+FAR-4.STM.PRES,pressure,Pa,Steam pressure at the fourth farthest building

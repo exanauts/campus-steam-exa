@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Example University campus steam demonstration</title>
+<meta name="description" content="Hour-by-hour steam network optimization on a fictional campus, using entirely synthetic data.">
+<link rel="stylesheet" href="assets/site.css">
+<script type="module" src="assets/main.js"></script>
+</head>
+<body>
+<p style="margin:0;padding:.5rem 1rem;background:#16181a;color:#f6f5f1;font:600 .95rem system-ui,sans-serif">Preview of pull request #8. This is not the published site.</p>
+<a class="skip" href="#explain">Skip the animation</a>
+
+<header class="masthead wrap">
+  <p class="brand">Example University <span>Fictional campus. All data on this page is synthetic.</span></p>
+  <a class="source-link" href="https://github.com/exanauts/campus-steam-exa">Source code on GitHub</a>
+</header>
+
+<main>
+<section class="hero wrap" id="hero" aria-labelledby="hero-title">
+  <h1 id="hero-title">How a campus steam network carries a hard week</h1>
+  <p class="hero-sub" id="hero-sub" hidden></p>
+  <p class="request-note">Further down, this page makes one small, read-only data request: an hourly export of a short list of historian tags. <a href="#ask-title">Go to the request</a></p>
+
+  <fieldset class="scenarios" id="scenario-switch">
+    <legend>Scenario</legend>
+    <label><input type="radio" name="scenario" value="baseline"><span>Baseline</span></label>
+    <label><input type="radio" name="scenario" value="cold_snap"><span>Cold snap</span></label>
+    <label><input type="radio" name="scenario" value="plant_derate" checked><span>Boiler out</span></label>
+    <label><input type="radio" name="scenario" value="pipe_out"><span>Pipe out</span></label>
+  </fieldset>
+
+  <div class="stage">
+    <figure class="map-card">
+      <div class="map" id="map"></div>
+      <div class="map-key" id="map-key" hidden></div>
+    </figure>
+    <aside class="panel" id="panel" aria-label="Plant status at the selected hour" hidden></aside>
+    <div class="transport" id="transport" hidden>
+      <div class="timeline-head">
+        <button type="button" id="play" class="play" aria-pressed="false">Play</button>
+        <div>
+          <p class="timeline-title">The week, hour by hour. Click or drag on the chart to pick an hour.</p>
+          <ul class="legend" id="timeline-legend"></ul>
+        </div>
+      </div>
+      <div class="timeline" id="timeline"></div>
+      <input type="range" id="scrubber" min="0" max="0" value="0" step="1" aria-label="Hour of the week">
+    </div>
+  </div>
+
+  <p class="hero-context" id="hero-context" hidden></p>
+  <p class="caption">Playback is precomputed solver output, not live plant data. Example University is fictional and its layout is generated. Only the steam supply side is drawn. <span id="campus-size"></span> Shed load is shown by building type, because the split between buildings of one type is not unique.</p>
+  <p class="caption" id="hero-labels" hidden></p>
+  <p class="sr-only" id="hero-live" aria-live="polite"></p>
+  <div class="hero-tables" id="hero-tables"></div>
+</section>
+
+<section class="wrap band" id="explain" aria-labelledby="explain-title">
+  <h2 id="explain-title">What you are looking at</h2>
+  <p class="prose">The plant makes steam that travels through underground supply pipes to the buildings, gives up its heat there, and returns as water. Along the way friction lowers the pressure and the ground cools the steam, so what leaves the plant is not what arrives. For every hour of the week, the model solves for the flows, pressures and temperatures that satisfy this physics across the whole network at once. The optimizer minimizes the heat the plant must supply and the load left unserved, with the most important buildings penalized most when they are shed, while holding the plant to its rating and its hour-to-hour ramp limit. Each scenario is the same model solved again with the weather, the plant capacity or the pipe network changed.</p>
+</section>
+
+<section class="wrap band" id="expansion" aria-labelledby="expansion-title">
+  <h2 id="expansion-title">Adding a building</h2>
+  <p class="prose">Can today's plant and pipes carry one more building in the coldest week, and what do the upgrade options change? This study solves the same plant twice over that week: once with today's network and once with one new building. It then solves four upgraded versions of tomorrow's network the same way.</p>
+  <div id="expansion-body"></div>
+  <h3>Limits of this study</h3>
+  <ul class="limits">
+    <li><strong>Constructed case.</strong> All data is synthetic, and the new building's size and place were chosen by hand to show the method.</li>
+    <li><strong>No cost data.</strong> The options are compared by physical outcome only. This page does not say which option is cheapest.</li>
+    <li><strong>Networks chosen by hand.</strong> Each option is a network drawn by hand and then solved. The solver does not size pipes or choose upgrades.</li>
+    <li><strong>Same model as above.</strong> Steady-state hours linked by the plant ramp limit, with no pipe transients and no valves.</li>
+  </ul>
+  <p class="prose">With heat-loss and friction values fitted to a real plant's records, the same study would describe that plant's network. <a href="#ask-title">See the data request</a>.</p>
+</section>
+
+<section class="wrap band" id="data-buys" aria-labelledby="data-title">
+  <h2 id="data-title">What the data buys</h2>
+  <div id="calibration"></div>
+
+  <h3 id="ask-title">What we would need from the plant</h3>
+  <p class="lead" id="ask-lead">A one-time hourly export of a short, curated list of historian tags: flows, temperatures, pressures and equipment run states.</p>
+  <div id="ask-figures"></div>
+
+  <div class="ask-grid">
+    <div>
+      <h4>Export format</h4>
+      <p>Narrow historian format, one reading per row. Rows whose quality is not good are excluded before any fitting.</p>
+      <div class="table-scroll" tabindex="0" role="region" aria-label="Example of the export format">
+        <table class="sample" id="sample-table">
+          <caption class="sr-only">Example rows in the export format, with one bad-quality row excluded</caption>
+          <thead><tr><th scope="col">DateTime</th><th scope="col">TagName</th><th scope="col">Value</th><th scope="col">Quality</th><th scope="col">Used</th></tr></thead>
+          <tbody id="sample-body"></tbody>
+        </table>
+      </div>
+      <p class="note" id="sample-note"></p>
+      <p id="template-slot"></p>
+    </div>
+    <div>
+      <h4>How the data is handled</h4>
+      <ul class="posture">
+        <li><strong>Read-only extract.</strong> Data is copied out of the historian. Nothing in the plant is changed.</li>
+        <li><strong>One way out.</strong> The file moves in one direction, out of the plant network.</li>
+        <li><strong>No inbound connections.</strong> Nothing connects into the plant network.</li>
+        <li><strong>No commands to equipment.</strong> This work never sends a setpoint or command to any device.</li>
+        <li><strong>Results as reports.</strong> Findings reach operators as reports, and operators decide what to do with them.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+
+<section class="wrap band" id="limits" aria-labelledby="limits-title">
+  <h2 id="limits-title">Limits</h2>
+  <p class="lead">This is a planning model on invented data. It does not describe any real plant.</p>
+  <ul class="limits">
+    <li><strong>Steady state each hour.</strong> Hours are linked only by the plant ramp limit. There are no pipe transients.</li>
+    <li><strong>No valves.</strong> Flow splits follow from the physics and the optimization alone.</li>
+    <li><strong>Synthetic data.</strong> The campus, weather, demand and equipment are all generated.</li>
+    <li><strong>Sensible cooling only.</strong> Steam loses heat without condensing, so the model has no condensation in pipes.</li>
+    <li><strong>Saturation fixed at 100 C,</strong> as in the reference paper, regardless of pressure.</li>
+    <li><strong>Pipe heat losses come from the model.</strong> The pipe heat losses shown follow from the model's assumptions and are not an estimate for a real network.</li>
+    <li><strong>Some quantities are not unique.</strong> Water-side pressures, return-side temperatures and flows in lightly loaded pipes can differ between equally good solutions, so they are not predictions. The animation fades lightly loaded pipes for this reason and does not draw the water side.</li>
+  </ul>
+  <h3>Sources</h3>
+  <ul class="links">
+    <li><a href="https://arxiv.org/abs/2404.18868">Hari, Srinivasan, Zlotnik, Sundar, Ewers, "Optimization of District Heating Network Parameters in Steady-State Operation", arXiv 2404.18868</a></li>
+    <li><a href="https://github.com/lanl-ansi/ThermalModels.jl">ThermalModels.jl</a>, the reference implementation</li>
+    <li><a href="https://github.com/exanauts/campus-steam-exa">campus-steam-exa</a>, the code behind this page</li>
+  </ul>
+</section>
+
+<section class="wrap band" id="cpu-gpu" aria-labelledby="gpu-title">
+  <p class="eyebrow">Background for technical readers</p>
+  <h2 id="gpu-title">CPU versus GPU</h2>
+  <div id="benchmarks"></div>
+  <h3>Where the GPU may pay off later</h3>
+  <p>None of the following has produced a result. The full-year horizon was attempted once per device in a separate run, outside this build, and neither solve finished. The others have not been run, and no speedup is claimed for any of them.</p>
+  <ul class="roadmap">
+    <li><span class="tag">Did not finish</span> A full-year horizon solved as one problem. <a href="https://github.com/exanauts/campus-steam-exa/blob/main/results/logs/benchmarks_year_attempt.txt">Log of the attempt</a></li>
+    <li><span class="tag">Not run</span> Many outage cases solved as one batch.</li>
+    <li><span class="tag">Not run</span> Networks much larger than this campus.</li>
+    <li><span class="tag">Not run</span> GPU linear solver settings tuned to reach full tolerance on long horizons.</li>
+  </ul>
+</section>
+</main>
+
+<footer class="wrap foot">
+  <dl>
+    <div><dt>Commit</dt><dd id="commit">Not available in this build</dd></div>
+    <div><dt>Run date</dt><dd id="run-date">Not available in this build</dd></div>
+    <div><dt>Runner hardware</dt><dd id="hardware">Not available in this build</dd></div>
+  </dl>
+  <p>Every result on this page is read from files generated by the build above. All data is synthetic.</p>
+</footer>
+<noscript><p class="wrap">This page needs JavaScript to draw its charts. All data on it is synthetic.</p></noscript>
+<div class="tip" id="tip" hidden></div>
+</body>
+</html>
