@@ -1,464 +1,464 @@
-# Console log of the local sweep at commit 6fd4ac9. Synthetic data.
-demo  cpu_madnlp_mumps  default  1.0e-8  1  SOLVE_SUCCEEDED  51  0.05690598487854004
-demo  cpu_madnlp_mumps  default  1.0e-8  2  SOLVE_SUCCEEDED  51  0.056944847106933594
-demo  cpu_madnlp_mumps  default  1.0e-8  3  SOLVE_SUCCEEDED  51  0.05694293975830078
-demo  cpu_madnlp_mumps  default  1.0e-8  4  SOLVE_SUCCEEDED  51  0.0569460391998291
-demo  cpu_madnlp_mumps  default  1.0e-8  5  SOLVE_SUCCEEDED  51  0.05695986747741699
-demo  gpu_madnlp_cudss  default  1.0e-8  1  SOLVE_SUCCEEDED  97  0.5862290859222412
-demo  gpu_madnlp_cudss  default  1.0e-8  2  SOLVE_SUCCEEDED  85  0.437161922454834
-demo  gpu_madnlp_cudss  default  1.0e-8  3  SOLVE_SUCCEEDED  128  8.254663944244385
-demo  gpu_madnlp_cudss  default  1.0e-8  4  SOLVE_SUCCEEDED  100  0.5407991409301758
-demo  gpu_madnlp_cudss  default  1.0e-8  5  SOLVE_SUCCEEDED  92  0.530062198638916
-demo  gpu_madnlp_cudss_async  default  1.0e-8  1  SOLVE_SUCCEEDED  161  0.7541429996490479
-demo  gpu_madnlp_cudss_async  default  1.0e-8  2  SOLVE_SUCCEEDED  102  0.4481220245361328
-demo  gpu_madnlp_cudss_async  default  1.0e-8  3  SOLVE_SUCCEEDED  141  0.7705948352813721
-demo  gpu_madnlp_cudss_async  default  1.0e-8  4  SOLVE_SUCCEEDED  78  0.3615279197692871
-demo  gpu_madnlp_cudss_async  default  1.0e-8  5  SOLVE_SUCCEEDED  86  0.44371986389160156
-demo  cpu_madnlp_mumps  strict  1.0e-8  1  SOLVE_SUCCEEDED  51  0.05693507194519043
-demo  cpu_madnlp_mumps  strict  1.0e-8  2  SOLVE_SUCCEEDED  51  0.057116031646728516
-demo  cpu_madnlp_mumps  strict  1.0e-8  3  SOLVE_SUCCEEDED  51  0.05694007873535156
-demo  cpu_madnlp_mumps  strict  1.0e-8  4  SOLVE_SUCCEEDED  51  0.05692100524902344
-demo  cpu_madnlp_mumps  strict  1.0e-8  5  SOLVE_SUCCEEDED  51  0.05712008476257324
-demo  gpu_madnlp_cudss  strict  1.0e-8  1  SOLVE_SUCCEEDED  129  1.022416114807129
-demo  gpu_madnlp_cudss  strict  1.0e-8  2  SOLVE_SUCCEEDED  115  0.9069299697875977
-demo  gpu_madnlp_cudss  strict  1.0e-8  3  SOLVE_SUCCEEDED  138  1.239804983139038
-demo  gpu_madnlp_cudss  strict  1.0e-8  4  SOLVE_SUCCEEDED  86  0.5695719718933105
-demo  gpu_madnlp_cudss  strict  1.0e-8  5  SOLVE_SUCCEEDED  83  0.43882203102111816
-demo  cpu_madnlp_mumps  strict  1.0e-6  1  SOLVE_SUCCEEDED  48  0.053356170654296875
-demo  cpu_madnlp_mumps  strict  1.0e-6  2  SOLVE_SUCCEEDED  48  0.05345296859741211
-demo  cpu_madnlp_mumps  strict  1.0e-6  3  SOLVE_SUCCEEDED  48  0.05347800254821777
-demo  cpu_madnlp_mumps  strict  1.0e-6  4  SOLVE_SUCCEEDED  48  0.0534510612487793
-demo  cpu_madnlp_mumps  strict  1.0e-6  5  SOLVE_SUCCEEDED  48  0.05318117141723633
-demo  gpu_madnlp_cudss  strict  1.0e-6  1  SOLVE_SUCCEEDED  76  0.451214075088501
-demo  gpu_madnlp_cudss  strict  1.0e-6  2  SOLVE_SUCCEEDED  77  0.4275820255279541
-demo  gpu_madnlp_cudss  strict  1.0e-6  3  SOLVE_SUCCEEDED  97  0.5048139095306396
-demo  gpu_madnlp_cudss  strict  1.0e-6  4  SOLVE_SUCCEEDED  76  0.40632176399230957
-demo  gpu_madnlp_cudss  strict  1.0e-6  5  SOLVE_SUCCEEDED  102  0.546907901763916
-scaled-200  cpu_madnlp_mumps  default  1.0e-8  1  SOLVE_SUCCEEDED  53  0.10617184638977051
-scaled-200  cpu_madnlp_mumps  default  1.0e-8  2  SOLVE_SUCCEEDED  53  0.1063079833984375
-scaled-200  cpu_madnlp_mumps  default  1.0e-8  3  SOLVE_SUCCEEDED  53  0.10941290855407715
-scaled-200  cpu_madnlp_mumps  default  1.0e-8  4  SOLVE_SUCCEEDED  53  0.11082196235656738
-scaled-200  cpu_madnlp_mumps  default  1.0e-8  5  SOLVE_SUCCEEDED  53  0.10959792137145996
-scaled-200  gpu_madnlp_cudss  default  1.0e-8  1  SOLVE_SUCCEEDED  63  0.42412900924682617
-scaled-200  gpu_madnlp_cudss  default  1.0e-8  2  SOLVE_SUCCEEDED  56  0.2886350154876709
-scaled-200  gpu_madnlp_cudss  default  1.0e-8  3  SOLVE_SUCCEEDED  55  0.38558411598205566
-scaled-200  gpu_madnlp_cudss  default  1.0e-8  4  SOLVE_SUCCEEDED  61  0.5617070198059082
-scaled-200  gpu_madnlp_cudss  default  1.0e-8  5  SOLVE_SUCCEEDED  60  0.46546006202697754
-scaled-200  gpu_madnlp_cudss_async  default  1.0e-8  1  SOLVE_SUCCEEDED  59  0.3891739845275879
-scaled-200  gpu_madnlp_cudss_async  default  1.0e-8  2  SOLVE_SUCCEEDED  58  0.3493380546569824
-scaled-200  gpu_madnlp_cudss_async  default  1.0e-8  3  SOLVE_SUCCEEDED  64  0.4545631408691406
-scaled-200  gpu_madnlp_cudss_async  default  1.0e-8  4  SOLVE_SUCCEEDED  58  0.37496209144592285
-scaled-200  gpu_madnlp_cudss_async  default  1.0e-8  5  SOLVE_SUCCEEDED  54  0.28394603729248047
-scaled-200  cpu_madnlp_mumps  strict  1.0e-8  1  SOLVE_SUCCEEDED  53  0.10766196250915527
-scaled-200  cpu_madnlp_mumps  strict  1.0e-8  2  SOLVE_SUCCEEDED  53  0.10629510879516602
-scaled-200  cpu_madnlp_mumps  strict  1.0e-8  3  SOLVE_SUCCEEDED  53  0.10515093803405762
-scaled-200  cpu_madnlp_mumps  strict  1.0e-8  4  SOLVE_SUCCEEDED  53  0.10508489608764648
-scaled-200  cpu_madnlp_mumps  strict  1.0e-8  5  SOLVE_SUCCEEDED  53  0.10546302795410156
-scaled-200  gpu_madnlp_cudss  strict  1.0e-8  1  SOLVE_SUCCEEDED  58  0.3989138603210449
-scaled-200  gpu_madnlp_cudss  strict  1.0e-8  2  SOLVE_SUCCEEDED  61  0.36978912353515625
-scaled-200  gpu_madnlp_cudss  strict  1.0e-8  3  SOLVE_SUCCEEDED  56  0.2881009578704834
-scaled-200  gpu_madnlp_cudss  strict  1.0e-8  4  SOLVE_SUCCEEDED  57  0.37508392333984375
-scaled-200  gpu_madnlp_cudss  strict  1.0e-8  5  SOLVE_SUCCEEDED  58  0.3309941291809082
-scaled-200  cpu_madnlp_mumps  strict  1.0e-6  1  SOLVE_SUCCEEDED  50  0.09947705268859863
-scaled-200  cpu_madnlp_mumps  strict  1.0e-6  2  SOLVE_SUCCEEDED  50  0.09972596168518066
-scaled-200  cpu_madnlp_mumps  strict  1.0e-6  3  SOLVE_SUCCEEDED  50  0.09878683090209961
-scaled-200  cpu_madnlp_mumps  strict  1.0e-6  4  SOLVE_SUCCEEDED  50  0.09776496887207031
-scaled-200  cpu_madnlp_mumps  strict  1.0e-6  5  SOLVE_SUCCEEDED  50  0.09760689735412598
-scaled-200  gpu_madnlp_cudss  strict  1.0e-6  1  SOLVE_SUCCEEDED  49  0.2759420871734619
-scaled-200  gpu_madnlp_cudss  strict  1.0e-6  2  SOLVE_SUCCEEDED  48  0.22769594192504883
-scaled-200  gpu_madnlp_cudss  strict  1.0e-6  3  SOLVE_SUCCEEDED  48  0.2278580665588379
-scaled-200  gpu_madnlp_cudss  strict  1.0e-6  4  SOLVE_SUCCEEDED  51  0.26221394538879395
-scaled-200  gpu_madnlp_cudss  strict  1.0e-6  5  SOLVE_SUCCEEDED  54  0.28928399085998535
-scaled-300  cpu_madnlp_mumps  default  1.0e-8  1  SOLVE_SUCCEEDED  62  0.21318697929382324
-scaled-300  cpu_madnlp_mumps  default  1.0e-8  2  SOLVE_SUCCEEDED  62  0.2103590965270996
-scaled-300  cpu_madnlp_mumps  default  1.0e-8  3  SOLVE_SUCCEEDED  62  0.20622491836547852
-scaled-300  cpu_madnlp_mumps  default  1.0e-8  4  SOLVE_SUCCEEDED  62  0.2056269645690918
-scaled-300  cpu_madnlp_mumps  default  1.0e-8  5  SOLVE_SUCCEEDED  62  0.2056879997253418
-scaled-300  gpu_madnlp_cudss  default  1.0e-8  1  SOLVE_SUCCEEDED  64  0.39327192306518555
-scaled-300  gpu_madnlp_cudss  default  1.0e-8  2  SOLVE_SUCCEEDED  76  0.4592399597167969
-scaled-300  gpu_madnlp_cudss  default  1.0e-8  3  SOLVE_SUCCEEDED  65  0.4052300453186035
-scaled-300  gpu_madnlp_cudss  default  1.0e-8  4  SOLVE_SUCCEEDED  75  0.46841001510620117
-scaled-300  gpu_madnlp_cudss  default  1.0e-8  5  SOLVE_SUCCEEDED  68  0.44331789016723633
-scaled-300  gpu_madnlp_cudss_async  default  1.0e-8  1  SOLVE_SUCCEEDED  76  0.44217610359191895
-scaled-300  gpu_madnlp_cudss_async  default  1.0e-8  2  SOLVE_SUCCEEDED  78  0.47490787506103516
-scaled-300  gpu_madnlp_cudss_async  default  1.0e-8  3  SOLVE_SUCCEEDED  75  0.5228900909423828
-scaled-300  gpu_madnlp_cudss_async  default  1.0e-8  4  SOLVE_SUCCEEDED  70  0.40502500534057617
-scaled-300  gpu_madnlp_cudss_async  default  1.0e-8  5  SOLVE_SUCCEEDED  67  0.3876769542694092
-scaled-300  cpu_madnlp_mumps  strict  1.0e-8  1  SOLVE_SUCCEEDED  62  0.2108910083770752
-scaled-300  cpu_madnlp_mumps  strict  1.0e-8  2  SOLVE_SUCCEEDED  62  0.21051502227783203
-scaled-300  cpu_madnlp_mumps  strict  1.0e-8  3  SOLVE_SUCCEEDED  62  0.20656108856201172
-scaled-300  cpu_madnlp_mumps  strict  1.0e-8  4  SOLVE_SUCCEEDED  62  0.20519185066223145
-scaled-300  cpu_madnlp_mumps  strict  1.0e-8  5  SOLVE_SUCCEEDED  62  0.20528793334960938
-scaled-300  gpu_madnlp_cudss  strict  1.0e-8  1  SOLVE_SUCCEEDED  73  0.5075678825378418
-scaled-300  gpu_madnlp_cudss  strict  1.0e-8  2  SOLVE_SUCCEEDED  64  0.41291284561157227
-scaled-300  gpu_madnlp_cudss  strict  1.0e-8  3  SOLVE_SUCCEEDED  70  0.5063130855560303
-scaled-300  gpu_madnlp_cudss  strict  1.0e-8  4  SOLVE_SUCCEEDED  66  0.454071044921875
-scaled-300  gpu_madnlp_cudss  strict  1.0e-8  5  SOLVE_SUCCEEDED  66  0.4525940418243408
-scaled-300  cpu_madnlp_mumps  strict  1.0e-6  1  SOLVE_SUCCEEDED  56  0.1954059600830078
-scaled-300  cpu_madnlp_mumps  strict  1.0e-6  2  SOLVE_SUCCEEDED  56  0.18990397453308105
-scaled-300  cpu_madnlp_mumps  strict  1.0e-6  3  SOLVE_SUCCEEDED  56  0.18982505798339844
-scaled-300  cpu_madnlp_mumps  strict  1.0e-6  4  SOLVE_SUCCEEDED  56  0.189316987991333
-scaled-300  cpu_madnlp_mumps  strict  1.0e-6  5  SOLVE_SUCCEEDED  56  0.18926095962524414
-scaled-300  gpu_madnlp_cudss  strict  1.0e-6  1  SOLVE_SUCCEEDED  66  0.3814730644226074
-scaled-300  gpu_madnlp_cudss  strict  1.0e-6  2  SOLVE_SUCCEEDED  61  0.3271758556365967
-scaled-300  gpu_madnlp_cudss  strict  1.0e-6  3  SOLVE_SUCCEEDED  57  0.4255378246307373
-scaled-300  gpu_madnlp_cudss  strict  1.0e-6  4  SOLVE_SUCCEEDED  66  0.48105788230895996
-scaled-300  gpu_madnlp_cudss  strict  1.0e-6  5  SOLVE_SUCCEEDED  75  0.4724388122558594
-scaled-400  cpu_madnlp_mumps  default  1.0e-8  1  SOLVE_SUCCEEDED  71  0.2566359043121338
-scaled-400  cpu_madnlp_mumps  default  1.0e-8  2  SOLVE_SUCCEEDED  71  0.44101691246032715
-scaled-400  cpu_madnlp_mumps  default  1.0e-8  3  SOLVE_SUCCEEDED  71  0.3485410213470459
-scaled-400  cpu_madnlp_mumps  default  1.0e-8  4  SOLVE_SUCCEEDED  71  0.31104397773742676
-scaled-400  cpu_madnlp_mumps  default  1.0e-8  5  SOLVE_SUCCEEDED  71  0.30843210220336914
-scaled-400  gpu_madnlp_cudss  default  1.0e-8  1  SOLVE_SUCCEEDED  137  1.3678019046783447
-scaled-400  gpu_madnlp_cudss  default  1.0e-8  2  SOLVE_SUCCEEDED  136  0.9126060009002686
-scaled-400  gpu_madnlp_cudss  default  1.0e-8  3  SOLVE_SUCCEEDED  127  0.7048201560974121
-scaled-400  gpu_madnlp_cudss  default  1.0e-8  4  SOLVE_SUCCEEDED  137  0.8821609020233154
-scaled-400  gpu_madnlp_cudss  default  1.0e-8  5  SOLVE_SUCCEEDED  131  0.7546958923339844
-scaled-400  gpu_madnlp_cudss_async  default  1.0e-8  1  SOLVE_SUCCEEDED  129  0.6396439075469971
-scaled-400  gpu_madnlp_cudss_async  default  1.0e-8  2  SOLVE_SUCCEEDED  132  0.6856689453125
-scaled-400  gpu_madnlp_cudss_async  default  1.0e-8  3  SOLVE_SUCCEEDED  129  0.6106209754943848
-scaled-400  gpu_madnlp_cudss_async  default  1.0e-8  4  SOLVE_SUCCEEDED  130  0.6514620780944824
-scaled-400  gpu_madnlp_cudss_async  default  1.0e-8  5  SOLVE_SUCCEEDED  140  0.6787440776824951
-scaled-400  cpu_madnlp_mumps  strict  1.0e-8  1  SOLVE_SUCCEEDED  71  0.2540879249572754
-scaled-400  cpu_madnlp_mumps  strict  1.0e-8  2  SOLVE_SUCCEEDED  71  0.2501990795135498
-scaled-400  cpu_madnlp_mumps  strict  1.0e-8  3  SOLVE_SUCCEEDED  71  0.24992799758911133
-scaled-400  cpu_madnlp_mumps  strict  1.0e-8  4  SOLVE_SUCCEEDED  71  0.24999094009399414
-scaled-400  cpu_madnlp_mumps  strict  1.0e-8  5  SOLVE_SUCCEEDED  71  0.24970102310180664
-scaled-400  gpu_madnlp_cudss  strict  1.0e-8  1  SOLVE_SUCCEEDED  129  0.748035192489624
-scaled-400  gpu_madnlp_cudss  strict  1.0e-8  2  SOLVE_SUCCEEDED  138  0.8838050365447998
-scaled-400  gpu_madnlp_cudss  strict  1.0e-8  3  SOLVE_SUCCEEDED  132  0.7631950378417969
-scaled-400  gpu_madnlp_cudss  strict  1.0e-8  4  SOLVE_SUCCEEDED  133  0.7775599956512451
-scaled-400  gpu_madnlp_cudss  strict  1.0e-8  5  SOLVE_SUCCEEDED  132  0.779332160949707
-scaled-400  cpu_madnlp_mumps  strict  1.0e-6  1  SOLVE_SUCCEEDED  64  0.2300558090209961
-scaled-400  cpu_madnlp_mumps  strict  1.0e-6  2  SOLVE_SUCCEEDED  64  0.22525596618652344
-scaled-400  cpu_madnlp_mumps  strict  1.0e-6  3  SOLVE_SUCCEEDED  64  0.22458600997924805
-scaled-400  cpu_madnlp_mumps  strict  1.0e-6  4  SOLVE_SUCCEEDED  64  0.22751402854919434
-scaled-400  cpu_madnlp_mumps  strict  1.0e-6  5  SOLVE_SUCCEEDED  64  0.22434306144714355
-scaled-400  gpu_madnlp_cudss  strict  1.0e-6  1  SOLVE_SUCCEEDED  126  0.709852933883667
-scaled-400  gpu_madnlp_cudss  strict  1.0e-6  2  SOLVE_SUCCEEDED  126  0.7031371593475342
-scaled-400  gpu_madnlp_cudss  strict  1.0e-6  3  SOLVE_SUCCEEDED  125  0.8150908946990967
-scaled-400  gpu_madnlp_cudss  strict  1.0e-6  4  SOLVE_SUCCEEDED  133  0.8596949577331543
-scaled-400  gpu_madnlp_cudss  strict  1.0e-6  5  SOLVE_SUCCEEDED  125  0.71048903465271
-scaled-500  cpu_madnlp_mumps  default  1.0e-8  1  SOLVE_SUCCEEDED  78  0.3205759525299072
-scaled-500  cpu_madnlp_mumps  default  1.0e-8  2  SOLVE_SUCCEEDED  78  0.38733887672424316
-scaled-500  cpu_madnlp_mumps  default  1.0e-8  3  SOLVE_SUCCEEDED  78  0.3887510299682617
-scaled-500  cpu_madnlp_mumps  default  1.0e-8  4  SOLVE_SUCCEEDED  78  0.3886089324951172
-scaled-500  cpu_madnlp_mumps  default  1.0e-8  5  SOLVE_SUCCEEDED  78  0.36247801780700684
-scaled-500  gpu_madnlp_cudss  default  1.0e-8  1  SOLVE_SUCCEEDED  104  0.6926701068878174
-scaled-500  gpu_madnlp_cudss  default  1.0e-8  2  SOLVE_SUCCEEDED  103  0.7334399223327637
-scaled-500  gpu_madnlp_cudss  default  1.0e-8  3  SOLVE_SUCCEEDED  84  0.5593221187591553
-scaled-500  gpu_madnlp_cudss  default  1.0e-8  4  SOLVE_SUCCEEDED  115  0.8009958267211914
-scaled-500  gpu_madnlp_cudss  default  1.0e-8  5  SOLVE_SUCCEEDED  110  0.7497520446777344
-scaled-500  gpu_madnlp_cudss_async  default  1.0e-8  1  SOLVE_SUCCEEDED  139  0.7922070026397705
-scaled-500  gpu_madnlp_cudss_async  default  1.0e-8  2  SOLVE_SUCCEEDED  104  0.5311939716339111
-scaled-500  gpu_madnlp_cudss_async  default  1.0e-8  3  SOLVE_SUCCEEDED  89  0.6184680461883545
-scaled-500  gpu_madnlp_cudss_async  default  1.0e-8  4  SOLVE_SUCCEEDED  113  0.6081371307373047
-scaled-500  gpu_madnlp_cudss_async  default  1.0e-8  5  SOLVE_SUCCEEDED  110  0.6746249198913574
-scaled-500  cpu_madnlp_mumps  strict  1.0e-8  1  SOLVE_SUCCEEDED  78  0.31814098358154297
-scaled-500  cpu_madnlp_mumps  strict  1.0e-8  2  SOLVE_SUCCEEDED  78  0.3698608875274658
-scaled-500  cpu_madnlp_mumps  strict  1.0e-8  3  SOLVE_SUCCEEDED  78  0.31319308280944824
-scaled-500  cpu_madnlp_mumps  strict  1.0e-8  4  SOLVE_SUCCEEDED  78  0.3133220672607422
-scaled-500  cpu_madnlp_mumps  strict  1.0e-8  5  SOLVE_SUCCEEDED  78  0.3129251003265381
-scaled-500  gpu_madnlp_cudss  strict  1.0e-8  1  SOLVE_SUCCEEDED  114  0.6892490386962891
-scaled-500  gpu_madnlp_cudss  strict  1.0e-8  2  SOLVE_SUCCEEDED  121  0.712134838104248
-scaled-500  gpu_madnlp_cudss  strict  1.0e-8  3  SOLVE_SUCCEEDED  90  0.5595390796661377
-scaled-500  gpu_madnlp_cudss  strict  1.0e-8  4  SOLVE_SUCCEEDED  363  2.0756380558013916
-scaled-500  gpu_madnlp_cudss  strict  1.0e-8  5  SOLVE_SUCCEEDED  114  0.6418359279632568
-scaled-500  cpu_madnlp_mumps  strict  1.0e-6  1  SOLVE_SUCCEEDED  75  0.2900240421295166
-scaled-500  cpu_madnlp_mumps  strict  1.0e-6  2  SOLVE_SUCCEEDED  75  0.2903130054473877
-scaled-500  cpu_madnlp_mumps  strict  1.0e-6  3  SOLVE_SUCCEEDED  75  0.2904839515686035
-scaled-500  cpu_madnlp_mumps  strict  1.0e-6  4  SOLVE_SUCCEEDED  75  0.4225120544433594
-scaled-500  cpu_madnlp_mumps  strict  1.0e-6  5  SOLVE_SUCCEEDED  75  0.49121618270874023
-scaled-500  gpu_madnlp_cudss  strict  1.0e-6  1  SOLVE_SUCCEEDED  106  0.950084924697876
-scaled-500  gpu_madnlp_cudss  strict  1.0e-6  2  SOLVE_SUCCEEDED  86  0.750175952911377
-scaled-500  gpu_madnlp_cudss  strict  1.0e-6  3  SOLVE_SUCCEEDED  91  0.7588310241699219
-scaled-500  gpu_madnlp_cudss  strict  1.0e-6  4  SOLVE_SUCCEEDED  102  0.8672990798950195
-scaled-500  gpu_madnlp_cudss  strict  1.0e-6  5  SOLVE_SUCCEEDED  99  0.8188979625701904
-scaled-600  cpu_madnlp_mumps  default  1.0e-8  1  SOLVE_SUCCEEDED  75  0.3916928768157959
-scaled-600  cpu_madnlp_mumps  default  1.0e-8  2  SOLVE_SUCCEEDED  75  0.3630850315093994
-scaled-600  cpu_madnlp_mumps  default  1.0e-8  3  SOLVE_SUCCEEDED  75  0.3628220558166504
-scaled-600  cpu_madnlp_mumps  default  1.0e-8  4  SOLVE_SUCCEEDED  75  0.3632059097290039
-scaled-600  cpu_madnlp_mumps  default  1.0e-8  5  SOLVE_SUCCEEDED  75  0.36265087127685547
-scaled-600  gpu_madnlp_cudss  default  1.0e-8  1  SOLVE_SUCCEEDED  155  1.0118558406829834
-scaled-600  gpu_madnlp_cudss  default  1.0e-8  2  SOLVE_SUCCEEDED  155  0.9033870697021484
-scaled-600  gpu_madnlp_cudss  default  1.0e-8  3  SOLVE_SUCCEEDED  155  0.8671200275421143
-scaled-600  gpu_madnlp_cudss  default  1.0e-8  4  SOLVE_SUCCEEDED  155  0.8478989601135254
-scaled-600  gpu_madnlp_cudss  default  1.0e-8  5  SOLVE_SUCCEEDED  182  1.0362279415130615
-scaled-600  gpu_madnlp_cudss_async  default  1.0e-8  1  SOLVE_SUCCEEDED  199  0.912855863571167
-scaled-600  gpu_madnlp_cudss_async  default  1.0e-8  2  SOLVE_SUCCEEDED  136  0.6628589630126953
-scaled-600  gpu_madnlp_cudss_async  default  1.0e-8  3  SOLVE_SUCCEEDED  155  0.7517249584197998
-scaled-600  gpu_madnlp_cudss_async  default  1.0e-8  4  SOLVE_SUCCEEDED  159  0.757174015045166
-scaled-600  gpu_madnlp_cudss_async  default  1.0e-8  5  SOLVE_SUCCEEDED  155  0.7714219093322754
-scaled-600  cpu_madnlp_mumps  strict  1.0e-8  1  SOLVE_SUCCEEDED  75  0.36397504806518555
-scaled-600  cpu_madnlp_mumps  strict  1.0e-8  2  SOLVE_SUCCEEDED  75  0.3635571002960205
-scaled-600  cpu_madnlp_mumps  strict  1.0e-8  3  SOLVE_SUCCEEDED  75  0.36336493492126465
-scaled-600  cpu_madnlp_mumps  strict  1.0e-8  4  SOLVE_SUCCEEDED  75  0.3633267879486084
-scaled-600  cpu_madnlp_mumps  strict  1.0e-8  5  SOLVE_SUCCEEDED  75  0.36444783210754395
-scaled-600  gpu_madnlp_cudss  strict  1.0e-8  1  SOLVE_SUCCEEDED  194  1.051914930343628
-scaled-600  gpu_madnlp_cudss  strict  1.0e-8  2  SOLVE_SUCCEEDED  155  0.8521068096160889
-scaled-600  gpu_madnlp_cudss  strict  1.0e-8  3  SOLVE_SUCCEEDED  155  0.8407340049743652
-scaled-600  gpu_madnlp_cudss  strict  1.0e-8  4  SOLVE_SUCCEEDED  176  0.9496438503265381
-scaled-600  gpu_madnlp_cudss  strict  1.0e-8  5  SOLVE_SUCCEEDED  155  0.9452841281890869
-scaled-600  cpu_madnlp_mumps  strict  1.0e-6  1  SOLVE_SUCCEEDED  70  0.3183431625366211
-scaled-600  cpu_madnlp_mumps  strict  1.0e-6  2  SOLVE_SUCCEEDED  70  0.3186020851135254
-scaled-600  cpu_madnlp_mumps  strict  1.0e-6  3  SOLVE_SUCCEEDED  70  0.32033586502075195
-scaled-600  cpu_madnlp_mumps  strict  1.0e-6  4  SOLVE_SUCCEEDED  70  0.3176419734954834
-scaled-600  cpu_madnlp_mumps  strict  1.0e-6  5  SOLVE_SUCCEEDED  70  0.3181941509246826
-scaled-600  gpu_madnlp_cudss  strict  1.0e-6  1  SOLVE_SUCCEEDED  150  0.8864271640777588
-scaled-600  gpu_madnlp_cudss  strict  1.0e-6  2  SOLVE_SUCCEEDED  150  0.7984158992767334
-scaled-600  gpu_madnlp_cudss  strict  1.0e-6  3  SOLVE_SUCCEEDED  150  0.8133001327514648
-scaled-600  gpu_madnlp_cudss  strict  1.0e-6  4  SOLVE_SUCCEEDED  133  0.7185871601104736
-scaled-600  gpu_madnlp_cudss  strict  1.0e-6  5  SOLVE_SUCCEEDED  150  0.9571249485015869
-scaled-800  cpu_madnlp_mumps  default  1.0e-8  1  SOLVE_SUCCEEDED  87  0.6387059688568115
-scaled-800  cpu_madnlp_mumps  default  1.0e-8  2  SOLVE_SUCCEEDED  87  0.6284561157226562
-scaled-800  cpu_madnlp_mumps  default  1.0e-8  3  SOLVE_SUCCEEDED  87  0.6312170028686523
-scaled-800  cpu_madnlp_mumps  default  1.0e-8  4  SOLVE_SUCCEEDED  87  0.6290872097015381
-scaled-800  cpu_madnlp_mumps  default  1.0e-8  5  SOLVE_SUCCEEDED  87  0.6285529136657715
-scaled-800  gpu_madnlp_cudss  default  1.0e-8  1  SOLVE_SUCCEEDED  417  3.0853989124298096
-scaled-800  gpu_madnlp_cudss  default  1.0e-8  2  SOLVE_SUCCEEDED  169  1.1414780616760254
-scaled-800  gpu_madnlp_cudss  default  1.0e-8  3  SOLVE_SUCCEEDED  142  0.8494088649749756
-scaled-800  gpu_madnlp_cudss  default  1.0e-8  4  SOLVE_SUCCEEDED  150  0.9078588485717773
-scaled-800  gpu_madnlp_cudss  default  1.0e-8  5  SOLVE_SUCCEEDED  185  1.3251259326934814
-scaled-800  gpu_madnlp_cudss_async  default  1.0e-8  1  SOLVE_SUCCEEDED  148  0.7764859199523926
-scaled-800  gpu_madnlp_cudss_async  default  1.0e-8  2  SOLVE_SUCCEEDED  150  0.7631721496582031
-scaled-800  gpu_madnlp_cudss_async  default  1.0e-8  3  SOLVE_SUCCEEDED  151  0.7895941734313965
-scaled-800  gpu_madnlp_cudss_async  default  1.0e-8  4  SOLVE_SUCCEEDED  154  0.8657848834991455
-scaled-800  gpu_madnlp_cudss_async  default  1.0e-8  5  SOLVE_SUCCEEDED  150  0.8435781002044678
-scaled-800  cpu_madnlp_mumps  strict  1.0e-8  1  SOLVE_SUCCEEDED  87  0.6369421482086182
-scaled-800  cpu_madnlp_mumps  strict  1.0e-8  2  SOLVE_SUCCEEDED  87  0.6293289661407471
-scaled-800  cpu_madnlp_mumps  strict  1.0e-8  3  SOLVE_SUCCEEDED  87  0.6302628517150879
-scaled-800  cpu_madnlp_mumps  strict  1.0e-8  4  SOLVE_SUCCEEDED  87  0.6293141841888428
-scaled-800  cpu_madnlp_mumps  strict  1.0e-8  5  SOLVE_SUCCEEDED  87  0.6290969848632812
-scaled-800  gpu_madnlp_cudss  strict  1.0e-8  1  SOLVE_SUCCEEDED  151  1.0630500316619873
-scaled-800  gpu_madnlp_cudss  strict  1.0e-8  2  SOLVE_SUCCEEDED  151  0.9780428409576416
-scaled-800  gpu_madnlp_cudss  strict  1.0e-8  3  SOLVE_SUCCEEDED  147  1.1097569465637207
-scaled-800  gpu_madnlp_cudss  strict  1.0e-8  4  SOLVE_SUCCEEDED  186  1.559462070465088
-scaled-800  gpu_madnlp_cudss  strict  1.0e-8  5  SOLVE_SUCCEEDED  148  0.8943579196929932
-scaled-800  cpu_madnlp_mumps  strict  1.0e-6  1  SOLVE_SUCCEEDED  80  0.9181699752807617
-scaled-800  cpu_madnlp_mumps  strict  1.0e-6  2  SOLVE_SUCCEEDED  80  0.921314001083374
-scaled-800  cpu_madnlp_mumps  strict  1.0e-6  3  SOLVE_SUCCEEDED  80  0.9215121269226074
-scaled-800  cpu_madnlp_mumps  strict  1.0e-6  4  SOLVE_SUCCEEDED  80  0.9229090213775635
-scaled-800  cpu_madnlp_mumps  strict  1.0e-6  5  SOLVE_SUCCEEDED  80  0.9244809150695801
-scaled-800  gpu_madnlp_cudss  strict  1.0e-6  1  SOLVE_SUCCEEDED  142  1.1147451400756836
-scaled-800  gpu_madnlp_cudss  strict  1.0e-6  2  SOLVE_SUCCEEDED  144  1.0157840251922607
-scaled-800  gpu_madnlp_cudss  strict  1.0e-6  3  SOLVE_SUCCEEDED  146  1.0077168941497803
-scaled-800  gpu_madnlp_cudss  strict  1.0e-6  4  SOLVE_SUCCEEDED  144  0.9997298717498779
-scaled-800  gpu_madnlp_cudss  strict  1.0e-6  5  SOLVE_SUCCEEDED  123  0.8767399787902832
-horizon-24  cpu_madnlp_mumps  default  1.0e-8  1  SOLVE_SUCCEEDED  58  2.5857999324798584
-horizon-24  cpu_madnlp_mumps  default  1.0e-8  2  SOLVE_SUCCEEDED  58  1.8255259990692139
-horizon-24  cpu_madnlp_mumps  default  1.0e-8  3  SOLVE_SUCCEEDED  58  1.5097429752349854
-horizon-24  cpu_madnlp_mumps  default  1.0e-8  4  SOLVE_SUCCEEDED  58  1.5852420330047607
-horizon-24  cpu_madnlp_mumps  default  1.0e-8  5  SOLVE_SUCCEEDED  58  1.5786819458007812
-horizon-24  gpu_madnlp_cudss  default  1.0e-8  1  SOLVED_TO_ACCEPTABLE_LEVEL  207  2.3081979751586914
-horizon-24  gpu_madnlp_cudss  default  1.0e-8  2  SOLVED_TO_ACCEPTABLE_LEVEL  131  1.6090381145477295
-horizon-24  gpu_madnlp_cudss  default  1.0e-8  3  SOLVED_TO_ACCEPTABLE_LEVEL  167  2.0869739055633545
-horizon-24  gpu_madnlp_cudss  default  1.0e-8  4  SOLVED_TO_ACCEPTABLE_LEVEL  306  3.074721097946167
-horizon-24  gpu_madnlp_cudss  default  1.0e-8  5  SOLVED_TO_ACCEPTABLE_LEVEL  209  2.5367660522460938
-horizon-24  gpu_madnlp_cudss_async  default  1.0e-8  1  SOLVED_TO_ACCEPTABLE_LEVEL  349  3.512906074523926
-horizon-24  gpu_madnlp_cudss_async  default  1.0e-8  2  SOLVED_TO_ACCEPTABLE_LEVEL  290  3.11714506149292
-horizon-24  gpu_madnlp_cudss_async  default  1.0e-8  3  SOLVED_TO_ACCEPTABLE_LEVEL  189  2.1028330326080322
-horizon-24  gpu_madnlp_cudss_async  default  1.0e-8  4  SOLVE_SUCCEEDED  90  0.7715811729431152
-horizon-24  gpu_madnlp_cudss_async  default  1.0e-8  5  SOLVED_TO_ACCEPTABLE_LEVEL  248  2.890345811843872
-horizon-24  cpu_madnlp_mumps  strict  1.0e-8  1  SOLVE_SUCCEEDED  58  1.4943838119506836
-horizon-24  cpu_madnlp_mumps  strict  1.0e-8  2  SOLVE_SUCCEEDED  58  1.5004901885986328
-horizon-24  cpu_madnlp_mumps  strict  1.0e-8  3  SOLVE_SUCCEEDED  58  1.496082067489624
-horizon-24  cpu_madnlp_mumps  strict  1.0e-8  4  SOLVE_SUCCEEDED  58  1.499445915222168
-horizon-24  cpu_madnlp_mumps  strict  1.0e-8  5  SOLVE_SUCCEEDED  58  1.4944448471069336
-horizon-24  gpu_madnlp_cudss  strict  1.0e-8  1  SOLVE_SUCCEEDED  343  4.592092990875244
-horizon-24  gpu_madnlp_cudss  strict  1.0e-8  2  SOLVE_SUCCEEDED  330  4.949850082397461
-horizon-24  gpu_madnlp_cudss  strict  1.0e-8  3  SOLVE_SUCCEEDED  184  3.7486519813537598
-horizon-24  gpu_madnlp_cudss  strict  1.0e-8  4  SOLVE_SUCCEEDED  218  5.109243869781494
-horizon-24  gpu_madnlp_cudss  strict  1.0e-8  5  SOLVE_SUCCEEDED  151  3.688222885131836
-horizon-24  cpu_madnlp_mumps  strict  1.0e-6  1  SOLVE_SUCCEEDED  52  2.269649028778076
-horizon-24  cpu_madnlp_mumps  strict  1.0e-6  2  SOLVE_SUCCEEDED  52  2.2742300033569336
-horizon-24  cpu_madnlp_mumps  strict  1.0e-6  3  SOLVE_SUCCEEDED  52  2.269243001937866
-horizon-24  cpu_madnlp_mumps  strict  1.0e-6  4  SOLVE_SUCCEEDED  52  2.271758794784546
-horizon-24  cpu_madnlp_mumps  strict  1.0e-6  5  SOLVE_SUCCEEDED  52  2.2695870399475098
-horizon-24  gpu_madnlp_cudss  strict  1.0e-6  1  SOLVE_SUCCEEDED  69  0.7225680351257324
-horizon-24  gpu_madnlp_cudss  strict  1.0e-6  2  SOLVE_SUCCEEDED  96  1.202280044555664
-horizon-24  gpu_madnlp_cudss  strict  1.0e-6  3  SOLVE_SUCCEEDED  110  1.4465370178222656
-horizon-24  gpu_madnlp_cudss  strict  1.0e-6  4  SOLVE_SUCCEEDED  66  0.6545219421386719
-horizon-24  gpu_madnlp_cudss  strict  1.0e-6  5  SOLVE_SUCCEEDED  91  1.0657169818878174
-horizon-168  cpu_madnlp_mumps  default  1.0e-8  1  SOLVE_SUCCEEDED  64  20.219807863235474
-horizon-168  cpu_madnlp_mumps  default  1.0e-8  2  SOLVE_SUCCEEDED  64  13.936115980148315
-horizon-168  cpu_madnlp_mumps  default  1.0e-8  3  SOLVE_SUCCEEDED  64  14.308520078659058
-horizon-168  cpu_madnlp_mumps  default  1.0e-8  4  SOLVE_SUCCEEDED  64  13.83254098892212
-horizon-168  cpu_madnlp_mumps  default  1.0e-8  5  SOLVE_SUCCEEDED  64  13.80254316329956
-horizon-168  gpu_madnlp_cudss  default  1.0e-8  1  SOLVE_SUCCEEDED  82  2.2480711936950684
-horizon-168  gpu_madnlp_cudss  default  1.0e-8  2  SOLVED_TO_ACCEPTABLE_LEVEL  296  9.251747846603394
-horizon-168  gpu_madnlp_cudss  default  1.0e-8  3  SOLVED_TO_ACCEPTABLE_LEVEL  242  6.158992052078247
-horizon-168  gpu_madnlp_cudss  default  1.0e-8  4  SOLVED_TO_ACCEPTABLE_LEVEL  187  5.606202840805054
-horizon-168  gpu_madnlp_cudss  default  1.0e-8  5  SOLVED_TO_ACCEPTABLE_LEVEL  265  8.227721929550171
-horizon-168  gpu_madnlp_cudss_async  default  1.0e-8  1  SOLVED_TO_ACCEPTABLE_LEVEL  112  3.2247350215911865
-horizon-168  gpu_madnlp_cudss_async  default  1.0e-8  2  SOLVED_TO_ACCEPTABLE_LEVEL  219  6.413002014160156
-horizon-168  gpu_madnlp_cudss_async  default  1.0e-8  3  SOLVED_TO_ACCEPTABLE_LEVEL  557  14.921326875686646
-horizon-168  gpu_madnlp_cudss_async  default  1.0e-8  4  SOLVED_TO_ACCEPTABLE_LEVEL  138  3.4222419261932373
-horizon-168  gpu_madnlp_cudss_async  default  1.0e-8  5  SOLVED_TO_ACCEPTABLE_LEVEL  134  3.940445899963379
-horizon-168  cpu_madnlp_mumps  strict  1.0e-8  1  SOLVE_SUCCEEDED  64  20.850006818771362
-horizon-168  cpu_madnlp_mumps  strict  1.0e-8  2  SOLVE_SUCCEEDED  64  14.045399904251099
-horizon-168  cpu_madnlp_mumps  strict  1.0e-8  3  SOLVE_SUCCEEDED  64  14.251986980438232
-horizon-168  cpu_madnlp_mumps  strict  1.0e-8  4  SOLVE_SUCCEEDED  64  14.452858924865723
-horizon-168  cpu_madnlp_mumps  strict  1.0e-8  5  SOLVE_SUCCEEDED  64  13.855008125305176
-horizon-168  gpu_madnlp_cudss  strict  1.0e-8  1  SOLVE_SUCCEEDED  656  21.071852922439575
-horizon-168  gpu_madnlp_cudss  strict  1.0e-8  2  SOLVE_SUCCEEDED  489  16.578528881072998
-horizon-168  gpu_madnlp_cudss  strict  1.0e-8  3  SOLVE_SUCCEEDED  732  22.8687961101532
-horizon-168  gpu_madnlp_cudss  strict  1.0e-8  4  SOLVE_SUCCEEDED  523  16.400198936462402
-horizon-168  gpu_madnlp_cudss  strict  1.0e-8  5  SOLVE_SUCCEEDED  343  11.617561101913452
-horizon-168  cpu_madnlp_mumps  strict  1.0e-6  1  SOLVE_SUCCEEDED  59  20.64148187637329
-horizon-168  cpu_madnlp_mumps  strict  1.0e-6  2  SOLVE_SUCCEEDED  59  12.701488018035889
-horizon-168  cpu_madnlp_mumps  strict  1.0e-6  3  SOLVE_SUCCEEDED  59  12.467148065567017
-horizon-168  cpu_madnlp_mumps  strict  1.0e-6  4  SOLVE_SUCCEEDED  59  12.898080110549927
-horizon-168  cpu_madnlp_mumps  strict  1.0e-6  5  SOLVE_SUCCEEDED  59  12.852850914001465
-horizon-168  gpu_madnlp_cudss  strict  1.0e-6  1  SOLVE_SUCCEEDED  73  1.8339309692382812
-horizon-168  gpu_madnlp_cudss  strict  1.0e-6  2  SOLVE_SUCCEEDED  75  1.937628984451294
-horizon-168  gpu_madnlp_cudss  strict  1.0e-6  3  SOLVE_SUCCEEDED  73  1.7945621013641357
-horizon-168  gpu_madnlp_cudss  strict  1.0e-6  4  SOLVE_SUCCEEDED  74  1.7644860744476318
-horizon-168  gpu_madnlp_cudss  strict  1.0e-6  5  SOLVE_SUCCEEDED  73  1.7859539985656738
-horizon-720  cpu_madnlp_mumps  default  1.0e-8  1  SOLVE_SUCCEEDED  76  88.11409878730774
-horizon-720  cpu_madnlp_mumps  default  1.0e-8  2  SOLVE_SUCCEEDED  76  88.09472012519836
-horizon-720  cpu_madnlp_mumps  default  1.0e-8  3  SOLVE_SUCCEEDED  76  88.20099997520447
-horizon-720  cpu_madnlp_mumps  default  1.0e-8  4  SOLVE_SUCCEEDED  76  88.0846757888794
-horizon-720  cpu_madnlp_mumps  default  1.0e-8  5  SOLVE_SUCCEEDED  76  88.40606999397278
-horizon-720  gpu_madnlp_cudss  default  1.0e-8  1  SOLVED_TO_ACCEPTABLE_LEVEL  789  66.33287000656128
-horizon-720  gpu_madnlp_cudss  default  1.0e-8  2  SOLVED_TO_ACCEPTABLE_LEVEL  289  22.66079807281494
-horizon-720  gpu_madnlp_cudss  default  1.0e-8  3  SOLVED_TO_ACCEPTABLE_LEVEL  386  35.09701991081238
-horizon-720  gpu_madnlp_cudss  default  1.0e-8  4  SOLVE_SUCCEEDED  131  12.22420620918274
-horizon-720  gpu_madnlp_cudss  default  1.0e-8  5  SOLVED_TO_ACCEPTABLE_LEVEL  327  25.70929503440857
-horizon-720  gpu_madnlp_cudss_async  default  1.0e-8  1  SOLVED_TO_ACCEPTABLE_LEVEL  215  16.081310987472534
-horizon-720  gpu_madnlp_cudss_async  default  1.0e-8  2  SOLVED_TO_ACCEPTABLE_LEVEL  201  17.182260036468506
-horizon-720  gpu_madnlp_cudss_async  default  1.0e-8  3  SOLVE_SUCCEEDED  127  8.920506000518799
-horizon-720  gpu_madnlp_cudss_async  default  1.0e-8  4  SOLVED_TO_ACCEPTABLE_LEVEL  405  26.337269067764282
-horizon-720  gpu_madnlp_cudss_async  default  1.0e-8  5  SOLVED_TO_ACCEPTABLE_LEVEL  844  52.583820104599
-horizon-720  cpu_madnlp_mumps  strict  1.0e-8  1  SOLVE_SUCCEEDED  76  97.59125590324402
-horizon-720  cpu_madnlp_mumps  strict  1.0e-8  2  SOLVE_SUCCEEDED  76  88.03096294403076
-horizon-720  cpu_madnlp_mumps  strict  1.0e-8  3  SOLVE_SUCCEEDED  76  88.14806294441223
-horizon-720  cpu_madnlp_mumps  strict  1.0e-8  4  SOLVE_SUCCEEDED  76  88.19342708587646
-horizon-720  cpu_madnlp_mumps  strict  1.0e-8  5  SOLVE_SUCCEEDED  76  88.23071312904358
-horizon-720  gpu_madnlp_cudss  strict  1.0e-8  1  SOLVE_SUCCEEDED  127  10.090813875198364
-horizon-720  gpu_madnlp_cudss  strict  1.0e-8  2  SOLVE_SUCCEEDED  944  71.3860080242157
-horizon-720  gpu_madnlp_cudss  strict  1.0e-8  3  MAXIMUM_ITERATIONS_EXCEEDED  1000  81.52036595344543
-horizon-720  gpu_madnlp_cudss  strict  1.0e-8  4  SOLVE_SUCCEEDED  148  14.102363109588623
-horizon-720  gpu_madnlp_cudss  strict  1.0e-8  5  SOLVE_SUCCEEDED  888  69.53831791877747
-horizon-720  cpu_madnlp_mumps  strict  1.0e-6  1  SOLVE_SUCCEEDED  62  78.0560371875763
-horizon-720  cpu_madnlp_mumps  strict  1.0e-6  2  SOLVE_SUCCEEDED  62  68.64561986923218
-horizon-720  cpu_madnlp_mumps  strict  1.0e-6  3  SOLVE_SUCCEEDED  62  68.50124716758728
-horizon-720  cpu_madnlp_mumps  strict  1.0e-6  4  SOLVE_SUCCEEDED  62  68.52950406074524
-horizon-720  cpu_madnlp_mumps  strict  1.0e-6  5  SOLVE_SUCCEEDED  62  68.56694889068604
-horizon-720  gpu_madnlp_cudss  strict  1.0e-6  1  SOLVE_SUCCEEDED  88  6.807523012161255
-horizon-720  gpu_madnlp_cudss  strict  1.0e-6  2  SOLVE_SUCCEEDED  92  7.067440032958984
-horizon-720  gpu_madnlp_cudss  strict  1.0e-6  3  SOLVE_SUCCEEDED  148  13.813326120376587
-horizon-720  gpu_madnlp_cudss  strict  1.0e-6  4  SOLVE_SUCCEEDED  121  12.772495031356812
-horizon-720  gpu_madnlp_cudss  strict  1.0e-6  5  SOLVE_SUCCEEDED  244  21.447038888931274
-demo strict=false repeat 1: Solve_Succeeded 0.09438 s
-demo strict=false repeat 2: Solve_Succeeded 0.09317 s
-demo strict=false repeat 3: Solve_Succeeded 0.09595 s
-demo strict=false repeat 4: Solve_Succeeded 0.09275 s
-demo strict=false repeat 5: Solve_Succeeded 0.09271 s
-demo strict=true repeat 1: Solve_Succeeded 0.09267 s
-demo strict=true repeat 2: Solve_Succeeded 0.09273 s
-demo strict=true repeat 3: Solve_Succeeded 0.09164 s
-demo strict=true repeat 4: Solve_Succeeded 0.09214 s
-demo strict=true repeat 5: Solve_Succeeded 0.09469 s
-scaled-200 strict=false repeat 1: Solve_Succeeded 0.1687 s
-scaled-200 strict=false repeat 2: Solve_Succeeded 0.1686 s
-scaled-200 strict=false repeat 3: Solve_Succeeded 0.1689 s
-scaled-200 strict=false repeat 4: Solve_Succeeded 0.1713 s
-scaled-200 strict=false repeat 5: Solve_Succeeded 0.169 s
-scaled-200 strict=true repeat 1: Solve_Succeeded 0.1687 s
-scaled-200 strict=true repeat 2: Solve_Succeeded 0.1686 s
-scaled-200 strict=true repeat 3: Solve_Succeeded 0.1685 s
-scaled-200 strict=true repeat 4: Solve_Succeeded 0.1688 s
-scaled-200 strict=true repeat 5: Solve_Succeeded 0.1682 s
-scaled-300 strict=false repeat 1: Solve_Succeeded 0.3897 s
-scaled-300 strict=false repeat 2: Solve_Succeeded 0.388 s
-scaled-300 strict=false repeat 3: Solve_Succeeded 0.3855 s
-scaled-300 strict=false repeat 4: Solve_Succeeded 0.3868 s
-scaled-300 strict=false repeat 5: Solve_Succeeded 0.3833 s
-scaled-300 strict=true repeat 1: Solve_Succeeded 0.3821 s
-scaled-300 strict=true repeat 2: Solve_Succeeded 0.3792 s
-scaled-300 strict=true repeat 3: Solve_Succeeded 0.3807 s
-scaled-300 strict=true repeat 4: Solve_Succeeded 0.3769 s
-scaled-300 strict=true repeat 5: Solve_Succeeded 0.3758 s
-scaled-400 strict=false repeat 1: Solve_Succeeded 0.4137 s
-scaled-400 strict=false repeat 2: Solve_Succeeded 0.4147 s
-scaled-400 strict=false repeat 3: Solve_Succeeded 0.4132 s
-scaled-400 strict=false repeat 4: Solve_Succeeded 0.4122 s
-scaled-400 strict=false repeat 5: Solve_Succeeded 0.4126 s
-scaled-400 strict=true repeat 1: Solve_Succeeded 0.4126 s
-scaled-400 strict=true repeat 2: Solve_Succeeded 0.4127 s
-scaled-400 strict=true repeat 3: Solve_Succeeded 0.412 s
-scaled-400 strict=true repeat 4: Solve_Succeeded 0.4124 s
-scaled-400 strict=true repeat 5: Solve_Succeeded 0.4151 s
-scaled-500 strict=false repeat 1: Solve_Succeeded 0.8138 s
-scaled-500 strict=false repeat 2: Solve_Succeeded 0.8131 s
-scaled-500 strict=false repeat 3: Solve_Succeeded 0.8127 s
-scaled-500 strict=false repeat 4: Solve_Succeeded 0.8131 s
-scaled-500 strict=false repeat 5: Solve_Succeeded 0.8154 s
-scaled-500 strict=true repeat 1: Solve_Succeeded 0.8418 s
-scaled-500 strict=true repeat 2: Solve_Succeeded 0.8369 s
-scaled-500 strict=true repeat 3: Solve_Succeeded 0.8359 s
-scaled-500 strict=true repeat 4: Solve_Succeeded 0.8359 s
-scaled-500 strict=true repeat 5: Solve_Succeeded 0.8282 s
-scaled-600 strict=false repeat 1: Solve_Succeeded 0.8684 s
-scaled-600 strict=false repeat 2: Solve_Succeeded 0.8679 s
-scaled-600 strict=false repeat 3: Solve_Succeeded 0.8648 s
-scaled-600 strict=false repeat 4: Solve_Succeeded 0.8638 s
-scaled-600 strict=false repeat 5: Solve_Succeeded 0.8651 s
-scaled-600 strict=true repeat 1: Solve_Succeeded 0.8613 s
-scaled-600 strict=true repeat 2: Solve_Succeeded 0.8598 s
-scaled-600 strict=true repeat 3: Solve_Succeeded 0.8604 s
-scaled-600 strict=true repeat 4: Solve_Succeeded 0.8627 s
-scaled-600 strict=true repeat 5: Solve_Succeeded 0.8594 s
-scaled-800 strict=false repeat 1: Solve_Succeeded 1.218 s
-scaled-800 strict=false repeat 2: Solve_Succeeded 1.213 s
-scaled-800 strict=false repeat 3: Solve_Succeeded 1.212 s
-scaled-800 strict=false repeat 4: Solve_Succeeded 1.201 s
-scaled-800 strict=false repeat 5: Solve_Succeeded 1.21 s
-scaled-800 strict=true repeat 1: Solve_Succeeded 1.205 s
-scaled-800 strict=true repeat 2: Solve_Succeeded 1.202 s
-scaled-800 strict=true repeat 3: Solve_Succeeded 1.201 s
-scaled-800 strict=true repeat 4: Solve_Succeeded 1.318 s
-scaled-800 strict=true repeat 5: Solve_Succeeded 1.213 s
-horizon-24 strict=false repeat 1: Solve_Succeeded 1.832 s
-horizon-24 strict=false repeat 2: Solve_Succeeded 1.824 s
-horizon-24 strict=false repeat 3: Solve_Succeeded 2.057 s
-horizon-24 strict=false repeat 4: Solve_Succeeded 1.948 s
-horizon-24 strict=false repeat 5: Solve_Succeeded 1.833 s
-horizon-24 strict=true repeat 1: Solve_Succeeded 2.063 s
-horizon-24 strict=true repeat 2: Solve_Succeeded 2.057 s
-horizon-24 strict=true repeat 3: Solve_Succeeded 2.077 s
-horizon-24 strict=true repeat 4: Solve_Succeeded 2.056 s
-horizon-24 strict=true repeat 5: Solve_Succeeded 2.062 s
-horizon-168 strict=false repeat 1: Solve_Succeeded 20.54 s
-horizon-168 strict=false repeat 2: Solve_Succeeded 20.53 s
-horizon-168 strict=false repeat 3: Solve_Succeeded 20.53 s
-horizon-168 strict=false repeat 4: Solve_Succeeded 20.66 s
-horizon-168 strict=false repeat 5: Solve_Succeeded 20.55 s
-horizon-168 strict=true repeat 1: Solve_Succeeded 20.48 s
-horizon-168 strict=true repeat 2: Solve_Succeeded 20.47 s
-horizon-168 strict=true repeat 3: Solve_Succeeded 20.48 s
-horizon-168 strict=true repeat 4: Solve_Succeeded 20.48 s
-horizon-168 strict=true repeat 5: Solve_Succeeded 20.49 s
-horizon-720 strict=false repeat 1: Solve_Succeeded 185.5 s
-horizon-720 strict=false repeat 2: Solve_Succeeded 190.0 s
-horizon-720 strict=false repeat 3: Solve_Succeeded 188.3 s
-horizon-720 strict=false repeat 4: Solve_Succeeded 201.6 s
-horizon-720 strict=false repeat 5: Solve_Succeeded 194.6 s
-horizon-720 strict=true repeat 1: Solve_Succeeded 187.1 s
-horizon-720 strict=true repeat 2: Solve_Succeeded 194.0 s
-horizon-720 strict=true repeat 3: Solve_Succeeded 183.4 s
-horizon-720 strict=true repeat 4: Solve_Succeeded 195.2 s
-horizon-720 strict=true repeat 5: Solve_Succeeded 185.6 s
-gpu memory  demo  SOLVE_SUCCEEDED  786 MiB
-gpu memory  scaled-200  SOLVE_SUCCEEDED  788 MiB
-gpu memory  scaled-300  SOLVE_SUCCEEDED  852 MiB
-gpu memory  scaled-400  SOLVE_SUCCEEDED  920 MiB
-gpu memory  scaled-500  SOLVE_SUCCEEDED  1048 MiB
-gpu memory  scaled-600  SOLVE_SUCCEEDED  1112 MiB
-gpu memory  scaled-800  SOLVE_SUCCEEDED  1274 MiB
-gpu memory  horizon-24  SOLVE_SUCCEEDED  2376 MiB
-gpu memory  horizon-168  SOLVE_SUCCEEDED  36044 MiB
-gpu memory  horizon-720  SOLVE_SUCCEEDED  36138 MiB
+# Console log of the local sweep at commit 1b2130c. Synthetic data.
+demo  cpu_madnlp_mumps  default  1.0e-8  1  SOLVE_SUCCEEDED  52  0.10678315162658691
+demo  cpu_madnlp_mumps  default  1.0e-8  2  SOLVE_SUCCEEDED  52  0.08887791633605957
+demo  cpu_madnlp_mumps  default  1.0e-8  3  SOLVE_SUCCEEDED  52  0.08910512924194336
+demo  cpu_madnlp_mumps  default  1.0e-8  4  SOLVE_SUCCEEDED  52  0.0920097827911377
+demo  cpu_madnlp_mumps  default  1.0e-8  5  SOLVE_SUCCEEDED  52  0.09033083915710449
+demo  gpu_madnlp_cudss  default  1.0e-8  1  SOLVE_SUCCEEDED  47  3.5096960067749023
+demo  gpu_madnlp_cudss  default  1.0e-8  2  SOLVE_SUCCEEDED  42  0.9850661754608154
+demo  gpu_madnlp_cudss  default  1.0e-8  3  SOLVE_SUCCEEDED  46  1.2875328063964844
+demo  gpu_madnlp_cudss  default  1.0e-8  4  SOLVE_SUCCEEDED  53  3.0757250785827637
+demo  gpu_madnlp_cudss  default  1.0e-8  5  SOLVE_SUCCEEDED  44  0.9130229949951172
+demo  gpu_madnlp_cudss_async  default  1.0e-8  1  SOLVE_SUCCEEDED  94  15.312893867492676
+demo  gpu_madnlp_cudss_async  default  1.0e-8  2  SOLVE_SUCCEEDED  134  2.1176960468292236
+demo  gpu_madnlp_cudss_async  default  1.0e-8  3  SOLVE_SUCCEEDED  42  0.402785062789917
+demo  gpu_madnlp_cudss_async  default  1.0e-8  4  SOLVE_SUCCEEDED  48  1.8277850151062012
+demo  gpu_madnlp_cudss_async  default  1.0e-8  5  SOLVE_SUCCEEDED  45  0.42360591888427734
+demo  cpu_madnlp_mumps  strict  1.0e-8  1  SOLVE_SUCCEEDED  52  0.1504988670349121
+demo  cpu_madnlp_mumps  strict  1.0e-8  2  SOLVE_SUCCEEDED  52  0.1498432159423828
+demo  cpu_madnlp_mumps  strict  1.0e-8  3  SOLVE_SUCCEEDED  52  0.15005087852478027
+demo  cpu_madnlp_mumps  strict  1.0e-8  4  SOLVE_SUCCEEDED  52  0.15362000465393066
+demo  cpu_madnlp_mumps  strict  1.0e-8  5  SOLVE_SUCCEEDED  52  0.1520979404449463
+demo  gpu_madnlp_cudss  strict  1.0e-8  1  SOLVE_SUCCEEDED  46  0.4869680404663086
+demo  gpu_madnlp_cudss  strict  1.0e-8  2  SOLVE_SUCCEEDED  41  0.3918471336364746
+demo  gpu_madnlp_cudss  strict  1.0e-8  3  SOLVE_SUCCEEDED  46  0.45358705520629883
+demo  gpu_madnlp_cudss  strict  1.0e-8  4  SOLVE_SUCCEEDED  40  0.4161391258239746
+demo  gpu_madnlp_cudss  strict  1.0e-8  5  SOLVE_SUCCEEDED  45  2.5028879642486572
+demo  cpu_madnlp_mumps  strict  1.0e-6  1  SOLVE_SUCCEEDED  50  0.1584320068359375
+demo  cpu_madnlp_mumps  strict  1.0e-6  2  SOLVE_SUCCEEDED  50  0.15031099319458008
+demo  cpu_madnlp_mumps  strict  1.0e-6  3  SOLVE_SUCCEEDED  50  0.14842486381530762
+demo  cpu_madnlp_mumps  strict  1.0e-6  4  SOLVE_SUCCEEDED  50  0.14841890335083008
+demo  cpu_madnlp_mumps  strict  1.0e-6  5  SOLVE_SUCCEEDED  50  0.14681220054626465
+demo  gpu_madnlp_cudss  strict  1.0e-6  1  SOLVE_SUCCEEDED  40  0.6800930500030518
+demo  gpu_madnlp_cudss  strict  1.0e-6  2  SOLVE_SUCCEEDED  36  0.7546851634979248
+demo  gpu_madnlp_cudss  strict  1.0e-6  3  SOLVE_SUCCEEDED  39  0.6111280918121338
+demo  gpu_madnlp_cudss  strict  1.0e-6  4  SOLVE_SUCCEEDED  47  0.8551340103149414
+demo  gpu_madnlp_cudss  strict  1.0e-6  5  SOLVE_SUCCEEDED  39  0.3289790153503418
+scaled-200  cpu_madnlp_mumps  default  1.0e-8  1  SOLVE_SUCCEEDED  68  0.2391500473022461
+scaled-200  cpu_madnlp_mumps  default  1.0e-8  2  SOLVE_SUCCEEDED  68  0.2366020679473877
+scaled-200  cpu_madnlp_mumps  default  1.0e-8  3  SOLVE_SUCCEEDED  68  0.24258089065551758
+scaled-200  cpu_madnlp_mumps  default  1.0e-8  4  SOLVE_SUCCEEDED  68  0.23875212669372559
+scaled-200  cpu_madnlp_mumps  default  1.0e-8  5  SOLVE_SUCCEEDED  68  0.23796510696411133
+scaled-200  gpu_madnlp_cudss  default  1.0e-8  1  SOLVE_SUCCEEDED  55  0.5767710208892822
+scaled-200  gpu_madnlp_cudss  default  1.0e-8  2  SOLVE_SUCCEEDED  116  3.6856019496917725
+scaled-200  gpu_madnlp_cudss  default  1.0e-8  3  SOLVE_SUCCEEDED  51  0.4055821895599365
+scaled-200  gpu_madnlp_cudss  default  1.0e-8  4  SOLVE_SUCCEEDED  91  1.7921760082244873
+scaled-200  gpu_madnlp_cudss  default  1.0e-8  5  SOLVE_SUCCEEDED  57  1.623840093612671
+scaled-200  gpu_madnlp_cudss_async  default  1.0e-8  1  SOLVE_SUCCEEDED  91  1.8642640113830566
+scaled-200  gpu_madnlp_cudss_async  default  1.0e-8  2  SOLVE_SUCCEEDED  107  3.016710042953491
+scaled-200  gpu_madnlp_cudss_async  default  1.0e-8  3  SOLVE_SUCCEEDED  85  1.8802809715270996
+scaled-200  gpu_madnlp_cudss_async  default  1.0e-8  4  SOLVE_SUCCEEDED  101  2.6878468990325928
+scaled-200  gpu_madnlp_cudss_async  default  1.0e-8  5  SOLVE_SUCCEEDED  51  1.5245180130004883
+scaled-200  cpu_madnlp_mumps  strict  1.0e-8  1  SOLVE_SUCCEEDED  68  0.24053096771240234
+scaled-200  cpu_madnlp_mumps  strict  1.0e-8  2  SOLVE_SUCCEEDED  68  0.2419898509979248
+scaled-200  cpu_madnlp_mumps  strict  1.0e-8  3  SOLVE_SUCCEEDED  68  0.24309802055358887
+scaled-200  cpu_madnlp_mumps  strict  1.0e-8  4  SOLVE_SUCCEEDED  68  0.2404170036315918
+scaled-200  cpu_madnlp_mumps  strict  1.0e-8  5  SOLVE_SUCCEEDED  68  0.24070000648498535
+scaled-200  gpu_madnlp_cudss  strict  1.0e-8  1  SOLVE_SUCCEEDED  77  1.8855080604553223
+scaled-200  gpu_madnlp_cudss  strict  1.0e-8  2  SOLVE_SUCCEEDED  68  0.8452489376068115
+scaled-200  gpu_madnlp_cudss  strict  1.0e-8  3  SOLVE_SUCCEEDED  57  0.41697001457214355
+scaled-200  gpu_madnlp_cudss  strict  1.0e-8  4  SOLVE_SUCCEEDED  144  1.7605211734771729
+scaled-200  gpu_madnlp_cudss  strict  1.0e-8  5  SOLVE_SUCCEEDED  73  0.9723808765411377
+scaled-200  cpu_madnlp_mumps  strict  1.0e-6  1  SOLVE_SUCCEEDED  66  0.2352299690246582
+scaled-200  cpu_madnlp_mumps  strict  1.0e-6  2  SOLVE_SUCCEEDED  66  0.2322092056274414
+scaled-200  cpu_madnlp_mumps  strict  1.0e-6  3  SOLVE_SUCCEEDED  66  0.23539113998413086
+scaled-200  cpu_madnlp_mumps  strict  1.0e-6  4  SOLVE_SUCCEEDED  66  0.2344369888305664
+scaled-200  cpu_madnlp_mumps  strict  1.0e-6  5  SOLVE_SUCCEEDED  66  0.23737001419067383
+scaled-200  gpu_madnlp_cudss  strict  1.0e-6  1  SOLVE_SUCCEEDED  81  0.617872953414917
+scaled-200  gpu_madnlp_cudss  strict  1.0e-6  2  SOLVE_SUCCEEDED  105  0.6104068756103516
+scaled-200  gpu_madnlp_cudss  strict  1.0e-6  3  SOLVE_SUCCEEDED  76  0.554563045501709
+scaled-200  gpu_madnlp_cudss  strict  1.0e-6  4  SOLVE_SUCCEEDED  68  0.5503690242767334
+scaled-200  gpu_madnlp_cudss  strict  1.0e-6  5  SOLVE_SUCCEEDED  102  0.5711290836334229
+scaled-300  cpu_madnlp_mumps  default  1.0e-8  1  SOLVE_SUCCEEDED  84  0.4250040054321289
+scaled-300  cpu_madnlp_mumps  default  1.0e-8  2  SOLVE_SUCCEEDED  84  0.4241490364074707
+scaled-300  cpu_madnlp_mumps  default  1.0e-8  3  SOLVE_SUCCEEDED  84  0.42885899543762207
+scaled-300  cpu_madnlp_mumps  default  1.0e-8  4  SOLVE_SUCCEEDED  84  0.4320230484008789
+scaled-300  cpu_madnlp_mumps  default  1.0e-8  5  SOLVE_SUCCEEDED  84  0.4301919937133789
+scaled-300  gpu_madnlp_cudss  default  1.0e-8  1  SOLVE_SUCCEEDED  81  1.176724910736084
+scaled-300  gpu_madnlp_cudss  default  1.0e-8  2  SOLVE_SUCCEEDED  132  0.8012571334838867
+scaled-300  gpu_madnlp_cudss  default  1.0e-8  3  SOLVE_SUCCEEDED  75  0.926767110824585
+scaled-300  gpu_madnlp_cudss  default  1.0e-8  4  SOLVE_SUCCEEDED  152  2.0908939838409424
+scaled-300  gpu_madnlp_cudss  default  1.0e-8  5  SOLVE_SUCCEEDED  90  0.8584539890289307
+scaled-300  gpu_madnlp_cudss_async  default  1.0e-8  1  SOLVE_SUCCEEDED  131  0.9202468395233154
+scaled-300  gpu_madnlp_cudss_async  default  1.0e-8  2  SOLVE_SUCCEEDED  176  1.2915189266204834
+scaled-300  gpu_madnlp_cudss_async  default  1.0e-8  3  SOLVE_SUCCEEDED  92  1.0244240760803223
+scaled-300  gpu_madnlp_cudss_async  default  1.0e-8  4  SOLVE_SUCCEEDED  83  2.4091758728027344
+scaled-300  gpu_madnlp_cudss_async  default  1.0e-8  5  SOLVE_SUCCEEDED  124  0.6307499408721924
+scaled-300  cpu_madnlp_mumps  strict  1.0e-8  1  SOLVE_SUCCEEDED  84  0.4305710792541504
+scaled-300  cpu_madnlp_mumps  strict  1.0e-8  2  SOLVE_SUCCEEDED  84  0.426861047744751
+scaled-300  cpu_madnlp_mumps  strict  1.0e-8  3  SOLVE_SUCCEEDED  84  0.4273679256439209
+scaled-300  cpu_madnlp_mumps  strict  1.0e-8  4  SOLVE_SUCCEEDED  84  0.4333939552307129
+scaled-300  cpu_madnlp_mumps  strict  1.0e-8  5  SOLVE_SUCCEEDED  84  0.42908787727355957
+scaled-300  gpu_madnlp_cudss  strict  1.0e-8  1  SOLVE_SUCCEEDED  89  2.458860158920288
+scaled-300  gpu_madnlp_cudss  strict  1.0e-8  2  SOLVE_SUCCEEDED  87  3.381469964981079
+scaled-300  gpu_madnlp_cudss  strict  1.0e-8  3  SOLVE_SUCCEEDED  90  5.245728969573975
+scaled-300  gpu_madnlp_cudss  strict  1.0e-8  4  SOLVE_SUCCEEDED  126  2.780364990234375
+scaled-300  gpu_madnlp_cudss  strict  1.0e-8  5  SOLVE_SUCCEEDED  131  4.607987880706787
+scaled-300  cpu_madnlp_mumps  strict  1.0e-6  1  SOLVE_SUCCEEDED  76  0.3997619152069092
+scaled-300  cpu_madnlp_mumps  strict  1.0e-6  2  SOLVE_SUCCEEDED  76  0.3989999294281006
+scaled-300  cpu_madnlp_mumps  strict  1.0e-6  3  SOLVE_SUCCEEDED  76  0.3998839855194092
+scaled-300  cpu_madnlp_mumps  strict  1.0e-6  4  SOLVE_SUCCEEDED  76  0.39933109283447266
+scaled-300  cpu_madnlp_mumps  strict  1.0e-6  5  SOLVE_SUCCEEDED  76  0.3994770050048828
+scaled-300  gpu_madnlp_cudss  strict  1.0e-6  1  SOLVE_SUCCEEDED  124  1.0641350746154785
+scaled-300  gpu_madnlp_cudss  strict  1.0e-6  2  SOLVE_SUCCEEDED  127  1.2239258289337158
+scaled-300  gpu_madnlp_cudss  strict  1.0e-6  3  SOLVE_SUCCEEDED  116  0.5847780704498291
+scaled-300  gpu_madnlp_cudss  strict  1.0e-6  4  SOLVE_SUCCEEDED  134  1.5350210666656494
+scaled-300  gpu_madnlp_cudss  strict  1.0e-6  5  SOLVE_SUCCEEDED  77  0.7784059047698975
+scaled-400  cpu_madnlp_mumps  default  1.0e-8  1  SOLVE_SUCCEEDED  68  0.39493393898010254
+scaled-400  cpu_madnlp_mumps  default  1.0e-8  2  SOLVE_SUCCEEDED  68  0.39226794242858887
+scaled-400  cpu_madnlp_mumps  default  1.0e-8  3  SOLVE_SUCCEEDED  68  0.39226603507995605
+scaled-400  cpu_madnlp_mumps  default  1.0e-8  4  SOLVE_SUCCEEDED  68  0.3939998149871826
+scaled-400  cpu_madnlp_mumps  default  1.0e-8  5  SOLVE_SUCCEEDED  68  0.3916478157043457
+scaled-400  gpu_madnlp_cudss  default  1.0e-8  1  SOLVE_SUCCEEDED  49  3.4772818088531494
+scaled-400  gpu_madnlp_cudss  default  1.0e-8  2  SOLVE_SUCCEEDED  66  0.6392011642456055
+scaled-400  gpu_madnlp_cudss  default  1.0e-8  3  SOLVE_SUCCEEDED  58  2.350182056427002
+scaled-400  gpu_madnlp_cudss  default  1.0e-8  4  SOLVE_SUCCEEDED  70  0.8685920238494873
+scaled-400  gpu_madnlp_cudss  default  1.0e-8  5  SOLVE_SUCCEEDED  50  0.6636350154876709
+scaled-400  gpu_madnlp_cudss_async  default  1.0e-8  1  SOLVE_SUCCEEDED  48  0.47545790672302246
+scaled-400  gpu_madnlp_cudss_async  default  1.0e-8  2  SOLVE_SUCCEEDED  57  0.89410400390625
+scaled-400  gpu_madnlp_cudss_async  default  1.0e-8  3  SOLVE_SUCCEEDED  159  1.261950969696045
+scaled-400  gpu_madnlp_cudss_async  default  1.0e-8  4  SOLVE_SUCCEEDED  103  1.6179389953613281
+scaled-400  gpu_madnlp_cudss_async  default  1.0e-8  5  SOLVE_SUCCEEDED  55  1.1714789867401123
+scaled-400  cpu_madnlp_mumps  strict  1.0e-8  1  SOLVE_SUCCEEDED  68  0.3981330394744873
+scaled-400  cpu_madnlp_mumps  strict  1.0e-8  2  SOLVE_SUCCEEDED  68  0.39362192153930664
+scaled-400  cpu_madnlp_mumps  strict  1.0e-8  3  SOLVE_SUCCEEDED  68  0.39556097984313965
+scaled-400  cpu_madnlp_mumps  strict  1.0e-8  4  SOLVE_SUCCEEDED  68  0.39343786239624023
+scaled-400  cpu_madnlp_mumps  strict  1.0e-8  5  SOLVE_SUCCEEDED  68  0.3936300277709961
+scaled-400  gpu_madnlp_cudss  strict  1.0e-8  1  SOLVE_SUCCEEDED  123  1.3139519691467285
+scaled-400  gpu_madnlp_cudss  strict  1.0e-8  2  SOLVE_SUCCEEDED  51  1.3370599746704102
+scaled-400  gpu_madnlp_cudss  strict  1.0e-8  3  SOLVE_SUCCEEDED  61  18.68669581413269
+scaled-400  gpu_madnlp_cudss  strict  1.0e-8  4  SOLVE_SUCCEEDED  119  0.8362529277801514
+scaled-400  gpu_madnlp_cudss  strict  1.0e-8  5  SOLVE_SUCCEEDED  54  2.402107000350952
+scaled-400  cpu_madnlp_mumps  strict  1.0e-6  1  SOLVE_SUCCEEDED  64  0.3882479667663574
+scaled-400  cpu_madnlp_mumps  strict  1.0e-6  2  SOLVE_SUCCEEDED  64  0.3800010681152344
+scaled-400  cpu_madnlp_mumps  strict  1.0e-6  3  SOLVE_SUCCEEDED  64  0.3837461471557617
+scaled-400  cpu_madnlp_mumps  strict  1.0e-6  4  SOLVE_SUCCEEDED  64  0.38294100761413574
+scaled-400  cpu_madnlp_mumps  strict  1.0e-6  5  SOLVE_SUCCEEDED  64  0.38245391845703125
+scaled-400  gpu_madnlp_cudss  strict  1.0e-6  1  SOLVE_SUCCEEDED  46  8.966090202331543
+scaled-400  gpu_madnlp_cudss  strict  1.0e-6  2  SOLVE_SUCCEEDED  46  3.1173439025878906
+scaled-400  gpu_madnlp_cudss  strict  1.0e-6  3  SOLVE_SUCCEEDED  107  4.432910919189453
+scaled-400  gpu_madnlp_cudss  strict  1.0e-6  4  SOLVE_SUCCEEDED  64  6.340463161468506
+scaled-400  gpu_madnlp_cudss  strict  1.0e-6  5  SOLVE_SUCCEEDED  80  0.6096599102020264
+scaled-500  cpu_madnlp_mumps  default  1.0e-8  1  SOLVE_SUCCEEDED  88  0.5890979766845703
+scaled-500  cpu_madnlp_mumps  default  1.0e-8  2  SOLVE_SUCCEEDED  88  0.5963149070739746
+scaled-500  cpu_madnlp_mumps  default  1.0e-8  3  SOLVE_SUCCEEDED  88  0.5952198505401611
+scaled-500  cpu_madnlp_mumps  default  1.0e-8  4  SOLVE_SUCCEEDED  88  0.5899679660797119
+scaled-500  cpu_madnlp_mumps  default  1.0e-8  5  SOLVE_SUCCEEDED  88  0.5923628807067871
+scaled-500  gpu_madnlp_cudss  default  1.0e-8  1  SOLVE_SUCCEEDED  82  1.70467209815979
+scaled-500  gpu_madnlp_cudss  default  1.0e-8  2  SOLVE_SUCCEEDED  79  0.692054033279419
+scaled-500  gpu_madnlp_cudss  default  1.0e-8  3  SOLVE_SUCCEEDED  62  2.3272199630737305
+scaled-500  gpu_madnlp_cudss  default  1.0e-8  4  SOLVE_SUCCEEDED  70  0.7710809707641602
+scaled-500  gpu_madnlp_cudss  default  1.0e-8  5  SOLVE_SUCCEEDED  137  4.92107892036438
+scaled-500  gpu_madnlp_cudss_async  default  1.0e-8  1  SOLVE_SUCCEEDED  68  0.9396791458129883
+scaled-500  gpu_madnlp_cudss_async  default  1.0e-8  2  SOLVE_SUCCEEDED  82  0.8318490982055664
+scaled-500  gpu_madnlp_cudss_async  default  1.0e-8  3  SOLVE_SUCCEEDED  70  0.8074541091918945
+scaled-500  gpu_madnlp_cudss_async  default  1.0e-8  4  SOLVE_SUCCEEDED  62  7.0544421672821045
+scaled-500  gpu_madnlp_cudss_async  default  1.0e-8  5  SOLVE_SUCCEEDED  56  1.0500450134277344
+scaled-500  cpu_madnlp_mumps  strict  1.0e-8  1  SOLVE_SUCCEEDED  88  0.5950930118560791
+scaled-500  cpu_madnlp_mumps  strict  1.0e-8  2  SOLVE_SUCCEEDED  88  0.5919849872589111
+scaled-500  cpu_madnlp_mumps  strict  1.0e-8  3  SOLVE_SUCCEEDED  88  0.5948851108551025
+scaled-500  cpu_madnlp_mumps  strict  1.0e-8  4  SOLVE_SUCCEEDED  88  0.5931239128112793
+scaled-500  cpu_madnlp_mumps  strict  1.0e-8  5  SOLVE_SUCCEEDED  88  0.5886359214782715
+scaled-500  gpu_madnlp_cudss  strict  1.0e-8  1  SOLVE_SUCCEEDED  52  1.1473610401153564
+scaled-500  gpu_madnlp_cudss  strict  1.0e-8  2  SOLVE_SUCCEEDED  82  0.6308469772338867
+scaled-500  gpu_madnlp_cudss  strict  1.0e-8  3  SOLVE_SUCCEEDED  76  0.7937290668487549
+scaled-500  gpu_madnlp_cudss  strict  1.0e-8  4  SOLVE_SUCCEEDED  67  1.003037929534912
+scaled-500  gpu_madnlp_cudss  strict  1.0e-8  5  SOLVE_SUCCEEDED  85  0.763416051864624
+scaled-500  cpu_madnlp_mumps  strict  1.0e-6  1  SOLVE_SUCCEEDED  84  0.5680081844329834
+scaled-500  cpu_madnlp_mumps  strict  1.0e-6  2  SOLVE_SUCCEEDED  84  0.569782018661499
+scaled-500  cpu_madnlp_mumps  strict  1.0e-6  3  SOLVE_SUCCEEDED  84  0.5710070133209229
+scaled-500  cpu_madnlp_mumps  strict  1.0e-6  4  SOLVE_SUCCEEDED  84  0.5696651935577393
+scaled-500  cpu_madnlp_mumps  strict  1.0e-6  5  SOLVE_SUCCEEDED  84  0.567878007888794
+scaled-500  gpu_madnlp_cudss  strict  1.0e-6  1  SOLVE_SUCCEEDED  87  4.3151490688323975
+scaled-500  gpu_madnlp_cudss  strict  1.0e-6  2  SOLVE_SUCCEEDED  61  6.329121828079224
+scaled-500  gpu_madnlp_cudss  strict  1.0e-6  3  SOLVE_SUCCEEDED  68  2.6104061603546143
+scaled-500  gpu_madnlp_cudss  strict  1.0e-6  4  SOLVE_SUCCEEDED  62  10.319939136505127
+scaled-500  gpu_madnlp_cudss  strict  1.0e-6  5  SOLVE_SUCCEEDED  51  2.9220120906829834
+scaled-600  cpu_madnlp_mumps  default  1.0e-8  1  SOLVE_SUCCEEDED  104  0.9369189739227295
+scaled-600  cpu_madnlp_mumps  default  1.0e-8  2  SOLVE_SUCCEEDED  104  0.9384260177612305
+scaled-600  cpu_madnlp_mumps  default  1.0e-8  3  SOLVE_SUCCEEDED  104  0.9335260391235352
+scaled-600  cpu_madnlp_mumps  default  1.0e-8  4  SOLVE_SUCCEEDED  104  0.9311408996582031
+scaled-600  cpu_madnlp_mumps  default  1.0e-8  5  SOLVE_SUCCEEDED  104  0.9275350570678711
+scaled-600  gpu_madnlp_cudss  default  1.0e-8  1  SOLVE_SUCCEEDED  63  0.6442849636077881
+scaled-600  gpu_madnlp_cudss  default  1.0e-8  2  SOLVE_SUCCEEDED  129  2.2392170429229736
+scaled-600  gpu_madnlp_cudss  default  1.0e-8  3  SOLVE_SUCCEEDED  67  1.0803167819976807
+scaled-600  gpu_madnlp_cudss  default  1.0e-8  4  SOLVE_SUCCEEDED  63  0.9229750633239746
+scaled-600  gpu_madnlp_cudss  default  1.0e-8  5  SOLVE_SUCCEEDED  58  2.3001480102539062
+scaled-600  gpu_madnlp_cudss_async  default  1.0e-8  1  SOLVE_SUCCEEDED  59  0.5619189739227295
+scaled-600  gpu_madnlp_cudss_async  default  1.0e-8  2  SOLVE_SUCCEEDED  66  0.546544075012207
+scaled-600  gpu_madnlp_cudss_async  default  1.0e-8  3  SOLVE_SUCCEEDED  62  0.7210721969604492
+scaled-600  gpu_madnlp_cudss_async  default  1.0e-8  4  SOLVE_SUCCEEDED  61  0.6162199974060059
+scaled-600  gpu_madnlp_cudss_async  default  1.0e-8  5  SOLVE_SUCCEEDED  64  0.7945480346679688
+scaled-600  cpu_madnlp_mumps  strict  1.0e-8  1  SOLVE_SUCCEEDED  104  0.950178861618042
+scaled-600  cpu_madnlp_mumps  strict  1.0e-8  2  SOLVE_SUCCEEDED  104  0.9376111030578613
+scaled-600  cpu_madnlp_mumps  strict  1.0e-8  3  SOLVE_SUCCEEDED  104  0.9392590522766113
+scaled-600  cpu_madnlp_mumps  strict  1.0e-8  4  SOLVE_SUCCEEDED  104  0.9261949062347412
+scaled-600  cpu_madnlp_mumps  strict  1.0e-8  5  SOLVE_SUCCEEDED  104  0.9358999729156494
+scaled-600  gpu_madnlp_cudss  strict  1.0e-8  1  SOLVE_SUCCEEDED  111  1.455482006072998
+scaled-600  gpu_madnlp_cudss  strict  1.0e-8  2  SOLVE_SUCCEEDED  64  1.213366985321045
+scaled-600  gpu_madnlp_cudss  strict  1.0e-8  3  SOLVE_SUCCEEDED  66  2.1783740520477295
+scaled-600  gpu_madnlp_cudss  strict  1.0e-8  4  SOLVE_SUCCEEDED  62  1.8974609375
+scaled-600  gpu_madnlp_cudss  strict  1.0e-8  5  SOLVE_SUCCEEDED  59  0.5701429843902588
+scaled-600  cpu_madnlp_mumps  strict  1.0e-6  1  SOLVE_SUCCEEDED  100  0.887099027633667
+scaled-600  cpu_madnlp_mumps  strict  1.0e-6  2  SOLVE_SUCCEEDED  100  0.8777279853820801
+scaled-600  cpu_madnlp_mumps  strict  1.0e-6  3  SOLVE_SUCCEEDED  100  0.8767480850219727
+scaled-600  cpu_madnlp_mumps  strict  1.0e-6  4  SOLVE_SUCCEEDED  100  0.884026050567627
+scaled-600  cpu_madnlp_mumps  strict  1.0e-6  5  SOLVE_SUCCEEDED  100  0.8782868385314941
+scaled-600  gpu_madnlp_cudss  strict  1.0e-6  1  SOLVE_SUCCEEDED  47  1.0411829948425293
+scaled-600  gpu_madnlp_cudss  strict  1.0e-6  2  SOLVE_SUCCEEDED  58  0.5423538684844971
+scaled-600  gpu_madnlp_cudss  strict  1.0e-6  3  SOLVE_SUCCEEDED  72  7.334027051925659
+scaled-600  gpu_madnlp_cudss  strict  1.0e-6  4  SOLVE_SUCCEEDED  59  3.185137987136841
+scaled-600  gpu_madnlp_cudss  strict  1.0e-6  5  SOLVE_SUCCEEDED  53  4.825983047485352
+scaled-800  cpu_madnlp_mumps  default  1.0e-8  1  SOLVE_SUCCEEDED  101  1.0834219455718994
+scaled-800  cpu_madnlp_mumps  default  1.0e-8  2  SOLVE_SUCCEEDED  101  1.0810918807983398
+scaled-800  cpu_madnlp_mumps  default  1.0e-8  3  SOLVE_SUCCEEDED  101  1.071619987487793
+scaled-800  cpu_madnlp_mumps  default  1.0e-8  4  SOLVE_SUCCEEDED  101  0.6272330284118652
+scaled-800  cpu_madnlp_mumps  default  1.0e-8  5  SOLVE_SUCCEEDED  101  0.6271440982818604
+scaled-800  gpu_madnlp_cudss  default  1.0e-8  1  SOLVE_SUCCEEDED  82  4.862353086471558
+scaled-800  gpu_madnlp_cudss  default  1.0e-8  2  SOLVE_SUCCEEDED  86  0.6868209838867188
+scaled-800  gpu_madnlp_cudss  default  1.0e-8  3  SOLVE_SUCCEEDED  85  0.9968740940093994
+scaled-800  gpu_madnlp_cudss  default  1.0e-8  4  SOLVE_SUCCEEDED  90  4.4889960289001465
+scaled-800  gpu_madnlp_cudss  default  1.0e-8  5  SOLVE_SUCCEEDED  95  1.537989854812622
+scaled-800  gpu_madnlp_cudss_async  default  1.0e-8  1  SOLVE_SUCCEEDED  206  3.1062510013580322
+scaled-800  gpu_madnlp_cudss_async  default  1.0e-8  2  SOLVE_SUCCEEDED  88  1.8230340480804443
+scaled-800  gpu_madnlp_cudss_async  default  1.0e-8  3  SOLVE_SUCCEEDED  86  0.7574429512023926
+scaled-800  gpu_madnlp_cudss_async  default  1.0e-8  4  SOLVE_SUCCEEDED  85  0.9157729148864746
+scaled-800  gpu_madnlp_cudss_async  default  1.0e-8  5  SOLVE_SUCCEEDED  85  0.7877600193023682
+scaled-800  cpu_madnlp_mumps  strict  1.0e-8  1  SOLVE_SUCCEEDED  101  1.0752410888671875
+scaled-800  cpu_madnlp_mumps  strict  1.0e-8  2  SOLVE_SUCCEEDED  101  1.0639328956604004
+scaled-800  cpu_madnlp_mumps  strict  1.0e-8  3  SOLVE_SUCCEEDED  101  1.062804937362671
+scaled-800  cpu_madnlp_mumps  strict  1.0e-8  4  SOLVE_SUCCEEDED  101  1.0615839958190918
+scaled-800  cpu_madnlp_mumps  strict  1.0e-8  5  SOLVE_SUCCEEDED  101  1.0624969005584717
+scaled-800  gpu_madnlp_cudss  strict  1.0e-8  1  SOLVE_SUCCEEDED  85  0.7221989631652832
+scaled-800  gpu_madnlp_cudss  strict  1.0e-8  2  SOLVE_SUCCEEDED  87  1.3874120712280273
+scaled-800  gpu_madnlp_cudss  strict  1.0e-8  3  SOLVE_SUCCEEDED  93  2.4005770683288574
+scaled-800  gpu_madnlp_cudss  strict  1.0e-8  4  SOLVE_SUCCEEDED  82  1.718458890914917
+scaled-800  gpu_madnlp_cudss  strict  1.0e-8  5  SOLVE_SUCCEEDED  82  1.4841148853302002
+scaled-800  cpu_madnlp_mumps  strict  1.0e-6  1  SOLVE_SUCCEEDED  97  1.0399432182312012
+scaled-800  cpu_madnlp_mumps  strict  1.0e-6  2  SOLVE_SUCCEEDED  97  1.0245978832244873
+scaled-800  cpu_madnlp_mumps  strict  1.0e-6  3  SOLVE_SUCCEEDED  97  1.02866792678833
+scaled-800  cpu_madnlp_mumps  strict  1.0e-6  4  SOLVE_SUCCEEDED  97  1.0208089351654053
+scaled-800  cpu_madnlp_mumps  strict  1.0e-6  5  SOLVE_SUCCEEDED  97  1.0240530967712402
+scaled-800  gpu_madnlp_cudss  strict  1.0e-6  1  SOLVE_SUCCEEDED  82  0.6712980270385742
+scaled-800  gpu_madnlp_cudss  strict  1.0e-6  2  SOLVE_SUCCEEDED  82  5.443201065063477
+scaled-800  gpu_madnlp_cudss  strict  1.0e-6  3  SOLVE_SUCCEEDED  63  2.8246419429779053
+scaled-800  gpu_madnlp_cudss  strict  1.0e-6  4  SOLVE_SUCCEEDED  80  9.92123293876648
+scaled-800  gpu_madnlp_cudss  strict  1.0e-6  5  SOLVE_SUCCEEDED  83  3.9241209030151367
+horizon-24  cpu_madnlp_mumps  default  1.0e-8  1  SOLVE_SUCCEEDED  86  5.871757984161377
+horizon-24  cpu_madnlp_mumps  default  1.0e-8  2  SOLVE_SUCCEEDED  86  5.8300299644470215
+horizon-24  cpu_madnlp_mumps  default  1.0e-8  3  SOLVE_SUCCEEDED  86  4.448184013366699
+horizon-24  cpu_madnlp_mumps  default  1.0e-8  4  SOLVE_SUCCEEDED  86  3.4006869792938232
+horizon-24  cpu_madnlp_mumps  default  1.0e-8  5  SOLVE_SUCCEEDED  86  3.448645830154419
+horizon-24  gpu_madnlp_cudss  default  1.0e-8  1  SOLVE_SUCCEEDED  82  1.5488641262054443
+horizon-24  gpu_madnlp_cudss  default  1.0e-8  2  SOLVE_SUCCEEDED  76  0.8566300868988037
+horizon-24  gpu_madnlp_cudss  default  1.0e-8  3  SOLVE_SUCCEEDED  83  1.463334083557129
+horizon-24  gpu_madnlp_cudss  default  1.0e-8  4  SOLVE_SUCCEEDED  78  3.523353099822998
+horizon-24  gpu_madnlp_cudss  default  1.0e-8  5  SOLVE_SUCCEEDED  118  2.0939390659332275
+horizon-24  gpu_madnlp_cudss_async  default  1.0e-8  1  SOLVE_SUCCEEDED  66  1.1153159141540527
+horizon-24  gpu_madnlp_cudss_async  default  1.0e-8  2  SOLVE_SUCCEEDED  81  1.684300184249878
+horizon-24  gpu_madnlp_cudss_async  default  1.0e-8  3  SOLVE_SUCCEEDED  75  2.231104850769043
+horizon-24  gpu_madnlp_cudss_async  default  1.0e-8  4  SOLVE_SUCCEEDED  72  0.742379903793335
+horizon-24  gpu_madnlp_cudss_async  default  1.0e-8  5  SOLVE_SUCCEEDED  70  6.931385040283203
+horizon-24  cpu_madnlp_mumps  strict  1.0e-8  1  SOLVE_SUCCEEDED  86  5.883721113204956
+horizon-24  cpu_madnlp_mumps  strict  1.0e-8  2  SOLVE_SUCCEEDED  86  5.824645042419434
+horizon-24  cpu_madnlp_mumps  strict  1.0e-8  3  SOLVE_SUCCEEDED  86  5.838786840438843
+horizon-24  cpu_madnlp_mumps  strict  1.0e-8  4  SOLVE_SUCCEEDED  86  3.66896390914917
+horizon-24  cpu_madnlp_mumps  strict  1.0e-8  5  SOLVE_SUCCEEDED  86  3.4285130500793457
+horizon-24  gpu_madnlp_cudss  strict  1.0e-8  1  SOLVE_SUCCEEDED  136  15.758322954177856
+horizon-24  gpu_madnlp_cudss  strict  1.0e-8  2  SOLVE_SUCCEEDED  117  44.87558698654175
+horizon-24  gpu_madnlp_cudss  strict  1.0e-8  3  SOLVE_SUCCEEDED  76  1.129755973815918
+horizon-24  gpu_madnlp_cudss  strict  1.0e-8  4  SOLVE_SUCCEEDED  68  0.8112292289733887
+horizon-24  gpu_madnlp_cudss  strict  1.0e-8  5  SOLVE_SUCCEEDED  72  0.8592371940612793
+horizon-24  cpu_madnlp_mumps  strict  1.0e-6  1  SOLVE_SUCCEEDED  81  5.701645135879517
+horizon-24  cpu_madnlp_mumps  strict  1.0e-6  2  SOLVE_SUCCEEDED  81  5.642133951187134
+horizon-24  cpu_madnlp_mumps  strict  1.0e-6  3  SOLVE_SUCCEEDED  81  5.59617018699646
+horizon-24  cpu_madnlp_mumps  strict  1.0e-6  4  SOLVE_SUCCEEDED  81  5.652521133422852
+horizon-24  cpu_madnlp_mumps  strict  1.0e-6  5  SOLVE_SUCCEEDED  81  5.609670877456665
+horizon-24  gpu_madnlp_cudss  strict  1.0e-6  1  SOLVE_SUCCEEDED  85  8.088165044784546
+horizon-24  gpu_madnlp_cudss  strict  1.0e-6  2  SOLVE_SUCCEEDED  57  1.6217730045318604
+horizon-24  gpu_madnlp_cudss  strict  1.0e-6  3  SOLVE_SUCCEEDED  85  1.0195989608764648
+horizon-24  gpu_madnlp_cudss  strict  1.0e-6  4  SOLVE_SUCCEEDED  77  0.9844908714294434
+horizon-24  gpu_madnlp_cudss  strict  1.0e-6  5  SOLVE_SUCCEEDED  68  2.26668381690979
+horizon-168  cpu_madnlp_mumps  default  1.0e-8  1  SOLVE_SUCCEEDED  151  70.62428498268127
+horizon-168  cpu_madnlp_mumps  default  1.0e-8  2  SOLVE_SUCCEEDED  151  51.9039351940155
+horizon-168  cpu_madnlp_mumps  default  1.0e-8  3  SOLVE_SUCCEEDED  151  57.96439003944397
+horizon-168  cpu_madnlp_mumps  default  1.0e-8  4  SOLVE_SUCCEEDED  151  52.53002405166626
+horizon-168  cpu_madnlp_mumps  default  1.0e-8  5  SOLVE_SUCCEEDED  151  58.729520082473755
+horizon-168  gpu_madnlp_cudss  default  1.0e-8  1  SOLVE_SUCCEEDED  86  76.82629609107971
+horizon-168  gpu_madnlp_cudss  default  1.0e-8  2  SOLVE_SUCCEEDED  90  3.14473295211792
+horizon-168  gpu_madnlp_cudss  default  1.0e-8  3  SOLVE_SUCCEEDED  74  2.7090940475463867
+horizon-168  gpu_madnlp_cudss  default  1.0e-8  4  SOLVE_SUCCEEDED  68  2.3117599487304688
+horizon-168  gpu_madnlp_cudss  default  1.0e-8  5  SOLVE_SUCCEEDED  160  3.929218053817749
+horizon-168  gpu_madnlp_cudss_async  default  1.0e-8  1  SOLVED_TO_ACCEPTABLE_LEVEL  112  3.571465015411377
+horizon-168  gpu_madnlp_cudss_async  default  1.0e-8  2  SOLVE_SUCCEEDED  182  3.962343215942383
+horizon-168  gpu_madnlp_cudss_async  default  1.0e-8  3  SOLVE_SUCCEEDED  188  3.917357921600342
+horizon-168  gpu_madnlp_cudss_async  default  1.0e-8  4  SOLVE_SUCCEEDED  88  2.5866570472717285
+horizon-168  gpu_madnlp_cudss_async  default  1.0e-8  5  SOLVE_SUCCEEDED  88  9.512540817260742
+horizon-168  cpu_madnlp_mumps  strict  1.0e-8  1  SOLVE_SUCCEEDED  151  67.19468808174133
+horizon-168  cpu_madnlp_mumps  strict  1.0e-8  2  SOLVE_SUCCEEDED  151  52.785315990448
+horizon-168  cpu_madnlp_mumps  strict  1.0e-8  3  SOLVE_SUCCEEDED  151  52.75196194648743
+horizon-168  cpu_madnlp_mumps  strict  1.0e-8  4  SOLVE_SUCCEEDED  151  53.15372681617737
+horizon-168  cpu_madnlp_mumps  strict  1.0e-8  5  SOLVE_SUCCEEDED  151  52.65907001495361
+horizon-168  gpu_madnlp_cudss  strict  1.0e-8  1  SOLVE_SUCCEEDED  147  33.93790292739868
+horizon-168  gpu_madnlp_cudss  strict  1.0e-8  2  SOLVE_SUCCEEDED  87  70.15966176986694
+horizon-168  gpu_madnlp_cudss  strict  1.0e-8  3  SOLVE_SUCCEEDED  70  2.468230962753296
+horizon-168  gpu_madnlp_cudss  strict  1.0e-8  4  SOLVE_SUCCEEDED  94  3.5930848121643066
+horizon-168  gpu_madnlp_cudss  strict  1.0e-8  5  SOLVE_SUCCEEDED  75  2.5552310943603516
+horizon-168  cpu_madnlp_mumps  strict  1.0e-6  1  SOLVE_SUCCEEDED  147  74.1417121887207
+horizon-168  cpu_madnlp_mumps  strict  1.0e-6  2  SOLVE_SUCCEEDED  147  51.92979693412781
+horizon-168  cpu_madnlp_mumps  strict  1.0e-6  3  SOLVE_SUCCEEDED  147  51.72340393066406
+horizon-168  cpu_madnlp_mumps  strict  1.0e-6  4  SOLVE_SUCCEEDED  147  49.675803899765015
+horizon-168  cpu_madnlp_mumps  strict  1.0e-6  5  SOLVE_SUCCEEDED  147  49.61228108406067
+horizon-168  gpu_madnlp_cudss  strict  1.0e-6  1  SOLVE_SUCCEEDED  100  2.695981025695801
+horizon-168  gpu_madnlp_cudss  strict  1.0e-6  2  SOLVE_SUCCEEDED  48  1.7514078617095947
+horizon-168  gpu_madnlp_cudss  strict  1.0e-6  3  SOLVE_SUCCEEDED  106  3.4376959800720215
+horizon-168  gpu_madnlp_cudss  strict  1.0e-6  4  SOLVE_SUCCEEDED  98  5.016370058059692
+horizon-168  gpu_madnlp_cudss  strict  1.0e-6  5  SOLVE_SUCCEEDED  100  2.986961841583252
+horizon-720  cpu_madnlp_mumps  default  1.0e-8  1  SOLVE_SUCCEEDED  216  358.249342918396
+horizon-720  cpu_madnlp_mumps  default  1.0e-8  2  SOLVE_SUCCEEDED  216  399.6958010196686
+horizon-720  cpu_madnlp_mumps  default  1.0e-8  3  SOLVE_SUCCEEDED  216  398.8057179450989
+horizon-720  cpu_madnlp_mumps  default  1.0e-8  4  SOLVE_SUCCEEDED  216  398.0182740688324
+horizon-720  cpu_madnlp_mumps  default  1.0e-8  5  SOLVE_SUCCEEDED  216  396.759770154953
+horizon-720  gpu_madnlp_cudss  default  1.0e-8  1  SOLVE_SUCCEEDED  99  19.300864934921265
+horizon-720  gpu_madnlp_cudss  default  1.0e-8  2  SOLVE_SUCCEEDED  92  7.869002819061279
+horizon-720  gpu_madnlp_cudss  default  1.0e-8  3  SOLVE_SUCCEEDED  88  105.7776849269867
+horizon-720  gpu_madnlp_cudss  default  1.0e-8  4  SOLVE_SUCCEEDED  105  11.295423984527588
+horizon-720  gpu_madnlp_cudss  default  1.0e-8  5  SOLVE_SUCCEEDED  99  10.610565900802612
+horizon-720  gpu_madnlp_cudss_async  default  1.0e-8  1  SOLVE_SUCCEEDED  89  15.833471059799194
+horizon-720  gpu_madnlp_cudss_async  default  1.0e-8  2  SOLVE_SUCCEEDED  99  39.9124071598053
+horizon-720  gpu_madnlp_cudss_async  default  1.0e-8  3  SOLVE_SUCCEEDED  88  54.36108613014221
+horizon-720  gpu_madnlp_cudss_async  default  1.0e-8  4  SOLVE_SUCCEEDED  97  10.073133945465088
+horizon-720  gpu_madnlp_cudss_async  default  1.0e-8  5  SOLVE_SUCCEEDED  97  17.447124004364014
+horizon-720  cpu_madnlp_mumps  strict  1.0e-8  1  SOLVE_SUCCEEDED  216  486.31322503089905
+horizon-720  cpu_madnlp_mumps  strict  1.0e-8  2  SOLVE_SUCCEEDED  216  434.98813700675964
+horizon-720  cpu_madnlp_mumps  strict  1.0e-8  3  SOLVE_SUCCEEDED  216  409.43663477897644
+horizon-720  cpu_madnlp_mumps  strict  1.0e-8  4  SOLVE_SUCCEEDED  216  426.0395939350128
+horizon-720  cpu_madnlp_mumps  strict  1.0e-8  5  SOLVE_SUCCEEDED  216  399.4444489479065
+horizon-720  gpu_madnlp_cudss  strict  1.0e-8  1  SOLVE_SUCCEEDED  89  7.417759895324707
+horizon-720  gpu_madnlp_cudss  strict  1.0e-8  2  SOLVE_SUCCEEDED  88  9.467244863510132
+horizon-720  gpu_madnlp_cudss  strict  1.0e-8  3  SOLVE_SUCCEEDED  88  7.214767932891846
+horizon-720  gpu_madnlp_cudss  strict  1.0e-8  4  SOLVE_SUCCEEDED  307  24.319260835647583
+horizon-720  gpu_madnlp_cudss  strict  1.0e-8  5  SOLVE_SUCCEEDED  95  10.236340999603271
+horizon-720  cpu_madnlp_mumps  strict  1.0e-6  1  SOLVE_SUCCEEDED  211  403.16573095321655
+horizon-720  cpu_madnlp_mumps  strict  1.0e-6  2  SOLVE_SUCCEEDED  211  392.78341698646545
+horizon-720  cpu_madnlp_mumps  strict  1.0e-6  3  SOLVE_SUCCEEDED  211  396.4910731315613
+horizon-720  cpu_madnlp_mumps  strict  1.0e-6  4  SOLVE_SUCCEEDED  211  511.2626428604126
+horizon-720  cpu_madnlp_mumps  strict  1.0e-6  5  SOLVE_SUCCEEDED  211  415.7527711391449
+horizon-720  gpu_madnlp_cudss  strict  1.0e-6  1  SOLVE_SUCCEEDED  156  24.250941038131714
+horizon-720  gpu_madnlp_cudss  strict  1.0e-6  2  SOLVE_SUCCEEDED  82  13.822319030761719
+horizon-720  gpu_madnlp_cudss  strict  1.0e-6  3  SOLVE_SUCCEEDED  100  47.845149993896484
+horizon-720  gpu_madnlp_cudss  strict  1.0e-6  4  SOLVE_SUCCEEDED  100  62.15950107574463
+horizon-720  gpu_madnlp_cudss  strict  1.0e-6  5  SOLVE_SUCCEEDED  149  22.07643222808838
+demo strict=false repeat 1: Solve_Succeeded 0.1788 s
+demo strict=false repeat 2: Solve_Succeeded 0.177 s
+demo strict=false repeat 3: Solve_Succeeded 0.1774 s
+demo strict=false repeat 4: Solve_Succeeded 0.1766 s
+demo strict=false repeat 5: Solve_Succeeded 0.1762 s
+demo strict=true repeat 1: Solve_Succeeded 0.1754 s
+demo strict=true repeat 2: Solve_Succeeded 0.175 s
+demo strict=true repeat 3: Solve_Succeeded 0.1748 s
+demo strict=true repeat 4: Solve_Succeeded 0.1743 s
+demo strict=true repeat 5: Solve_Succeeded 0.1744 s
+scaled-200 strict=false repeat 1: Solve_Succeeded 0.2672 s
+scaled-200 strict=false repeat 2: Solve_Succeeded 0.2667 s
+scaled-200 strict=false repeat 3: Solve_Succeeded 0.2664 s
+scaled-200 strict=false repeat 4: Solve_Succeeded 0.2662 s
+scaled-200 strict=false repeat 5: Solve_Succeeded 0.3256 s
+scaled-200 strict=true repeat 1: Solve_Succeeded 0.2706 s
+scaled-200 strict=true repeat 2: Solve_Succeeded 0.2731 s
+scaled-200 strict=true repeat 3: Solve_Succeeded 0.2693 s
+scaled-200 strict=true repeat 4: Solve_Succeeded 0.2687 s
+scaled-200 strict=true repeat 5: Solve_Succeeded 0.268 s
+scaled-300 strict=false repeat 1: Solve_Succeeded 0.4707 s
+scaled-300 strict=false repeat 2: Solve_Succeeded 0.4701 s
+scaled-300 strict=false repeat 3: Solve_Succeeded 0.4694 s
+scaled-300 strict=false repeat 4: Solve_Succeeded 0.4673 s
+scaled-300 strict=false repeat 5: Solve_Succeeded 0.4676 s
+scaled-300 strict=true repeat 1: Solve_Succeeded 0.4784 s
+scaled-300 strict=true repeat 2: Solve_Succeeded 0.4766 s
+scaled-300 strict=true repeat 3: Solve_Succeeded 0.4811 s
+scaled-300 strict=true repeat 4: Solve_Succeeded 0.472 s
+scaled-300 strict=true repeat 5: Solve_Succeeded 0.4698 s
+scaled-400 strict=false repeat 1: Solve_Succeeded 0.4473 s
+scaled-400 strict=false repeat 2: Solve_Succeeded 0.4444 s
+scaled-400 strict=false repeat 3: Solve_Succeeded 0.4425 s
+scaled-400 strict=false repeat 4: Solve_Succeeded 0.4418 s
+scaled-400 strict=false repeat 5: Solve_Succeeded 0.4406 s
+scaled-400 strict=true repeat 1: Solve_Succeeded 0.4467 s
+scaled-400 strict=true repeat 2: Solve_Succeeded 0.4447 s
+scaled-400 strict=true repeat 3: Solve_Succeeded 0.4425 s
+scaled-400 strict=true repeat 4: Solve_Succeeded 0.4415 s
+scaled-400 strict=true repeat 5: Solve_Succeeded 0.4402 s
+scaled-500 strict=false repeat 1: Solve_Succeeded 0.6763 s
+scaled-500 strict=false repeat 2: Solve_Succeeded 0.6693 s
+scaled-500 strict=false repeat 3: Solve_Succeeded 0.6685 s
+scaled-500 strict=false repeat 4: Solve_Succeeded 0.6665 s
+scaled-500 strict=false repeat 5: Solve_Succeeded 0.6657 s
+scaled-500 strict=true repeat 1: Solve_Succeeded 0.6731 s
+scaled-500 strict=true repeat 2: Solve_Succeeded 0.4937 s
+scaled-500 strict=true repeat 3: Solve_Succeeded 0.4148 s
+scaled-500 strict=true repeat 4: Solve_Succeeded 0.4132 s
+scaled-500 strict=true repeat 5: Solve_Succeeded 0.4201 s
+scaled-600 strict=false repeat 1: Solve_Succeeded 0.6225 s
+scaled-600 strict=false repeat 2: Solve_Succeeded 0.6206 s
+scaled-600 strict=false repeat 3: Solve_Succeeded 0.6557 s
+scaled-600 strict=false repeat 4: Solve_Succeeded 0.6471 s
+scaled-600 strict=false repeat 5: Solve_Succeeded 0.6392 s
+scaled-600 strict=true repeat 1: Solve_Succeeded 0.6419 s
+scaled-600 strict=true repeat 2: Solve_Succeeded 0.6178 s
+scaled-600 strict=true repeat 3: Solve_Succeeded 0.6119 s
+scaled-600 strict=true repeat 4: Solve_Succeeded 0.6212 s
+scaled-600 strict=true repeat 5: Solve_Succeeded 0.6421 s
+scaled-800 strict=false repeat 1: Solve_Succeeded 0.8543 s
+scaled-800 strict=false repeat 2: Solve_Succeeded 0.9107 s
+scaled-800 strict=false repeat 3: Solve_Succeeded 0.8818 s
+scaled-800 strict=false repeat 4: Solve_Succeeded 1.286 s
+scaled-800 strict=false repeat 5: Solve_Succeeded 1.303 s
+scaled-800 strict=true repeat 1: Solve_Succeeded 1.378 s
+scaled-800 strict=true repeat 2: Solve_Succeeded 1.334 s
+scaled-800 strict=true repeat 3: Solve_Succeeded 1.263 s
+scaled-800 strict=true repeat 4: Solve_Succeeded 1.262 s
+scaled-800 strict=true repeat 5: Solve_Succeeded 1.255 s
+horizon-24 strict=false repeat 1: Solve_Succeeded 6.693 s
+horizon-24 strict=false repeat 2: Solve_Succeeded 6.702 s
+horizon-24 strict=false repeat 3: Solve_Succeeded 6.687 s
+horizon-24 strict=false repeat 4: Solve_Succeeded 6.674 s
+horizon-24 strict=false repeat 5: Solve_Succeeded 6.719 s
+horizon-24 strict=true repeat 1: Solve_Succeeded 6.659 s
+horizon-24 strict=true repeat 2: Solve_Succeeded 6.663 s
+horizon-24 strict=true repeat 3: Solve_Succeeded 6.659 s
+horizon-24 strict=true repeat 4: Solve_Succeeded 6.699 s
+horizon-24 strict=true repeat 5: Solve_Succeeded 6.69 s
+horizon-168 strict=false repeat 1: Solve_Succeeded 65.54 s
+horizon-168 strict=false repeat 2: Solve_Succeeded 64.15 s
+horizon-168 strict=false repeat 3: Solve_Succeeded 82.46 s
+horizon-168 strict=false repeat 4: Solve_Succeeded 65.19 s
+horizon-168 strict=false repeat 5: Solve_Succeeded 62.36 s
+horizon-168 strict=true repeat 1: Solve_Succeeded 62.52 s
+horizon-168 strict=true repeat 2: Solve_Succeeded 62.99 s
+horizon-168 strict=true repeat 3: Solve_Succeeded 62.33 s
+horizon-168 strict=true repeat 4: Solve_Succeeded 63.19 s
+horizon-168 strict=true repeat 5: Solve_Succeeded 63.0 s
+horizon-720 strict=false repeat 1: Solve_Succeeded 550.9 s
+horizon-720 strict=false repeat 2: Solve_Succeeded 475.9 s
+horizon-720 strict=false repeat 3: Solve_Succeeded 459.6 s
+horizon-720 strict=false repeat 4: Solve_Succeeded 476.8 s
+horizon-720 strict=false repeat 5: Solve_Succeeded 449.6 s
+horizon-720 strict=true repeat 1: Solve_Succeeded 459.9 s
+horizon-720 strict=true repeat 2: Solve_Succeeded 447.5 s
+horizon-720 strict=true repeat 3: Solve_Succeeded 430.4 s
+horizon-720 strict=true repeat 4: Solve_Succeeded 418.4 s
+horizon-720 strict=true repeat 5: Solve_Succeeded 417.3 s
+gpu memory  demo  SOLVE_SUCCEEDED  788 MiB
+gpu memory  scaled-200  SOLVE_SUCCEEDED  820 MiB
+gpu memory  scaled-300  SOLVE_SUCCEEDED  916 MiB
+gpu memory  scaled-400  SOLVE_SUCCEEDED  918 MiB
+gpu memory  scaled-500  SOLVE_SUCCEEDED  982 MiB
+gpu memory  scaled-600  SOLVE_SUCCEEDED  1076 MiB
+gpu memory  scaled-800  SOLVE_SUCCEEDED  1174 MiB
+gpu memory  horizon-24  SOLVE_SUCCEEDED  2852 MiB
+gpu memory  horizon-168  SOLVE_SUCCEEDED  11926 MiB
+gpu memory  horizon-720  SOLVE_SUCCEEDED  36824 MiB
 ┌ Info: Benchmarks finished
 │   profile = :local
-└   runtime_s = 6373.3
+└   runtime_s = 16602.2
