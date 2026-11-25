@@ -1,5 +1,5 @@
 {
-  "commit_sha": "1b2130cc20fbb1ca218e30f09e8f8a6c2c5b7569",
+  "commit_sha": "5b2506ed5820cc55df40b4e5680d634b993fe9e3",
   "cpu_model": "INTEL(R) XEON(R) PLATINUM 8568Y+",
   "cuda_device": "NVIDIA H200",
   "cuda_functional": true,
@@ -23,32 +23,32 @@
       "cuda_device": "NVIDIA H200",
       "other_compute_processes_at_start": 0,
       "other_processes_on_gpu_at_start": false,
-      "run_date": "2026-11-20T17:42:08Z",
+      "run_date": "2026-11-25T17:53:19Z",
       "selected_gpu_index": 3,
       "selected_gpu_memory_used_mib_at_start": 5,
-      "wall_s": 331.3
+      "wall_s": 261.2
     },
     "calibration": {
       "cuda_device": "NVIDIA H200",
       "other_compute_processes_at_start": 0,
       "other_processes_on_gpu_at_start": false,
-      "run_date": "2026-11-20T17:42:11Z",
+      "run_date": "2026-11-25T17:53:18Z",
       "selected_gpu_index": 2,
       "selected_gpu_memory_used_mib_at_start": 5,
-      "wall_s": 314.2
+      "wall_s": 356.4
     },
     "scenarios": {
       "cuda_device": "NVIDIA H200",
       "other_compute_processes_at_start": 0,
       "other_processes_on_gpu_at_start": false,
-      "run_date": "2026-11-20T17:42:11Z",
+      "run_date": "2026-11-25T17:53:18Z",
       "selected_gpu_index": 2,
       "selected_gpu_memory_used_mib_at_start": 5,
-      "wall_s": 318.4
+      "wall_s": 364.8
     }
   },
   "parts_missing": [],
-  "run_date": "2026-11-20T17:42:08Z",
+  "run_date": "2026-11-25T17:53:18Z",
   "selected_gpu_index": 3,
   "selected_gpu_memory_used_mib_at_start": 5
 }
